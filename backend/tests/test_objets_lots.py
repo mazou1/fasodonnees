@@ -160,3 +160,24 @@ def test_rien_a_sauver_quand_lobjet_est_absent():
     ) is None
     assert sans_queue_de_montant("Frais généraux (non précisés)") is None
     assert sans_queue_de_montant("Lot non précisé") is None
+
+
+def test_un_accord_cadre_multi_attributaires_reste_un_objet_valide():
+    """« Conclusion d'un accord cadre multi-attributaires pour l'acquisition de
+    valeurs inactiniques » est du vocabulaire de la commande publique. Le mot
+    « attributaires » y est légitime : le marqueur générique dépubliait
+    l'objet."""
+    assert not objet_est_douteux(
+        "Conclusion d'un accord cadre multi-attributaires pour l'acquisition "
+        "de valeurs inactiniques"
+    )
+
+
+def test_le_montant_entre_parentheses_est_coupe():
+    """« Acquisition de produits d'entretien (montant minimum HTVA) » : l'objet
+    est complet, la parenthèse est un reliquat de colonne."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "LOT 1 : Acquisition de produits d’entretien (montant minimum HTVA)"
+    ) == "LOT 1 : Acquisition de produits d’entretien"

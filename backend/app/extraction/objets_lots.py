@@ -93,13 +93,18 @@ def numero_de_lot(objet: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
+# « accord cadre multi-attributaires » désigne une forme de marché, pas une
+# ligne d'attribution mal extraite : le mot « attributaire » y est légitime.
+_ATTRIBUTAIRE_LEGITIME = re.compile(r"multi[-\s]?attributaires?", re.IGNORECASE)
+
+
 def _acceptable(candidat: str) -> bool:
     """Ce fragment peut-il être l'objet d'un marché ?
 
     Deux conditions, et les deux sont nécessaires : ne porter aucun marqueur de
     la ligne des attributaires, et commencer comme un objet commence.
     """
-    reduit = candidat.strip().lower()
+    reduit = _ATTRIBUTAIRE_LEGITIME.sub("", candidat).strip().lower()
     if any(marqueur in reduit for marqueur in _PAS_UN_OBJET):
         return False
     if len(reduit) < 20 or len(reduit.split()) < 3:
@@ -172,8 +177,16 @@ def objet_du_lot(texte: str, numero: int, position: int | None = None) -> str | 
 # « … pour un montant TTC de quatre-vingt-deux millions » : le montant a été
 # recopié à la suite de l'objet. L'objet, lui, est bien là - il suffit de couper.
 _QUEUE_MONTANT = re.compile(
-    r"\s*[-,;]?\s*(?:pour\s+un\s+montant|d[’']un\s+montant|au\s+prix\s+de|"
-    r"soit\s+un\s+montant|montant\s+(?:ttc|htva|total))\b.*$",
+    r"\s*[-,;:]?\s*(?:"
+    r"\(\s*montant[^)]*\)?|"             # « (montant minimum HTVA) »
+    r"pour\s+un\s+montant|"
+    r"d[’']un\s+montant|"
+    r"au\s+prix\s+de|"
+    r"soit\s+un\s+montant|"
+    r"montant\s+(?:ttc|htva|total|minimum|maximum)|"
+    r"attribution\s+(?:à|a|pour)|"        # « - Attribution à 22 000 000 FCFA »
+    r"correction\s+op[ée]r[ée]e"          # « - Correction opérée pour variation… »
+    r").*$",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -202,7 +215,7 @@ def objet_est_douteux(objet: str | None) -> bool:
     un mot absent de `_DEBUTS_ATTENDUS`, et le déclarer douteux le renverrait
     en revue sans raison.
     """
-    reduit = (objet or "").lower()
+    reduit = _ATTRIBUTAIRE_LEGITIME.sub("", objet or "").lower()
     return bool(objet) and any(marqueur in reduit for marqueur in _PAS_UN_OBJET)
 
 
