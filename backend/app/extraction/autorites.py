@@ -218,8 +218,27 @@ def _demander(texte: str) -> AutoriteExtraite:
     return parsee
 
 
+def _cle_disponible() -> bool:
+    return bool(
+        settings.mistral_api_key
+        if settings.llm_provider == "mistral"
+        else settings.anthropic_api_key
+    )
+
+
 def reparer(max_marches: int = 100) -> dict[str, int]:
-    """Complète l'autorité des marchés qui n'en ont pas. Retourne le décompte."""
+    """Complète l'autorité des marchés qui n'en ont pas. Retourne le décompte.
+
+    S'arrête d'emblée sans clé LLM : lancée depuis un conteneur qui n'en a pas
+    (l'API, par exemple, où elle est inutile), la passe partait quand même et
+    échouait appel après appel - 734 échecs sur 801 marchés, visibles nulle
+    part ailleurs que dans le décompte final.
+    """
+    if not _cle_disponible():
+        raise RuntimeError(
+            f"Aucune clé API pour le fournisseur '{settings.llm_provider}' : "
+            "lancer cette passe depuis le conteneur worker."
+        )
     compte = {
         "traites": 0, "remplis": 0, "introuvables": 0,
         "doute": 0, "rubriques": 0, "echecs": 0,

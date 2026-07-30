@@ -63,3 +63,17 @@ def test_une_preselection_chiffree_part_en_revue_humaine():
 def test_une_confiance_deja_basse_nest_pas_relevee():
     m = _marche(nature="preselection", montant_fcfa=1_000, confiance=0.2)
     assert m.confiance == 0.2
+
+
+def test_la_reparation_dautorite_refuse_de_tourner_sans_cle(monkeypatch):
+    """Sans clé, chaque appel échoue en silence : la passe a déjà consommé
+    801 marchés en production pour 734 échecs, sans autre trace que le
+    décompte final. Mieux vaut refuser de commencer."""
+    import pytest
+
+    from app.extraction import autorites
+
+    monkeypatch.setattr(autorites.settings, "llm_provider", "mistral")
+    monkeypatch.setattr(autorites.settings, "mistral_api_key", "")
+    with pytest.raises(RuntimeError, match="worker"):
+        autorites.reparer(max_marches=5)
