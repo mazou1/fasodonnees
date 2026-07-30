@@ -137,3 +137,26 @@ def test_la_formule_creuse_est_reperee():
     indéfiniment, ni publiable ni corrigée."""
     assert objet_est_douteux("Lot 5 : Réalisation d'un marché public")
     assert not objet_est_douteux("Réalisation d'une latrine à deux (02) postes")
+
+
+def test_le_montant_recopie_derriere_lobjet_est_coupe():
+    """« Acquisition de chaises visiteur … pour un montant TTC de quatre-vingt-
+    deux millions » : l'objet est bien là, seul le montant est de trop."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "Lot 1: Acquisition de chaises visiteur (Directeur et Agent) pour un "
+        "montant TTC de quatre-vingt-deux millions"
+    ) == "Lot 1: Acquisition de chaises visiteur (Directeur et Agent)"
+
+
+def test_rien_a_sauver_quand_lobjet_est_absent():
+    """« BARK SERVICE INTERNATIONAL SARL pour un montant en TTC de… » : couper
+    le montant laisse un nom d'entreprise, pas un objet de marché."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "BARK SERVICE INTERNATIONAL SARL pour un montant en TTC de soixante millions"
+    ) is None
+    assert sans_queue_de_montant("Frais généraux (non précisés)") is None
+    assert sans_queue_de_montant("Lot non précisé") is None

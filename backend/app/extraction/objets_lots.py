@@ -169,6 +169,32 @@ def objet_du_lot(texte: str, numero: int, position: int | None = None) -> str | 
     return candidats[-1][1] if position is not None else max(candidats, key=lambda c: len(c[1]))[1]
 
 
+# « … pour un montant TTC de quatre-vingt-deux millions » : le montant a été
+# recopié à la suite de l'objet. L'objet, lui, est bien là - il suffit de couper.
+_QUEUE_MONTANT = re.compile(
+    r"\s*[-,;]?\s*(?:pour\s+un\s+montant|d[’']un\s+montant|au\s+prix\s+de|"
+    r"soit\s+un\s+montant|montant\s+(?:ttc|htva|total))\b.*$",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def sans_queue_de_montant(objet: str | None) -> str | None:
+    """Retire le montant recopié derrière l'objet, s'il en reste un objet.
+
+    « Acquisition de chaises visiteur (Directeur et Agent) pour un montant TTC
+    de quatre-vingt-deux millions… » devient « Acquisition de chaises visiteur
+    (Directeur et Agent) ». Retourne None si ce qui précède le montant n'est pas
+    un objet - auquel cas il n'y a rien à sauver, et la ligne ne doit pas rester
+    publiée.
+    """
+    if not objet:
+        return None
+    coupe = _QUEUE_MONTANT.sub("", objet).strip(" .:-–—;,")
+    # le numéro de lot en tête ne compte pas dans l'appréciation
+    corps = re.sub(r"^lot\s*(?:n\s*[°ºo]\s*)?\d{0,2}\s*[:\-–—]?\s*", "", coupe, flags=re.I)
+    return coupe if _acceptable(corps) else None
+
+
 def objet_est_douteux(objet: str | None) -> bool:
     """L'objet enregistré décrit-il autre chose que le marché lui-même ?
 
@@ -227,9 +253,51 @@ def reparer(appliquer: bool = False) -> dict[str, int]:
     return compte
 
 
+def assainir_les_publies(appliquer: bool = False) -> dict[str, int]:
+    """Traite les marchés PUBLIÉS dont l'objet ne dit pas ce qui a été acheté.
+
+    Deux issues, jamais une seule : si l'objet est là et que seul le montant a
+    été recopié derrière, on coupe et la ligne reste publiée. Sinon la ligne
+    repart en revue - un marché de 103 millions dont l'objet est « Frais
+    généraux (non précisés) » n'apprend rien à personne et abîme la confiance
+    dans tout le reste.
+    """
+    compte = {"examines": 0, "coupes": 0, "depublies": 0}
+    with SessionLocal() as db:
+        for m in db.scalars(select(Marche).where(Marche.statut_validation == "valide")):
+            if not objet_est_douteux(m.objet):
+                continue
+            compte["examines"] += 1
+            recupere = sans_queue_de_montant(m.objet)
+            if recupere:
+                print(f"  [{m.id}] coupé  → {recupere[:82]}")
+                if appliquer:
+                    m.objet = recupere
+                compte["coupes"] += 1
+            else:
+                print(f"  [{m.id}] retiré ← {str(m.objet)[:82]}")
+                if appliquer:
+                    m.statut_validation = "a_valider"
+                compte["depublies"] += 1
+        if appliquer:
+            db.commit()
+            print("\nModifications enregistrées.")
+        else:
+            print("\n(simulation - relancer avec --appliquer pour écrire)")
+    return compte
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    c = reparer(appliquer="--appliquer" in sys.argv)
+    appliquer = "--appliquer" in sys.argv
+    if "--assainir" in sys.argv:
+        a = assainir_les_publies(appliquer)
+        print(
+            f"\n{a['examines']} ligne(s) publiée(s) à l'objet douteux : "
+            f"{a['coupes']} objet(s) récupéré(s), {a['depublies']} remise(s) en revue."
+        )
+        return 0
+    c = reparer(appliquer=appliquer)
     print(
         f"\n{c['examines']} objet(s) douteux : {c['corriges']} corrigé(s), "
         f"{c['sans_entete']} sans en-tête retrouvé, {c['sans_numero']} sans numéro de lot, "
