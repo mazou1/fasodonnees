@@ -7,7 +7,13 @@ avant de s'être assuré que la copie est bonne.
 
 import pytest
 
-from app.stockage import CleInvalide, StockageLocal, migrer_depuis_local, normaliser_cle
+from app.stockage import (
+    CleInvalide,
+    StockageLocal,
+    StockageS3,
+    migrer_depuis_local,
+    normaliser_cle,
+)
 
 
 # --- normalisation des clés -----------------------------------------------
@@ -157,6 +163,45 @@ def test_un_envoi_tronque_est_detecte_avant_suppression(tmp_path):
     stats = migrer_depuis_local(racine, supprimer_apres=True, cible=_CibleFactice(corrompt=True))
     assert stats["echecs"] == 2
     assert all(p.is_file() for p in racine.rglob("*.pdf"))
+
+
+# --- URL publiques stables -----------------------------------------------
+
+class _S3Nu(StockageS3):
+    """Instancie StockageS3 sans client boto3 : on ne teste que l'URL rendue."""
+
+    def __init__(self, url_publique=""):
+        self.bucket = "faso-archives"
+        self.duree_url = 3600
+        self.url_publique = url_publique.rstrip("/")
+        self.client = None
+
+
+def test_une_url_publique_est_stable_et_sans_signature():
+    """Le point capital : un lien vers un acte officiel doit rester valable des
+    années. Une URL présignée expire — ici, aucune signature, aucune date."""
+    genre, url = _S3Nu("/archives").url_ou_chemin("conseil_constitutionnel/2026/a.pdf")
+    assert genre == "url"
+    assert url == "/archives/conseil_constitutionnel/2026/a.pdf"
+    assert "X-Amz" not in url and "Expires" not in url
+
+
+def test_deux_appels_rendent_la_meme_url():
+    """Une URL présignée change à chaque appel : impossible de la mettre en
+    cache ni de la citer. La forme publique, elle, est déterministe."""
+    s = _S3Nu("https://fasodonnees.org/archives")
+    cle = "asce_lc/2025/raga.pdf"
+    assert s.url_ou_chemin(cle) == s.url_ou_chemin(cle)
+
+
+def test_la_base_publique_tolere_une_barre_finale():
+    assert _S3Nu("/archives/").url_ou_chemin("a/b.pdf")[1] == "/archives/a/b.pdf"
+
+
+def test_une_cle_hors_perimetre_reste_refusee_meme_en_public():
+    """L'URL publique ne doit pas devenir un moyen de sortir du bucket."""
+    with pytest.raises(CleInvalide):
+        _S3Nu("/archives").url_ou_chemin("../../etc/passwd")
 
 
 def test_migrer_vers_le_local_est_refuse(tmp_path):

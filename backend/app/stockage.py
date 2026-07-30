@@ -105,9 +105,10 @@ class StockageS3:
 
     def __init__(self, *, endpoint: str, bucket: str, cle_acces: str,
                  cle_secrete: str, region: str = "garage",
-                 duree_url: int = 3600):
+                 duree_url: int = 3600, url_publique: str = ""):
         self.bucket = bucket
         self.duree_url = duree_url
+        self.url_publique = url_publique.rstrip("/")
         import boto3
         from botocore.config import Config
 
@@ -169,14 +170,23 @@ class StockageS3:
             chemin.unlink(missing_ok=True)
 
     def url_ou_chemin(self, cle: str) -> tuple[str, Path | str]:
-        """URL présignée : le document part du bucket, pas de l'API.
+        """URL du document — publique et stable si le bucket l'est.
 
-        Faire transiter les PDF par FastAPI transformerait l'API en serveur de
-        fichiers et saturerait le VPS applicatif.
+        Dans les deux cas le document part du bucket et non de l'API : faire
+        transiter les PDF par FastAPI en ferait un serveur de fichiers.
+
+        La forme publique est préférable pour un corpus d'actes officiels :
+        l'URL ne périme pas, elle est citable dans un article ou un rapport,
+        cachable par un CDN, et permet à un tiers de miroiter l'archive. La
+        signature ne sert qu'à protéger un contenu privé — ce corpus n'en est
+        pas un. Le repli présigné reste là pour un bucket resté fermé.
         """
+        cle = normaliser_cle(cle)
+        if self.url_publique:
+            return "url", f"{self.url_publique}/{cle}"
         url = self.client.generate_presigned_url(
             "get_object",
-            Params={"Bucket": self.bucket, "Key": normaliser_cle(cle)},
+            Params={"Bucket": self.bucket, "Key": cle},
             ExpiresIn=self.duree_url,
         )
         return "url", url
@@ -206,6 +216,7 @@ def _construire():
             cle_secrete=settings.s3_secret_key,
             region=settings.s3_region,
             duree_url=settings.s3_duree_url,
+            url_publique=settings.s3_url_publique,
         )
     return StockageLocal(settings.data_dir)
 

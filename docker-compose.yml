@@ -48,6 +48,8 @@ services:
       FASO_S3_ACCESS_KEY: ${FASO_S3_ACCESS_KEY:-}
       FASO_S3_SECRET_KEY: ${FASO_S3_SECRET_KEY:-}
       FASO_S3_REGION: ${FASO_S3_REGION:-garage}
+      # URL publiques et stables du corpus, proxifiées vers Garage par nginx
+      FASO_S3_URL_PUBLIQUE: ${FASO_S3_URL_PUBLIQUE:-/archives}
       FASO_ADMIN_USER: ${FASO_ADMIN_USER:-admin}
       FASO_ADMIN_PASSWORD: ${FASO_ADMIN_PASSWORD:-change-me}
       FASO_SECRET_KEY: ${FASO_SECRET_KEY:-change-me-long-random}
@@ -76,6 +78,8 @@ services:
       FASO_S3_ACCESS_KEY: ${FASO_S3_ACCESS_KEY:-}
       FASO_S3_SECRET_KEY: ${FASO_S3_SECRET_KEY:-}
       FASO_S3_REGION: ${FASO_S3_REGION:-garage}
+      # URL publiques et stables du corpus, proxifiées vers Garage par nginx
+      FASO_S3_URL_PUBLIQUE: ${FASO_S3_URL_PUBLIQUE:-/archives}
       FASO_LLM_PROVIDER: ${FASO_LLM_PROVIDER:-mistral}
       FASO_MISTRAL_API_KEY: ${FASO_MISTRAL_API_KEY:-}
       FASO_ANTHROPIC_API_KEY: ${FASO_ANTHROPIC_API_KEY:-}

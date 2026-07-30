@@ -19,7 +19,13 @@ class Settings(BaseSettings):
     s3_access_key: str = ""
     s3_secret_key: str = ""
     s3_region: str = "garage"
-    s3_duree_url: int = 3600  # validité des URL présignées servies au public
+    # Base des URL PUBLIQUES et STABLES du corpus (ex. « /archives », proxifié
+    # vers le point d'accès web de Garage par nginx). Renseignée, elle remplace
+    # les URL présignées : un lien vers un document officiel doit rester valable
+    # des années et pouvoir être miroité, pas expirer au bout d'une heure.
+    s3_url_publique: str = ""
+    # repli quand aucune URL publique n'est configurée (bucket privé)
+    s3_duree_url: int = 3600
 
     admin_user: str = "admin"
     admin_password: str = "change-me"

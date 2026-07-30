@@ -133,6 +133,31 @@ docker compose -f docker-compose.prod.yml exec -T garage /garage bucket allow --
 Reporter le *Key ID* et le *Secret key* dans le `.env` (`FASO_S3_ACCESS_KEY`,
 `FASO_S3_SECRET_KEY`), avec `FASO_S3_ENDPOINT=http://garage:3900`.
 
+### Rendre le corpus public, avec des URL stables
+
+Les documents archivés sont des actes officiels : rien à protéger, et tout à
+gagner à ce qu'un lien vers un rapport d'audit reste valable des années et
+puisse être miroité par un tiers. On expose donc le bucket en lecture publique
+plutôt que de signer chaque URL — une URL présignée expire (une heure par
+défaut) et change à chaque appel, donc ni citable ni cachable.
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T garage \
+  /garage bucket website --allow faso-archives
+```
+
+Le point d'accès web de Garage (port 3902) identifie le bucket par l'en-tête
+`Host`. Le nginx du front le réécrit et sert le corpus sous `/archives/`
+(cf. `frontend/nginx.conf`) : pas de sous-domaine ni de certificat de plus, et
+la même URL fonctionne en développement comme en production. D'où
+`FASO_S3_URL_PUBLIQUE=/archives`.
+
+Les clés étant des empreintes de contenu, un objet ne change jamais : le cache
+est posé à un an, `immutable`.
+
+Laisser `FASO_S3_URL_PUBLIQUE` vide rebascule sur les URL présignées, pour un
+bucket que l'on souhaite garder fermé.
+
 ### Pointer vers un S3 externe
 
 Ne pas activer le profil `garage` ; renseigner l'endpoint, le bucket, les clés
