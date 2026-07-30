@@ -20,6 +20,7 @@ fusion_propositions.csv
 attributaires_propositions.csv
 attributaires_personnes.csv
 projets_propositions.csv
+projets_propositions.arbitre.csv
 
 # Divers
 *.log

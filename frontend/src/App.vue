@@ -57,13 +57,12 @@ const NAVIGATION = [
   },
   {
     // « exécution » au sens budgétaire : ce qui advient du budget une fois voté
-    // - marchés passés, ouvrages livrés, écart entre l'annonce et la livraison.
+    // - marchés passés, ouvrages livrés.
     libelle: "Budget & exécution",
     enfants: [
       ["/finances", "Budget de l'État"],
       ["/marches", "Marchés publics"],
       ["/infrastructures", "Infrastructures"],
-      ["/suivi", "Suivi des annonces"],
     ],
   },
   {

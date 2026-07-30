@@ -35,11 +35,12 @@
         <span v-if="d.date_publication">{{ formatDate(d.date_publication) }}</span>
         <span>{{ d.source_nom }}</span>
       </div>
-      <div class="titre">{{ d.titre || d.url }}</div>
+      <router-link class="titre titre-lien" :to="`/documents/${d.id}`">{{ d.titre || d.url }}</router-link>
       <div class="meta" style="margin-top: 6px">
         <router-link v-if="d.type_doc === 'cr_conseil'" class="source" :to="`/conseils/${d.id}`">
           Voir sur Faso Données Publiques →
         </router-link>
+        <router-link class="source" :to="`/documents/${d.id}`">Lire dans la plateforme →</router-link>
         <a v-if="d.pdf" class="source" :href="`/api/documents/${d.id}/fichier`" target="_blank" rel="noopener">
           📄 PDF archivé →
         </a>
@@ -138,4 +139,6 @@ onMounted(recharger);
 .entete-recherche { align-items: center; }
 .entete-recherche input[type="search"] { flex: 1; max-width: 340px; }
 .compteur { margin-left: auto; color: var(--text-muted); font-size: 0.88rem; }
+.titre-lien { display: block; text-decoration: none; color: inherit; }
+.titre-lien:hover { color: var(--accent); }
 </style>
