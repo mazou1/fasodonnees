@@ -50,7 +50,11 @@ class MarcheExtrait(BaseModel):
         description="Autorité contractante : le ministère, la société d'État ou la "
         "collectivité qui passe le marché. null si absente.",
     )
-    objet: str = Field(description="Objet du marché, tel qu'écrit dans le document")
+    objet: str = Field(
+        description="Objet du marché, RECOPIÉ du document. Si l'extrait ne le "
+        "donne pas, laisser une chaîne vide - jamais une formule de "
+        "remplacement du genre « non précisé dans l'extrait »."
+    )
     reference: str | None = Field(
         default=None,
         description="Référence de l'appel ou de la demande de prix "
@@ -131,6 +135,11 @@ HT et un TTC, prends le TTC.
 « Attributaire : », pas de numéro de lot collé au nom.
 - N'invente rien. Un champ absent reste null. Si l'extrait ne contient aucune \
 attribution, retourne une liste vide.
+- N'écris JAMAIS une formule de remplacement dans `objet` - « non précisé \
+dans l'extrait », « non spécifié », « à déterminer ». Un objet vide se \
+corrige plus tard ; un objet inventé se publie tel quel, et la plateforme \
+annonce alors des millions attribués à un marché qui n'existe pas. Si tu ne \
+lis pas l'objet, laisse-le vide et baisse `confiance`.
 - `confiance` reflète TA certitude sur cette ligne : basse si les colonnes sont \
 manifestement mélangées ou si l'attributaire et le montant pourraient appartenir \
 à deux marchés différents."""

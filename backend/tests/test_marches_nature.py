@@ -77,3 +77,15 @@ def test_la_reparation_dautorite_refuse_de_tourner_sans_cle(monkeypatch):
     monkeypatch.setattr(autorites.settings, "mistral_api_key", "")
     with pytest.raises(RuntimeError, match="worker"):
         autorites.reparer(max_marches=5)
+
+
+def test_un_objet_fabrique_est_reconnu_comme_tel():
+    """Le modèle a comblé un champ obligatoire qu'il n'avait pas lu et s'est
+    donné 0,95 : quatre marchés portaient « Lot 3 : Réalisation d'un marché
+    public (non précisé dans l'extrait) » pour des dizaines de millions."""
+    from app.extraction.marches_arbitrage import _objet_est_fabrique
+
+    assert _objet_est_fabrique("Lot 3 : Réalisation d'un marché public (non précisé dans l'extrait)")
+    assert _objet_est_fabrique("Objet non spécifié")
+    assert not _objet_est_fabrique("Lot 21 : Acquisition de fournitures de bureau")
+    assert not _objet_est_fabrique(None)
