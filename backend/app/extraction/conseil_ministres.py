@@ -24,7 +24,7 @@ from app.models import Decision, Document, Nomination, Personne, Structure
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = "claude-opus-4-8"
+MODELE_ANTHROPIC = "claude-opus-5"
 MODELE_MISTRAL = "mistral-small-latest"
 TEXTE_MINIMUM = 500  # en dessous, le document est un lien PDF / une traduction, pas un CR complet
 

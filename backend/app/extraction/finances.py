@@ -31,7 +31,7 @@ from app.models import BudgetExercice, Document, EngagementFinancier
 logger = logging.getLogger(__name__)
 
 MODELE_MISTRAL = "mistral-small-latest"
-MODELE_ANTHROPIC = "claude-opus-4-8"
+MODELE_ANTHROPIC = "claude-opus-5"
 TEXTE_MINIMUM = 500
 
 

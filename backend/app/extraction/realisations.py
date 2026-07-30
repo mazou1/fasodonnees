@@ -31,7 +31,7 @@ from app.models import Document, Realisation
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = "claude-opus-4-8"
+MODELE_ANTHROPIC = "claude-opus-5"
 MODELE_MISTRAL = "mistral-small-latest"
 
 # Types d'ouvrage documentés (chaîne libre en base) → secteur d'affichage.

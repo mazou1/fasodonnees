@@ -202,7 +202,9 @@ def main() -> int:
             select(Document)
             .where(
                 Document.type_doc == "marche_public",
-                Document.fichier.is_not(None),
+                # l'extraction lit le texte, plus le PDF : c'est lui qui doit
+                # être présent (cf. marches_llm.py)
+                Document.texte_extrait.is_not(None),
                 Document.id.not_in(select(deja.c.document_id)),
             )
             .order_by(Document.date_publication.desc().nulls_last())
