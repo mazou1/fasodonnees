@@ -20,7 +20,9 @@
       <div class="valeur">{{ stats.total.toLocaleString("fr-FR") }}</div>
       <div class="libelle">{{ nature === "preselection" ? "présélections recensées" : "marchés recensés" }}</div>
     </div>
-    <div class="carte tuile" v-if="plusGros">
+    <!-- le plus gros marché est une attribution : l'afficher à côté d'un total
+         de présélections à 0 FCFA laisserait croire qu'il en fait partie -->
+    <div class="carte tuile" v-if="plusGros && nature !== 'preselection'">
       <div class="valeur">{{ fmtFCFA(plusGros.montant_fcfa) }}</div>
       <div class="libelle">plus gros marché ({{ plusGros.attributaire }})</div>
     </div>
