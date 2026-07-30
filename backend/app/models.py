@@ -367,6 +367,12 @@ class Marche(Base):
     objet: Mapped[str] = mapped_column(Text)
     reference: Mapped[str | None] = mapped_column(String(300))  # n° de l'appel/demande
     mode: Mapped[str | None] = mapped_column(String(120))  # demande de prix, AOO…
+    # attribution | preselection — un avis à manifestation d'intérêt aboutit à
+    # une PRÉSÉLECTION de candidats, pas à un contrat chiffré : le montant se
+    # négocie ensuite. Les compter comme des attributions gonflerait le nombre de
+    # marchés sans rien ajouter au total, et ferait passer un candidat retenu
+    # pour un adjudicataire sur sa fiche entreprise.
+    nature: Mapped[str] = mapped_column(String(20), default="attribution", index=True)
     attributaire: Mapped[str | None] = mapped_column(String(400))  # entreprise retenue (texte source)
     # rattachement à l'entité consolidée — dérivé, jamais saisi par l'extraction
     attributaire_id: Mapped[int | None] = mapped_column(

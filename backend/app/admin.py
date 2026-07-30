@@ -253,6 +253,9 @@ class MarcheAdmin(ValidationActionsMixin, ModelView, model=Marche):
     page_size = 100
     column_list = [
         Marche.id,
+        # visible dès la liste : le valideur doit voir qu'une ligne sans montant
+        # est une présélection et non une attribution incomplète
+        Marche.nature,
         Marche.attributaire,
         Marche.montant_fcfa,
         Marche.autorite,
@@ -262,7 +265,12 @@ class MarcheAdmin(ValidationActionsMixin, ModelView, model=Marche):
         Marche.statut_validation,
     ]
     column_searchable_list = [Marche.attributaire, Marche.autorite, Marche.objet]
-    column_sortable_list = [Marche.montant_fcfa, Marche.date_attribution, Marche.statut_validation]
+    column_sortable_list = [
+        Marche.montant_fcfa,
+        Marche.date_attribution,
+        Marche.statut_validation,
+        Marche.nature,
+    ]
     column_default_sort = ("montant_fcfa", True)
     icon = "fa-solid fa-file-signature"
 

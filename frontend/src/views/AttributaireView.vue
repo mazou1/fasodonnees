@@ -112,6 +112,14 @@
       <a :href="`/api/marches?attributaire_id=${fiche.id}&par_page=100`">les voir tous via l'API</a>.
     </p>
 
+    <p v-if="fiche.nb_preselections" class="note-methode">
+      Cette entreprise figure en outre parmi les candidats présélectionnés de
+      {{ fiche.nb_preselections }} avis à manifestation d'intérêt. Une présélection
+      n'attribue ni marché ni montant : elle n'entre donc dans aucun des chiffres
+      ci-dessus —
+      <router-link :to="`/marches?nature=preselection&q=${encodeURIComponent(fiche.nom)}`">les consulter</router-link>.
+    </p>
+
     <p class="note-methode">
       Cette fiche regroupe les marchés attribués sous
       {{ fiche.variantes.length > 1 ? fiche.variantes.length + " graphies" : "une graphie" }}

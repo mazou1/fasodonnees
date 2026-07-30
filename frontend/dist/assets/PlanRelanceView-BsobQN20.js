@@ -1,1 +1,0 @@
-import{_ as e}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{c,l as a}from"./index-BhWvYok5.js";const r={},n={class:"cadre-dossier",src:"/plan-relance/",title:"Plan de relance — PND R.E.L.A.N.C.E. 2026-2030"};function s(t,o){return a(),c("iframe",n)}const d=e(r,[["render",s],["__scopeId","data-v-b86767eb"]]);export{d as default};

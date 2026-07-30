@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -1768,6 +1769,8 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
 # ── Marchés publics (attributions) ────────────────────────────────────────
 class MarcheOut(BaseModel):
     id: int
+    # attribution | preselection — le second n'est pas un marché remporté
+    nature: str
     attributaire: str | None  # la graphie exacte du document source
     attributaire_id: int | None  # l'entité consolidée (fiche entreprise)
     montant_fcfa: int | None
@@ -1823,6 +1826,9 @@ class AttributaireDetail(BaseModel):
     variantes: list[str]
     nb_marches: int
     montant_fcfa: int
+    # candidats retenus après manifestation d'intérêt : hors des totaux
+    # ci-dessus, mais tus complètement ils donneraient une image incomplète
+    nb_preselections: int
     premiere_attribution: date | None
     derniere_attribution: date | None
     par_secteur: list[CategorieStat]
@@ -1874,7 +1880,9 @@ def list_attributaires(
         )
         .select_from(Marche)
         .join(Attributaire, Marche.attributaire_id == Attributaire.id)
-        .where(Marche.statut_validation == "valide")
+        # les présélections n'ont pas de montant : les compter ici gonflerait le
+        # nombre de marchés d'une entreprise sans rien ajouter à son total
+        .where(Marche.statut_validation == "valide", Marche.nature == "attribution")
         .group_by(racine)
         .subquery()
     )
@@ -1917,7 +1925,9 @@ def fiche_attributaire(
     racine = db.get(Attributaire, ids[0])
 
     marches_valides = select(Marche).where(
-        Marche.attributaire_id.in_(ids), Marche.statut_validation == "valide"
+        Marche.attributaire_id.in_(ids),
+        Marche.statut_validation == "valide",
+        Marche.nature == "attribution",
     )
     montant = func.coalesce(func.sum(Marche.montant_fcfa), 0)
     an = func.extract("year", Marche.date_attribution)
@@ -1960,6 +1970,15 @@ def fiche_attributaire(
     marches = db.scalars(
         marches_valides.order_by(Marche.montant_fcfa.desc().nulls_last()).limit(par_page)
     ).all()
+    nb_preselections = db.scalar(
+        select(func.count())
+        .select_from(Marche)
+        .where(
+            Marche.attributaire_id.in_(ids),
+            Marche.statut_validation == "valide",
+            Marche.nature == "preselection",
+        )
+    )
 
     return AttributaireDetail(
         id=racine.id,
@@ -1967,6 +1986,7 @@ def fiche_attributaire(
         variantes=variantes,
         nb_marches=int(bornes[0] or 0),
         montant_fcfa=int(bornes[1] or 0),
+        nb_preselections=int(nb_preselections or 0),
         premiere_attribution=bornes[2],
         derniere_attribution=bornes[3],
         par_secteur=agrege(Marche.secteur),
@@ -1975,6 +1995,7 @@ def fiche_attributaire(
         marches=[
             MarcheOut(
                 id=m.id,
+                nature=m.nature,
                 attributaire=m.attributaire,
                 attributaire_id=m.attributaire_id,
                 montant_fcfa=m.montant_fcfa,
@@ -1999,6 +2020,12 @@ def list_marches(
     attributaire_id: int | None = Query(
         None, description="Restreindre à une entreprise consolidée (variantes incluses)"
     ),
+    nature: Literal["attribution", "preselection", "toutes"] | None = Query(
+        None,
+        description="attribution (défaut) | preselection | toutes — une "
+        "manifestation d'intérêt retient un candidat pour la suite de la "
+        "procédure, sans lui attribuer de contrat ni de montant",
+    ),
     tri: str = Query("montant", description="montant | date"),
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
@@ -2007,6 +2034,11 @@ def list_marches(
     from app.models import Marche
 
     base = select(Marche).where(Marche.statut_validation == "valide")
+    # Par défaut on ne sert que les attributions : mêlées aux présélections, les
+    # chiffres de la liste ne correspondraient plus à ceux des statistiques.
+    # `nature=preselection` ouvre l'autre volet, `toutes` les réunit.
+    if nature != "toutes":
+        base = base.where(Marche.nature == (nature or "attribution"))
     if q:
         motif = f"%{q}%"
         base = base.where(
@@ -2037,6 +2069,7 @@ def list_marches(
         marches=[
             MarcheOut(
                 id=m.id,
+                nature=m.nature,
                 attributaire=m.attributaire,
                 attributaire_id=m.attributaire_id,
                 montant_fcfa=m.montant_fcfa,
@@ -2066,7 +2099,9 @@ def marches_stats(
     montant = func.coalesce(func.sum(Marche.montant_fcfa), 0)
 
     def filtree(*colonnes):
-        s = select(*colonnes).where(Marche.statut_validation == "valide")
+        s = select(*colonnes).where(
+            Marche.statut_validation == "valide", Marche.nature == "attribution"
+        )
         if secteur:
             s = s.where(Marche.secteur == secteur)
         if annee:
@@ -2095,7 +2130,9 @@ def marches_stats(
     )
 
     # options de filtre : toujours calculées sur l'ensemble validé (pas restreint)
-    base_all = select(Marche).where(Marche.statut_validation == "valide")
+    base_all = select(Marche).where(
+        Marche.statut_validation == "valide", Marche.nature == "attribution"
+    )
     annees = sorted(
         {int(a) for a in db.scalars(base_all.with_only_columns(an.distinct()).order_by(None)) if a is not None},
         reverse=True,
@@ -2401,7 +2438,9 @@ def _maillons_par_projet(db: Session, projet_ids: list[int]) -> dict[int, list[M
         )
     for m in db.scalars(
         select(Marche).where(
-            Marche.projet_id.in_(projet_ids), Marche.statut_validation == "valide"
+            Marche.projet_id.in_(projet_ids),
+        Marche.statut_validation == "valide",
+        Marche.nature == "attribution",
         )
     ):
         par_projet[m.projet_id].append(

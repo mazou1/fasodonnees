@@ -192,7 +192,13 @@ def _pieces(db: Session) -> list[Piece]:
                   None, None, ORDRE["engagement"],
                   e.document.date_publication if e.document else None)
         )
-    for m in db.scalars(select(Marche).where(Marche.statut_validation == "valide")):
+    # une présélection ne fait pas avancer un dossier : elle ne dit ni qui
+    # exécute ni pour combien, et son stade « attribué » serait mensonger
+    for m in db.scalars(
+        select(Marche).where(
+            Marche.statut_validation == "valide", Marche.nature == "attribution"
+        )
+    ):
         texte = f"{m.objet} {m.autorite or ''}"
         pieces.append(
             Piece("marche", m.id, m.objet, tokens_distinctifs(texte), m.montant_fcfa,

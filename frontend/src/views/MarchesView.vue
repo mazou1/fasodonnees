@@ -14,11 +14,11 @@
   <div v-if="stats" class="grille-tuiles">
     <div class="carte tuile">
       <div class="valeur">{{ fmtFCFA(stats.montant) }}</div>
-      <div class="libelle">total des marchés attribués</div>
+      <div class="libelle">{{ nature === "preselection" ? "total (les présélections n'ont pas de montant)" : "total des marchés attribués" }}</div>
     </div>
     <div class="carte tuile">
       <div class="valeur">{{ stats.total.toLocaleString("fr-FR") }}</div>
-      <div class="libelle">marchés recensés</div>
+      <div class="libelle">{{ nature === "preselection" ? "présélections recensées" : "marchés recensés" }}</div>
     </div>
     <div class="carte tuile" v-if="plusGros">
       <div class="valeur">{{ fmtFCFA(plusGros.montant_fcfa) }}</div>
@@ -32,23 +32,37 @@
       <option value="montant">Par montant</option>
       <option value="date">Par date</option>
     </select>
+    <select v-model="nature" @change="page = 1; recharger()" title="Une manifestation d'intérêt présélectionne un candidat sans lui attribuer de contrat">
+      <option value="attribution">Attributions</option>
+      <option value="preselection">Présélections</option>
+      <option value="toutes">Les deux</option>
+    </select>
     <a class="export" href="/api/marches?tri=montant&par_page=100" title="Données via l'API">API</a>
   </div>
 
   <div class="liste">
     <article v-for="m in marches" :key="m.id" class="item">
       <div class="meta">
-        <span class="badge">Marché attribué</span>
+        <span class="badge" :class="{ 'badge-preselection': m.nature === 'preselection' }">
+          {{ m.nature === "preselection" ? "Présélection" : "Marché attribué" }}
+        </span>
         <span v-if="m.secteur" class="badge-secteur">{{ m.secteur }}</span>
         <span v-if="m.date">Quotidien du {{ formatDate(m.date) }}</span>
         <span v-if="m.autorite">{{ m.autorite }}</span>
       </div>
       <div class="titre">
-        {{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> —
+        <!-- une présélection n'a pas de montant : afficher « — » à sa place
+             laisserait croire à une donnée manquante -->
+        <template v-if="m.nature !== 'preselection'">{{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> — </template></template>
+        <template v-if="m.attributaire">
           <router-link v-if="m.attributaire_id" :to="`/marches/entreprises/${m.attributaire_id}`">{{ m.attributaire }}</router-link>
           <template v-else>{{ m.attributaire }}</template>
         </template>
       </div>
+      <p v-if="m.nature === 'preselection'" class="detail-preselection">
+        Candidat retenu à l'issue d'un avis à manifestation d'intérêt : le marché
+        n'est pas encore attribué et le montant reste à négocier.
+      </p>
       <div class="detail">{{ m.objet }}</div>
       <ContexteSource genre="marche" :id="m.id" libelle="le Quotidien officiel" />
       <div class="meta" style="margin-top: 4px">
@@ -77,15 +91,26 @@
 
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import { apiGet } from "../api";
 import ContexteSource from "../components/ContexteSource.vue";
 
 const PAR_PAGE = 20;
+// la fiche entreprise renvoie ici avec ?nature=preselection&q=… : sans lire la
+// query, le lien retomberait sur la liste des attributions
+const route = useRoute();
 const marches = ref([]);
 const stats = ref(null);
 const plusGros = ref(null);
-const q = ref("");
+const q = ref(route.query.q ? String(route.query.q) : "");
 const tri = ref("montant");
+// attribution | preselection | toutes — les statistiques du site ne comptent que
+// les attributions, la liste doit s'aligner par défaut
+const nature = ref(
+  ["preselection", "toutes"].includes(String(route.query.nature))
+    ? String(route.query.nature)
+    : "attribution",
+);
 const page = ref(1);
 const chargement = ref(false);
 let minuterie = null;
@@ -108,6 +133,7 @@ async function recharger() {
     const r = await apiGet("/marches", {
       q: q.value.length >= 2 ? q.value : undefined,
       tri: tri.value,
+      nature: nature.value,
       page: page.value,
       par_page: PAR_PAGE,
     });
@@ -137,6 +163,8 @@ onMounted(async () => {
 .entete-recherche { align-items: center; }
 .entete-recherche input[type="search"] { flex: 1; max-width: 380px; }
 .badge-secteur { background: var(--series-1-fonce, #0a6b3c); color: #fff; padding: 1px 8px; border-radius: 999px; font-size: 0.72rem; }
+.badge-preselection { background: var(--surface-alt, #e8e4da); color: var(--text-muted, #5a5a5a); }
+.detail-preselection { color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 0; }
 .ref { font-variant-numeric: tabular-nums; }
 .note-methode { color: var(--text-muted); font-size: 0.82rem; margin-top: 16px; }
 </style>

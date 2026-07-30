@@ -27,7 +27,9 @@ import logging
 import re
 import time
 
-from pydantic import BaseModel, Field
+from typing import Literal
+
+from pydantic import BaseModel, Field, model_validator
 
 from app.config import settings
 
@@ -69,12 +71,36 @@ class MarcheExtrait(BaseModel):
         description="Montant attribué en FCFA, en entier et sans séparateur. Prendre "
         "le montant TTC s'il est distingué. null s'il n'est pas indiqué.",
     )
+    nature: Literal["attribution", "preselection"] = Field(
+        default="attribution",
+        description="'preselection' si le texte résulte d'un avis à MANIFESTATION "
+        "D'INTÉRÊT ou d'une pré-qualification — le candidat est retenu pour la "
+        "suite de la procédure, sans contrat chiffré. 'attribution' si un marché "
+        "est effectivement attribué.",
+    )
     region: str | None = Field(
         default=None, description="Région du Burkina Faso concernée si elle apparaît"
     )
     confiance: float = Field(
         ge=0, le=1, description="Certitude de l'extraction de CETTE ligne, entre 0 et 1"
     )
+
+    @model_validator(mode="after")
+    def _preselection_chiffree_est_douteuse(self):
+        """Une présélection chiffrée est contradictoire : à revoir à la main.
+
+        La manifestation d'intérêt sert aussi de mode de passation pour les
+        prestations intellectuelles, et le Quotidien publie alors une vraie
+        attribution sous cette référence — parfois « attribution provisoire ».
+        Trancher automatiquement se paierait dans un sens ou dans l'autre :
+        classer en attribution gonflerait le total public d'un contrat qui
+        n'existe pas, classer en présélection en effacerait un qui existe. On
+        abaisse donc la confiance sous le seuil de validation automatique (0,9)
+        pour que la ligne passe par la file de `/admin`.
+        """
+        if self.nature == "preselection" and self.montant_fcfa is not None:
+            self.confiance = min(self.confiance, 0.5)
+        return self
 
 
 class ExtractionMarches(BaseModel):
@@ -93,6 +119,10 @@ de l'appel, le mode de passation, l'entreprise retenue et le montant en FCFA.
 Règles :
 - Une seule entrée par marché attribué. Un marché en plusieurs lots attribués à \
 des entreprises différentes donne une entrée par lot, en le précisant dans l'objet.
+- Distingue l'ATTRIBUTION d'un marché de la PRÉSÉLECTION issue d'un avis à \
+manifestation d'intérêt ou d'une pré-qualification : dans le second cas le \
+candidat est retenu pour la suite de la procédure, sans contrat ni montant. \
+Renseigne `nature` en conséquence — ne devine pas un montant qui n'existe pas.
 - Ne relève PAS les avis d'appel d'offres, les avis de recrutement, les \
 rectificatifs ni les marchés déclarés infructueux ou sans attributaire retenu.
 - Le montant est un entier en FCFA, sans espace ni devise. S'il y a un montant \

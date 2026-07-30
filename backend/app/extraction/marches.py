@@ -107,6 +107,7 @@ def traiter_document(db, doc: Document, connues: set[str] | None = None) -> tupl
                 montant_fcfa=m.montant_fcfa,
                 secteur=secteur_de(m.objet, m.autorite),
                 region=m.region,
+                nature=m.nature,
                 date_attribution=doc.date_publication,
                 score_confiance=m.confiance,
                 statut_validation="a_valider",
