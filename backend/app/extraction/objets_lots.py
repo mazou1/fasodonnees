@@ -115,6 +115,8 @@ _FIN_ENTETE = re.compile(
     r"(?<![(\d])\d[\d\s]{5,}|"             # un montant : longue suite de chiffres
     r"lot\s*(?:n\s*[°ºo]\s*)?\d|"          # le lot suivant
     r"le\s+d[ée]lai\s+d|"                  # « Le délai d'exécution de… »
+    r"seuils?\s+anormaux|"                 # en-tête de la colonne des seuils
+    r"montant\s+(?:lu|corrig)|"            # « Montant lu », « Montant corrigé »
     r"les\s+candidats\s+ont\s+la\s+possibilit"  # boilerplate de l'avis
     r")",
     re.IGNORECASE,

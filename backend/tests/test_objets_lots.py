@@ -122,3 +122,10 @@ def test_le_lot_dune_autre_procedure_nest_jamais_pris():
     assert objet_du_lot(texte, 1, position).startswith("Construction de trois salles")
     # sans position, on ne sait pas laquelle choisir
     assert objet_du_lot(texte, 1).startswith(("Acquisition", "Construction"))
+
+
+def test_les_en_tetes_de_colonnes_du_tableau_sont_coupes():
+    """« Seuils anormaux du », « Montant lu » : ce sont les titres des colonnes
+    voisines, aplatis dans le texte par l'extraction du PDF."""
+    texte = "Lot 3 : Acquisition de coffres forts Seuils anormaux du marché\n\n"
+    assert objet_du_lot(texte, 3) == "Acquisition de coffres forts"
