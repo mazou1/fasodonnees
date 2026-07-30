@@ -181,3 +181,26 @@ def test_le_montant_entre_parentheses_est_coupe():
     assert sans_queue_de_montant(
         "LOT 1 : Acquisition de produits d’entretien (montant minimum HTVA)"
     ) == "LOT 1 : Acquisition de produits d’entretien"
+
+
+def test_laveu_du_modele_est_coupe_si_lobjet_subsiste():
+    """« LOT 2 : acquisition de fournitures et matériel de bureau, de produits
+    d'entretien et de nettoyage (non précisé dans l'extrait) » : l'objet est
+    complet, seule la parenthèse finale est de trop."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "LOT 2 : acquisition de fournitures et matériel de bureau, de produits "
+        "d'entretien et de nettoyage (non précisé dans l'extrait)"
+    ) == (
+        "LOT 2 : acquisition de fournitures et matériel de bureau, de produits "
+        "d'entretien et de nettoyage"
+    )
+
+
+def test_laveu_coupe_ne_sauve_pas_un_objet_vide_de_sens():
+    """« Lot 9 - Fourniture de matériel (non précisé) » : couper laisse
+    « Fourniture de matériel », qui n'apprend rien de plus que le silence."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant("Lot 9 - Fourniture de matériel (non précisé)") is None

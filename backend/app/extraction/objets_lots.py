@@ -191,6 +191,17 @@ _QUEUE_MONTANT = re.compile(
 )
 
 
+# « (non précisé dans l'extrait) » : l'aveu du modèle, collé derrière un objet
+# parfois complet. Le couper récupère la ligne - à condition que ce qui reste
+# dise quelque chose.
+_AVEU_FINAL = re.compile(
+    r"\s*\(\s*non\s+(?:pr[ée]cis|indiqu|sp[ée]cifi)[^)]*\)?\s*$", re.IGNORECASE
+)
+# En deçà, ce qui reste est trop vague pour valoir publication : « Fourniture de
+# matériel » ne dit pas davantage que le silence.
+MOTS_MINIMUM_APRES_COUPE = 5
+
+
 def sans_queue_de_montant(objet: str | None) -> str | None:
     """Retire le montant recopié derrière l'objet, s'il en reste un objet.
 
@@ -202,10 +213,16 @@ def sans_queue_de_montant(objet: str | None) -> str | None:
     """
     if not objet:
         return None
-    coupe = _QUEUE_MONTANT.sub("", objet).strip(" .:-–—;,")
+    coupe = _AVEU_FINAL.sub("", objet)
+    aveu_retire = coupe != objet
+    coupe = _QUEUE_MONTANT.sub("", coupe).strip(" .:-–—;,")
     # le numéro de lot en tête ne compte pas dans l'appréciation
     corps = re.sub(r"^lot\s*(?:n\s*[°ºo]\s*)?\d{0,2}\s*[:\-–—]?\s*", "", coupe, flags=re.I)
-    return coupe if _acceptable(corps) else None
+    if not _acceptable(corps):
+        return None
+    if aveu_retire and len(corps.split()) < MOTS_MINIMUM_APRES_COUPE:
+        return None
+    return coupe
 
 
 def objet_est_douteux(objet: str | None) -> bool:
