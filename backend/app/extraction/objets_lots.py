@@ -60,6 +60,11 @@ _PAS_UN_OBJET = (
     "publication de l'avis",
     "revue des marchés publics",
     "quotidien des marchés publics",
+    # formule creuse produite quand le modèle n'a pas lu l'objet : elle ne dit
+    # rien de ce qui a été acheté, et ne porte aucun des marqueurs ci-dessus
+    "réalisation d'un marché public",
+    "realisation d'un marche public",
+    "réalisation d’un marché public",
 )
 
 # Un objet de marché commence par ce qu'on achète ou ce qu'on fait faire. La

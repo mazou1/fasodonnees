@@ -129,3 +129,11 @@ def test_les_en_tetes_de_colonnes_du_tableau_sont_coupes():
     voisines, aplatis dans le texte par l'extraction du PDF."""
     texte = "Lot 3 : Acquisition de coffres forts Seuils anormaux du marché\n\n"
     assert objet_du_lot(texte, 3) == "Acquisition de coffres forts"
+
+
+def test_la_formule_creuse_est_reperee():
+    """« Réalisation d'un marché public » ne dit rien de ce qui a été acheté et
+    ne porte aucun autre marqueur : sans cette entrée, la ligne restait en file
+    indéfiniment, ni publiable ni corrigée."""
+    assert objet_est_douteux("Lot 5 : Réalisation d'un marché public")
+    assert not objet_est_douteux("Réalisation d'une latrine à deux (02) postes")
