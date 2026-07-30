@@ -1,7 +1,7 @@
 <template>
   <h1>L'Assemblée législative</h1>
   <p class="sous-titre">
-    Les lois votées par l'Assemblée, des plus récentes aux plus anciennes — textes issus de Légiburkina.
+    Les lois votées par l'Assemblée, des plus récentes aux plus anciennes - textes issus de Légiburkina.
   </p>
 
   <nav class="onglets">

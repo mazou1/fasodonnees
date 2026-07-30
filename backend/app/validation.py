@@ -7,7 +7,7 @@ sous le seuil demeurent en file pour revue manuelle dans /admin.
 ⚠️ Une entité SANS score n'est jamais validée ici, et ce n'est pas un oubli :
 les marchés publics sont extraits de façon déterministe (tableaux du Quotidien
 DGCMEF, pas de LLM) et ne portent donc aucun score. Rien ne permet de les
-départager automatiquement — ils relèvent de la relecture dans /admin.
+départager automatiquement - ils relèvent de la relecture dans /admin.
 
 Usage : python -m app.validation [seuil]   (défaut : 0.9)
 """

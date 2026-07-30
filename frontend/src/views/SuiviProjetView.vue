@@ -17,13 +17,13 @@
           v-for="s in STADES"
           :key="s.cle"
           :class="{ atteint: dossier.etapes_constatees.includes(s.cle) }"
-          :title="dossier.etapes_constatees.includes(s.cle) ? `${s.libelle} — documenté` : `${s.libelle} — aucune pièce au dossier`"
+          :title="dossier.etapes_constatees.includes(s.cle) ? `${s.libelle} - documenté` : `${s.libelle} - aucune pièce au dossier`"
         >
           <span class="puce" aria-hidden="true"></span>{{ s.libelle }}
         </li>
       </ol>
       <p class="note-chaine">
-        Une étape éteinte signifie qu'<strong>aucune pièce du dossier ne l'atteste</strong> —
+        Une étape éteinte signifie qu'<strong>aucune pièce du dossier ne l'atteste</strong> -
         pas nécessairement qu'elle n'a pas eu lieu.
       </p>
     </header>
@@ -80,7 +80,7 @@
     <p class="note-methode">
       Ce dossier réunit des pièces issues de trois corpus qui ne partagent aucun identifiant de
       projet : le rapprochement a été proposé automatiquement, puis <strong>accepté par un
-      relecteur</strong>. Il ne prétend pas être exhaustif — d'autres marchés ou décisions
+      relecteur</strong>. Il ne prétend pas être exhaustif - d'autres marchés ou décisions
       peuvent concerner ce projet sans figurer ici. L'écart entre le montant annoncé et le
       montant attribué ne se lit pas comme un écart d'exécution : un marché ne couvre souvent
       qu'un lot de l'annonce. En cas de doute, les documents officiels liés ci-dessus font foi.
@@ -127,7 +127,7 @@ function libelleStatutRealisation(s) {
   return STATUTS_REALISATION[s] ?? s;
 }
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;

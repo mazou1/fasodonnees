@@ -3,14 +3,14 @@
 Remplace la lecture déterministe des tableaux (`marches_tableau.py`), qui
 dépendait de la géométrie des colonnes détectée par pdfplumber : elle ratait les
 Quotidiens dont la mise en page changeait, et n'attribuait aucun score de
-confiance — donc aucune validation automatique n'était défendable sur ces
+confiance - donc aucune validation automatique n'était défendable sur ces
 lignes.
 
 Le problème de taille
 ---------------------
 Un Quotidien fait **277 000 caractères en médiane**, jusqu'à 1,1 million : hors
 de portée d'un seul appel. On ne peut pas non plus se rabattre sur les sections
-« SYNTHÈSE DES RÉSULTATS » — elles couvrent 99 % du texte, et certains numéros
+« SYNTHÈSE DES RÉSULTATS » - elles couvrent 99 % du texte, et certains numéros
 n'en contiennent aucune tout en publiant des attributions.
 
 D'où un découpage autour du mot **« attributaire »**, qui accompagne toute
@@ -74,7 +74,7 @@ class MarcheExtrait(BaseModel):
     nature: Literal["attribution", "preselection"] = Field(
         default="attribution",
         description="'preselection' si le texte résulte d'un avis à MANIFESTATION "
-        "D'INTÉRÊT ou d'une pré-qualification — le candidat est retenu pour la "
+        "D'INTÉRÊT ou d'une pré-qualification - le candidat est retenu pour la "
         "suite de la procédure, sans contrat chiffré. 'attribution' si un marché "
         "est effectivement attribué.",
     )
@@ -91,7 +91,7 @@ class MarcheExtrait(BaseModel):
 
         La manifestation d'intérêt sert aussi de mode de passation pour les
         prestations intellectuelles, et le Quotidien publie alors une vraie
-        attribution sous cette référence — parfois « attribution provisoire ».
+        attribution sous cette référence - parfois « attribution provisoire ».
         Trancher automatiquement se paierait dans un sens ou dans l'autre :
         classer en attribution gonflerait le total public d'un contrat qui
         n'existe pas, classer en présélection en effacerait un qui existe. On
@@ -122,7 +122,7 @@ des entreprises différentes donne une entrée par lot, en le précisant dans l'
 - Distingue l'ATTRIBUTION d'un marché de la PRÉSÉLECTION issue d'un avis à \
 manifestation d'intérêt ou d'une pré-qualification : dans le second cas le \
 candidat est retenu pour la suite de la procédure, sans contrat ni montant. \
-Renseigne `nature` en conséquence — ne devine pas un montant qui n'existe pas.
+Renseigne `nature` en conséquence - ne devine pas un montant qui n'existe pas.
 - Ne relève PAS les avis d'appel d'offres, les avis de recrutement, les \
 rectificatifs ni les marchés déclarés infructueux ou sans attributaire retenu.
 - Le montant est un entier en FCFA, sans espace ni devise. S'il y a un montant \
@@ -170,9 +170,9 @@ def extraire_marches_llm(texte: str) -> list[MarcheExtrait]:
             time.sleep(1.2)  # politesse tier gratuit Mistral (~1 req/s)
         try:
             marches.extend(_extraire_fenetre(fenetre).marches)
-        except Exception:  # noqa: BLE001 — le SDK lève des types variés
+        except Exception:  # noqa: BLE001 - le SDK lève des types variés
             logger.warning(
-                "Fenêtre %d/%d non exploitable — les autres sont conservées",
+                "Fenêtre %d/%d non exploitable - les autres sont conservées",
                 i + 1, len(fenetres),
             )
     return marches
@@ -203,7 +203,7 @@ def _extraire_mistral(texte: str) -> ExtractionMarches:
         except Exception as exc:  # noqa: BLE001
             if getattr(exc, "status_code", None) == 429 and tentative < 3:
                 attente = 5 * (tentative + 1)
-                logger.info("Mistral 429 (tier gratuit) — nouvelle tentative dans %ds", attente)
+                logger.info("Mistral 429 (tier gratuit) - nouvelle tentative dans %ds", attente)
                 time.sleep(attente)
                 continue
             raise

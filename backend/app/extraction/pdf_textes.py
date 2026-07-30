@@ -2,7 +2,7 @@
 
 Le champ `url` publié par Légiburkina est cassé (il renvoie la coquille de
 l'application Angular) ; le vrai endpoint, retrouvé dans leur bundle, est
-GET /api/documents/download/{fileName} — le fileName étant la fin de l'URL
+GET /api/documents/download/{fileName} - le fileName étant la fin de l'URL
 après « sggcm ». On télécharge, archive, et remplit texte_extrait avec le
 texte natif du PDF (les scans sont marqués « scan » pour une passe OCR
 ultérieure). La description courte d'origine est préservée dans
@@ -57,7 +57,7 @@ def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     # l'URL publiée est déjà percent-encodée : on normalise pour éviter le double encodage
     resp = client.get(ENDPOINT + quote(unquote(nom)))
     if resp.status_code >= 400:
-        # 500 « NonUniqueResult » = doublon côté Légiburkina — irrécupérable de notre côté
+        # 500 « NonUniqueResult » = doublon côté Légiburkina - irrécupérable de notre côté
         meta["pdf_statut"] = "echec_source"
         meta["pdf_erreur"] = resp.status_code
         doc.meta = meta
@@ -82,9 +82,12 @@ def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     return statut
 
 
-def main() -> int:
+def main(max_docs: int | None = None) -> int:
+    # `max_docs` permet au worker d'appeler cette passe avec un budget borné
+    # sans passer par la ligne de commande (cf. app/ingestion/scheduler.py)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 6000
+    if max_docs is None:
+        max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 6000
     client = httpx.Client(
         headers={"User-Agent": settings.user_agent}, timeout=90, follow_redirects=True
     )
@@ -107,13 +110,13 @@ def main() -> int:
                 time.sleep(1.0)  # politesse envers legiburkina.gov.bf
             try:
                 statut = traiter(db, doc, client)
-            except Exception:  # noqa: BLE001 — un PDF en échec ne doit pas arrêter le lot
-                logging.exception("Échec sur le document %s — on continue", doc.id)
+            except Exception:  # noqa: BLE001 - un PDF en échec ne doit pas arrêter le lot
+                logging.exception("Échec sur le document %s - on continue", doc.id)
                 db.rollback()
                 statut = "echec"
             stats[statut] = stats.get(statut, 0) + 1
             if (i + 1) % 100 == 0:
-                logger.info("%d/%d — %s", i + 1, len(docs), stats)
+                logger.info("%d/%d - %s", i + 1, len(docs), stats)
         print(f"{len(docs)} document(s) : {stats}")
     return 0
 

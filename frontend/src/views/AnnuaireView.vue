@@ -1,7 +1,7 @@
 <template>
   <h1>Annuaire de l'État</h1>
   <p class="sous-titre">
-    Qui occupe quel poste, dans quelle institution — reconstitué à partir des nominations
+    Qui occupe quel poste, dans quelle institution - reconstitué à partir des nominations
     officielles en Conseil des ministres. Parcourez par institution ou cherchez une personne.
   </p>
 
@@ -47,7 +47,7 @@
           <div class="corps">
             <router-link class="nom" :to="`/personnes/${m.personne_id}`">{{ m.personne }}</router-link>
             <span class="matricule" v-if="m.matricule">Mle {{ m.matricule }}</span>
-            <div class="poste">{{ m.poste }}<template v-if="m.structure"> — {{ m.structure }}</template></div>
+            <div class="poste">{{ m.poste }}<template v-if="m.structure"> - {{ m.structure }}</template></div>
           </div>
         </article>
       </div>

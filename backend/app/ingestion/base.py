@@ -3,7 +3,7 @@
 Principes (cadrage §5) :
 - max ~1 requête/seconde par collecteur, User-Agent identifiant le projet ;
 - tout document collecté est archivé tel quel AVANT extraction (le corpus
-  archivé est l'actif du projet — les sites officiels dépublient) ;
+  archivé est l'actif du projet - les sites officiels dépublient) ;
 - chaque exécution est journalisée dans `run` (alerte « source muette »).
 """
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class Collector:
     slug: str  # doit correspondre à Source.slug
-    groupe: str = "autre"  # media | institutionnel — utilisé par le scheduler
+    groupe: str = "autre"  # media | institutionnel - utilisé par le scheduler
 
     def __init__(self, db: Session):
         self.db = db
@@ -59,7 +59,7 @@ class Collector:
                 # 4xx = la ressource est en faute, pas le réseau : réessayer
                 # n'y changera rien. Les sites officiels publient des liens
                 # morts vers leurs propres documents (404 constatés sur des
-                # décisions du Conseil constitutionnel) — insister trois fois
+                # décisions du Conseil constitutionnel) - insister trois fois
                 # avec backoff ne fait que les marteler pour rien. Seul 429
                 # (trop de requêtes) mérite d'attendre et de recommencer.
                 if 400 <= exc.response.status_code < 500 and exc.response.status_code != 429:
@@ -150,7 +150,7 @@ class Collector:
         try:
             self.collect()
             run.statut = "ok"
-        except Exception as exc:  # noqa: BLE001 — on journalise tout échec de collecte
+        except Exception as exc:  # noqa: BLE001 - on journalise tout échec de collecte
             logger.exception("Échec du collecteur %s", self.slug)
             run.statut = "echec"
             run.erreurs = f"{type(exc).__name__}: {exc}"
@@ -161,7 +161,7 @@ class Collector:
             self.db.commit()
             self.client.close()
         logger.info(
-            "%s : %s — %d nouveaux, %d déjà vus",
+            "%s : %s - %d nouveaux, %d déjà vus",
             self.slug,
             run.statut,
             run.nb_nouveaux,

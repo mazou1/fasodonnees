@@ -43,8 +43,8 @@ def main() -> int:
                 time.sleep(1.5)  # politesse tier gratuit Mistral (~1 req/s)
             try:
                 d, n = traiter_document(db, doc)
-            except Exception:  # noqa: BLE001 — un CR en échec ne doit pas arrêter le backfill
-                logging.exception("Échec sur le document %s — on continue", doc.id)
+            except Exception:  # noqa: BLE001 - un CR en échec ne doit pas arrêter le backfill
+                logging.exception("Échec sur le document %s - on continue", doc.id)
                 db.rollback()
                 echecs += 1
                 continue

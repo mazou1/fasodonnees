@@ -49,7 +49,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_engagement_financier_montant_fcfa'), 'engagement_financier', ['montant_fcfa'], unique=False)
     op.create_index(op.f('ix_engagement_financier_statut_validation'), 'engagement_financier', ['statut_validation'], unique=False)
     op.create_index(op.f('ix_engagement_financier_type'), 'engagement_financier', ['type'], unique=False)
-    # (l'index ix_document_tsv est géré en SQL brut — exclu de l'autogénération via env.py)
+    # (l'index ix_document_tsv est géré en SQL brut - exclu de l'autogénération via env.py)
     # ### end Alembic commands ###
 
 

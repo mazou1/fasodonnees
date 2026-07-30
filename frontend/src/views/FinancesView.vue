@@ -2,7 +2,7 @@
   <h1>Finances publiques</h1>
   <p class="sous-titre">
     Les dépenses décidées en Conseil des ministres (marchés, conventions, prêts, subventions)
-    et les budgets de l'État adoptés — chaque chiffre relié à son compte rendu source.
+    et les budgets de l'État adoptés - chaque chiffre relié à son compte rendu source.
   </p>
 
   <div v-if="stats" class="grille-tuiles">
@@ -16,7 +16,7 @@
     </div>
     <div class="carte tuile" v-if="plusGros">
       <div class="valeur">{{ fmtFCFA(plusGros.montant_fcfa) }}</div>
-      <div class="libelle">plus gros engagement ({{ plusGros.beneficiaire ?? plusGros.ministere ?? "—" }})</div>
+      <div class="libelle">plus gros engagement ({{ plusGros.beneficiaire ?? plusGros.ministere ?? "-" }})</div>
     </div>
     <div class="carte tuile" v-if="stats.budgets.length">
       <div class="valeur">{{ exercices }}</div>
@@ -47,7 +47,7 @@
 
   <template v-if="exercicesDetail.length">
     <h2 style="margin-top: 28px">
-      Où va l'argent, d'où vient-il —
+      Où va l'argent, d'où vient-il -
       <select v-model.number="exerciceDetail">
         <option v-for="ex in exercicesDetail" :key="ex" :value="ex">{{ ex }}</option>
       </select>
@@ -81,7 +81,7 @@
     <section class="carte repartition" v-if="dotationsDetail.length" style="margin-top: 14px">
       <h3>Allocations par secteur</h3>
       <p class="note">
-        Les grandes allocations budgétaires publiées pour {{ exerciceDetail }} — en pourcentage
+        Les grandes allocations budgétaires publiées pour {{ exerciceDetail }} - en pourcentage
         des dépenses totales de l'exercice.
       </p>
       <div class="ligne" v-for="d in dotationsDetail" :key="d.ministere">
@@ -100,7 +100,7 @@
 
   <div class="grille-graphes" v-if="stats">
     <div class="carte graphe-large" v-if="stats.budgets.length">
-      <h2>Budget de l'État par exercice — recettes et dépenses</h2>
+      <h2>Budget de l'État par exercice - recettes et dépenses</h2>
       <div ref="elBudgets" class="graphe" style="height: 260px"></div>
     </div>
     <div class="carte">
@@ -140,7 +140,7 @@
         <span v-if="e.date_conseil">Conseil du {{ formatDate(e.date_conseil) }}</span>
         <span v-if="e.ministere">{{ e.ministere }}</span>
       </div>
-      <div class="titre">{{ fmtFCFA(e.montant_fcfa) }}<template v-if="e.beneficiaire"> — {{ e.beneficiaire }}</template></div>
+      <div class="titre">{{ fmtFCFA(e.montant_fcfa) }}<template v-if="e.beneficiaire"> - {{ e.beneficiaire }}</template></div>
       <div class="detail">{{ e.objet }}</div>
       <a class="source" :href="e.document_url" target="_blank" rel="noopener">Voir le compte rendu officiel →</a>
     </article>
@@ -209,7 +209,7 @@ let minuterie = null;
 
 const exercices = computed(() => {
   const ex = [...new Set((stats.value?.budgets ?? []).map((b) => b.exercice))].sort();
-  return ex.length > 1 ? `${ex[0]}–${ex[ex.length - 1]}` : (ex[0] ?? "—");
+  return ex.length > 1 ? `${ex[0]}-${ex[ex.length - 1]}` : (ex[0] ?? "-");
 });
 
 const lignesBudget = computed(() => consoliderBudgets(stats.value?.budgets ?? []));
@@ -266,15 +266,17 @@ function pctLigne(montant, lignes) {
 function pctDotation(montant) {
   const b = lignesBudget.value.find((l) => l.exercice === exerciceDetail.value);
   const total = b?.depenses_fcfa;
-  return total ? `${((montant / total) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : "—";
+  return total ? `${((montant / total) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} %` : "-";
 }
 const sourcesDetail = computed(() => {
   const lignes = [...recettesDetail.value, ...depensesDetail.value, ...dotationsDetail.value];
-  return [...new Set(lignes.map((l) => (l.source || "").split(" — ")[0]).filter(Boolean))];
+  // le séparateur citation/URL est saisi à la main dans l'admin : accepter
+  // les trois tirets évite qu'une URL s'affiche en clair dans « Sources »
+  return [...new Set(lignes.map((l) => (l.source || "").split(/\s[-–—]\s/)[0]).filter(Boolean))];
 });
 
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;
@@ -341,7 +343,7 @@ onMounted(async () => {
           backgroundColor: c.surface,
           borderColor: c.grille,
           textStyle: { color: c.texte },
-          valueFormatter: (v) => (v == null ? "—" : `${enMds(v)} Mds FCFA`),
+          valueFormatter: (v) => (v == null ? "-" : `${enMds(v)} Mds FCFA`),
         },
         xAxis: {
           type: "category",

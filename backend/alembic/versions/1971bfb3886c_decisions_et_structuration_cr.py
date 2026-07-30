@@ -33,7 +33,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_decision_type'), 'decision', ['type'], unique=False)
     op.add_column('document', sa.Column('date_structuration', sa.DateTime(timezone=True), nullable=True))
     # NB : la colonne générée document.tsv (recherche plein texte) est gérée en SQL
-    # brut dans la migration initiale et volontairement absente de l'ORM — ne pas
+    # brut dans la migration initiale et volontairement absente de l'ORM - ne pas
     # laisser l'autogénération la supprimer (filtre include_name dans env.py).
     # ### end Alembic commands ###
 

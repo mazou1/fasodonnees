@@ -2,7 +2,7 @@
 
 Heuristique déterministe (pas de LLM) : le modèle `Marche` n'a pas de champ
 secteur dans le Quotidien ; on le déduit par mots-clés de l'objet (repli sur
-l'autorité). Liste ordonnée du plus spécifique au plus générique — la première
+l'autorité). Liste ordonnée du plus spécifique au plus générique - la première
 règle qui matche gagne. Approche transparente, affichée comme « secteur déduit »
 sur le site.
 """
@@ -13,7 +13,7 @@ import re
 
 AUTRES = "Autres"
 
-# (secteur, motif) — ordre = priorité (spécifique avant générique)
+# (secteur, motif) - ordre = priorité (spécifique avant générique)
 _REGLES: list[tuple[str, re.Pattern]] = [
     ("Santé", re.compile(
         r"m[ée]dic|m[ée]dico|pharmac|hospital|ambulanc|\bcsps\b|\bchr\b|\bchu"

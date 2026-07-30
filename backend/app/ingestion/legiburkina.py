@@ -1,10 +1,10 @@
-"""Légiburkina (SGG-CM) — textes juridiques via l'API JSON de la plateforme Angular.
+"""Légiburkina (SGG-CM) - textes juridiques via l'API JSON de la plateforme Angular.
 
 Endpoints découverts le 2026-07-10 (aucune authentification requise) :
 - POST /api/documents/search-mot-cle?size=N&page=P  (corps {}) → métadonnées
   paginées : référence, type (DECRET/LOI/ARRETE…), secteur, description,
   date, URL du PDF, et le Journal officiel de publication (numéro, date,
-  lien jobf.gov.bf) — le recoupement texte ↔ JO est fourni par la source.
+  lien jobf.gov.bf) - le recoupement texte ↔ JO est fourni par la source.
 
 On ingère les MÉTADONNÉES (la description sert de texte interrogeable) ;
 le téléchargement des PDF des textes est un chantier ultérieur.
@@ -79,7 +79,7 @@ class LegiburkinaCollector(Collector):
             hash_contenu=digest,
             mime="application/pdf",
             texte_extrait=description or None,
-            statut_extraction="na",  # métadonnées seules — PDF non téléchargé à ce stade
+            statut_extraction="na",  # métadonnées seules - PDF non téléchargé à ce stade
             meta={
                 "legi_id": item.get("id"),
                 "reference": reference,

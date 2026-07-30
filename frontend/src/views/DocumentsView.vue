@@ -2,7 +2,7 @@
   <h1>Documents</h1>
   <p class="sous-titre">
     Les documents officiels collectés et archivés par la plateforme : comptes rendus du Conseil
-    des ministres, lois et décrets, marchés publics et autres textes — chacun relié à sa source
+    des ministres, lois et décrets, marchés publics et autres textes - chacun relié à sa source
     d'origine. Les articles de presse et communiqués sont dans les <router-link to="/actualites">Actualités</router-link>.
   </p>
 

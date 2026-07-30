@@ -5,7 +5,7 @@
   <iframe
     class="cadre-dossier"
     src="/plan-relance/"
-    title="Plan de relance — PND R.E.L.A.N.C.E. 2026-2030"
+    title="Plan de relance - PND R.E.L.A.N.C.E. 2026-2030"
   ></iframe>
 </template>
 

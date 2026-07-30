@@ -5,7 +5,7 @@ d'orthographe issues de l'extraction) éclatent l'annuaire. Principe du
 cadrage : fusion manuelle ASSISTÉE, jamais automatique seule.
 
 - `auto`     : fusionne les doublons STRICTS (même nom aux accents,
-               majuscules et espaces près) — sans risque.
+               majuscules et espaces près) - sans risque.
 - `proposer` : écrit fusion_propositions.csv (paires similaires, pg_trgm)
                à relire ; passer la colonne `appliquer` à « oui » pour
                accepter une fusion (le canonique est la cible).
@@ -41,7 +41,7 @@ def _resoudre(db: Session, structure_id: int) -> int:
     vu = set()
     sid = structure_id
     while True:
-        if sid in vu:  # cycle — on s'arrête
+        if sid in vu:  # cycle - on s'arrête
             return sid
         vu.add(sid)
         cid = db.scalar(select(Structure.canonique_id).where(Structure.id == sid))
@@ -125,7 +125,7 @@ def main() -> int:
         elif commande == "proposer":
             seuil = float(sys.argv[2]) if len(sys.argv) > 2 else 0.55
             n = proposer(db, seuil)
-            print(f"{n} proposition(s) écrites dans {CSV_PROPOSITIONS} — "
+            print(f"{n} proposition(s) écrites dans {CSV_PROPOSITIONS} - "
                   "mettre 'oui' dans la colonne appliquer puis : python -m app.fusion appliquer "
                   f"{CSV_PROPOSITIONS}")
         elif commande == "appliquer":

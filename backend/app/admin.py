@@ -327,7 +327,7 @@ class ProjetAdmin(ValidationActionsMixin, ModelView, model=Projet):
     là qu'on a le libellé sous les yeux pour juger.
 
     `defaut_a_valider = False` : un dossier n'est pas une extraction
-    automatique, il naît d'une décision humaine — la liste les montre tous.
+    automatique, il naît d'une décision humaine - la liste les montre tous.
     """
 
     modele = Projet
@@ -360,7 +360,7 @@ class AttributaireAdmin(ModelView, model=Attributaire):
 
     Vue de CORRECTION, pas de validation : ces lignes sont dérivées, pas
     extraites (cf. app/attributaires.py). On y corrige une graphie retenue
-    — cocher alors `nom_fige` pour que la consolidation ne la réécrive pas —
+    - cocher alors `nom_fige` pour que la consolidation ne la réécrive pas -
     et on rattache une variante à sa canonique via `canonique`.
     """
 
@@ -557,7 +557,7 @@ def mount_admin(app: FastAPI) -> None:
     admin = Admin(
         app,
         engine,
-        title="Faso Données Publiques — Admin",
+        title="Faso Données Publiques - Admin",
         authentication_backend=AdminAuth(secret_key=settings.secret_key),
     )
     admin.add_view(AValiderView)

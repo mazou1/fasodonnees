@@ -1,9 +1,9 @@
-"""MINEFID (finances.gov.bf) — veille des documents budgétaires citoyens.
+"""MINEFID (finances.gov.bf) - veille des documents budgétaires citoyens.
 
 Le Budget citoyen (Tableau 2 : allocations par secteur/ministère) n'est publié
 qu'une fois par an, à une URL prévisible (budget-citoyen-<année>_web.pdf en
 2025) mais sans flux. On sonde donc les URL candidates et les liens de la page
-d'accueil ; dès parution, le PDF est archivé comme Document « rapport » — la
+d'accueil ; dès parution, le PDF est archivé comme Document « rapport » - la
 saisie des dotations dans l'admin (ou une passe d'extraction) suit.
 """
 
@@ -79,7 +79,7 @@ class BudgetCitoyenCollector(Collector):
             )
             if doc is not None:
                 logger.warning(
-                    "BUDGET CITOYEN %s PARU — archivé (%s). Saisir les dotations "
+                    "BUDGET CITOYEN %s PARU - archivé (%s). Saisir les dotations "
                     "(Tableau 2) dans l'admin : /finances les affichera.",
                     exercice,
                     fichier,

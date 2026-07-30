@@ -49,7 +49,7 @@ def health() -> dict:
 
 @router.get("/stats")
 def stats(db: Session = Depends(get_db)) -> dict:
-    """Agrégats pour le tableau de bord — contenus validés uniquement."""
+    """Agrégats pour le tableau de bord - contenus validés uniquement."""
     valide_d = Decision.statut_validation == "valide"
     valide_n = Nomination.statut_validation == "valide"
     annee = func.extract("year", Document.date_publication).label("annee")
@@ -70,7 +70,7 @@ def stats(db: Session = Depends(get_db)) -> dict:
         select(Decision.type, func.count()).where(valide_d).group_by(Decision.type).order_by(func.count().desc())
     ).all()
 
-    # regroupement par structure canonique (fusion des renommages — cf. app/fusion.py)
+    # regroupement par structure canonique (fusion des renommages - cf. app/fusion.py)
     from sqlalchemy.orm import aliased
 
     canon = aliased(Structure)
@@ -233,7 +233,7 @@ def recherche(
     q: str = Query(..., min_length=2, description="Recherche globale sur tout le site"),
 ) -> dict:
     """Recherche fédérée : personnes, conseils des ministres, décisions,
-    textes juridiques et actualités — top résultats par catégorie."""
+    textes juridiques et actualités - top résultats par catégorie."""
     motif = f"%{q}%"
 
     personnes = db.execute(
@@ -341,7 +341,7 @@ class ConseilOut(BaseModel):
     # La source réécrit ses comptes rendus après publication : on archive chaque
     # version et on l'assume à l'affichage. `nb_versions` > 1 signale une
     # réécriture ; `modification_constatee_le` est la date à laquelle NOUS
-    # l'avons constatée, pas celle de la retouche — le site ne la publie pas.
+    # l'avons constatée, pas celle de la retouche - le site ne la publie pas.
     nb_versions: int
     modification_constatee_le: date | None
 
@@ -416,7 +416,7 @@ def list_conseils(
             Document.id.in_(ids_versions_de_reference()),
             # on écarte les coquilles : une page sans compte rendu réel. Le test
             # porte sur le texte lui-même et non, comme avant, sur la présence
-            # d'entités validées — sinon un conseil collecté depuis six jours et
+            # d'entités validées - sinon un conseil collecté depuis six jours et
             # dont l'extraction attend la relecture reste invisible.
             func.length(func.coalesce(Document.texte_extrait, "")) >= TEXTE_MINIMUM_CR,
         )
@@ -510,7 +510,7 @@ def get_conseil(doc_id: int, db: Session = Depends(get_db)) -> dict:
 
 @router.get("/finances/stats")
 def finances_stats(db: Session = Depends(get_db)) -> dict:
-    """Agrégats financiers — engagements et budgets validés uniquement."""
+    """Agrégats financiers - engagements et budgets validés uniquement."""
     valide = EngagementFinancier.statut_validation == "valide"
     annee = func.extract("year", Document.date_publication).label("annee")
 
@@ -626,7 +626,7 @@ def list_engagements(
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
 ):
-    """Engagements financiers décidés en Conseil des ministres — validés uniquement."""
+    """Engagements financiers décidés en Conseil des ministres - validés uniquement."""
     stmt = (
         select(EngagementFinancier)
         .join(Document)
@@ -746,7 +746,7 @@ class InstitutionsPage(BaseModel):
 
 def _intitules_courants(db: Session) -> dict[str, str]:
     """Intitulé en vigueur de chaque portefeuille, d'après le trombinoscope
-    officiel du gouvernement — les noms reconstitués depuis les nominations
+    officiel du gouvernement - les noms reconstitués depuis les nominations
     retardent d'un remaniement (« Défense et Anciens Combattants » pour ce qui
     est aujourd'hui le ministère de la Guerre et de la Défense patriotique)."""
     from app.annuaire_taxonomie import intitule_officiel, portefeuille
@@ -773,7 +773,7 @@ def _part_conseil_administration(db: Session) -> dict[int, float]:
     """Pour chaque structure canonique nommée « Ministère … » mais portant un
     sigle, la part de ses mandats qui sont des sièges au conseil
     d'administration de l'entité du sigle. À 100 %, la structure EST cette
-    entité et non le ministère — voir `annuaire_taxonomie.type_institution`.
+    entité et non le ministère - voir `annuaire_taxonomie.type_institution`.
 
     Le ratio porte sur le groupe canonique, puisque c'est lui que l'annuaire
     affiche : le mesurer sur une variante fusionnée le rendrait aveugle."""
@@ -806,7 +806,7 @@ def annuaire_institutions(
     q: str | None = Query(None, min_length=2, description="Nom ou sigle d'institution"),
 ):
     """Index des institutions de l'État (structures canoniques ayant au moins un
-    agent recensé), avec type déduit et effectif — pour naviguer l'annuaire par
+    agent recensé), avec type déduit et effectif - pour naviguer l'annuaire par
     institution plutôt qu'en liste plate.
 
     Les intitulés successifs d'un même ministère (renommages de remaniement)
@@ -1194,7 +1194,7 @@ class DocumentsPage(BaseModel):
 
 
 # La bibliothèque « Documents » ne montre que des documents officiels : on
-# écarte les actualités (articles de presse, communiqués — elles ont leur
+# écarte les actualités (articles de presse, communiqués - elles ont leur
 # propre page), les traductions de CR en langues nationales (doublons/junk)
 # et les Quotidiens des Marchés Publics (bulletins-source, exposés via /marches ;
 # le PDF reste accessible par lien direct depuis chaque marché).
@@ -1423,7 +1423,7 @@ def list_decisions(
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
 ):
-    """Décisions du Conseil des ministres — contenus validés uniquement."""
+    """Décisions du Conseil des ministres - contenus validés uniquement."""
     stmt = (
         select(Decision)
         .join(Document)
@@ -1477,7 +1477,7 @@ def list_nominations(
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
 ):
-    """Nominations en Conseil des ministres — contenus validés uniquement."""
+    """Nominations en Conseil des ministres - contenus validés uniquement."""
     stmt = (
         select(Nomination)
         .join(Document)
@@ -1691,7 +1691,7 @@ def rss_conseils(request: Request, db: Session = Depends(get_db)):
     ]
     xml = flux_rss(
         request,
-        titre="Faso Données Publiques — Conseils des ministres",
+        titre="Faso Données Publiques - Conseils des ministres",
         description="Les comptes rendus du Conseil des ministres du Burkina Faso.",
         chemin="/rss/conseils.xml",
         items=items,
@@ -1726,7 +1726,7 @@ def rss_actualites(request: Request, db: Session = Depends(get_db)):
         )
     xml = flux_rss(
         request,
-        titre="Faso Données Publiques — Actualités",
+        titre="Faso Données Publiques - Actualités",
         description="Le fil d'actualités agrégé : médias burkinabè et communiqués officiels.",
         chemin="/rss/actualites.xml",
         items=items,
@@ -1758,7 +1758,7 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
     ]
     xml = flux_rss(
         request,
-        titre="Faso Données Publiques — Lois & décrets",
+        titre="Faso Données Publiques - Lois & décrets",
         description="Les nouveaux textes juridiques publiés (Légiburkina).",
         chemin="/rss/textes.xml",
         items=items,
@@ -1769,7 +1769,7 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
 # ── Marchés publics (attributions) ────────────────────────────────────────
 class MarcheOut(BaseModel):
     id: int
-    # attribution | preselection — le second n'est pas un marché remporté
+    # attribution | preselection - le second n'est pas un marché remporté
     nature: str
     attributaire: str | None  # la graphie exacte du document source
     attributaire_id: int | None  # l'entité consolidée (fiche entreprise)
@@ -1840,7 +1840,7 @@ class AttributaireDetail(BaseModel):
 def _ids_du_groupe(db: Session, attributaire_id: int) -> list[int]:
     """Identifiants de l'entité consolidée : la racine et ses variantes fusionnées.
 
-    Accepte indifféremment l'id de la racine ou celui d'une variante — une
+    Accepte indifféremment l'id de la racine ou celui d'une variante - une
     URL déjà partagée reste valable après une fusion.
     """
     racine = db.scalar(
@@ -1917,7 +1917,7 @@ def fiche_attributaire(
     par_page: int = Query(50, ge=1, le=200, description="Marchés listés dans la fiche"),
 ):
     """Fiche d'une entreprise attributaire : ce qu'elle a remporté, auprès de
-    qui, dans quels secteurs — uniquement à partir de marchés validés et
+    qui, dans quels secteurs - uniquement à partir de marchés validés et
     sourcés."""
     ids = _ids_du_groupe(db, attributaire_id)
     if not ids:
@@ -2022,7 +2022,7 @@ def list_marches(
     ),
     nature: Literal["attribution", "preselection", "toutes"] | None = Query(
         None,
-        description="attribution (défaut) | preselection | toutes — une "
+        description="attribution (défaut) | preselection | toutes - une "
         "manifestation d'intérêt retient un candidat pour la suite de la "
         "procédure, sans lui attribuer de contrat ni de montant",
     ),
@@ -2030,7 +2030,7 @@ def list_marches(
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
 ):
-    """Marchés publics attribués (Quotidien DGCMEF) — validés uniquement."""
+    """Marchés publics attribués (Quotidien DGCMEF) - validés uniquement."""
     from app.models import Marche
 
     base = select(Marche).where(Marche.statut_validation == "valide")
@@ -2395,7 +2395,7 @@ class ProjetOut(BaseModel):
     # les étapes RÉELLEMENT documentées, dans l'ordre de la chaîne. Une étape
     # absente n'est pas « pas encore franchie » : elle n'est pas attestée dans
     # notre corpus. Un ouvrage peut être en travaux sans qu'on ait retrouvé le
-    # marché qui l'a lancé — l'afficher comme attribué serait une invention.
+    # marché qui l'a lancé - l'afficher comme attribué serait une invention.
     etapes_constatees: list[str]
     montant_annonce_fcfa: int | None
     montant_attribue_fcfa: int | None
@@ -2500,7 +2500,7 @@ def _resume_projet(projet: Projet, maillons: list[MaillonOut]) -> ProjetOut:
         region=projet.region,
         etapes_constatees=etapes,
         # le `detail` d'une réalisation porte son statut (inauguration,
-        # première pierre…) — c'est lui qui distingue livré de « en travaux »
+        # première pierre…) - c'est lui qui distingue livré de « en travaux »
         stade=stade(bool(marches), [m.detail or "" for m in realisations]),
         montant_annonce_fcfa=somme(annonces),
         montant_attribue_fcfa=somme(marches),

@@ -1,4 +1,4 @@
-"""Conseil constitutionnel (conseil-constitutionnel.gov.bf) — jurisprudence.
+"""Conseil constitutionnel (conseil-constitutionnel.gov.bf) - jurisprudence.
 
 Le Conseil publie ses **décisions, avis et ordonnances** en PDF, regroupés par
 année sous la rubrique « Jurisprudence » : conformité des lois et des traités à
@@ -47,7 +47,7 @@ RE_ANNEE = re.compile(r"\b((?:19|20)\d{2})\b")
 # Deux façons de référencer une même décision, souvent dans le même millésime :
 #   « décision n°2026-18 »       → l'année est dans la référence
 #   « décision n°22 du 18 déc. » → l'année vient du contexte (date ou page)
-# NB : pas de `\b` en fin de motif — dans « 2026-06_du_17_fev », l'underscore
+# NB : pas de `\b` en fin de motif - dans « 2026-06_du_17_fev », l'underscore
 # est un caractère de mot, donc il n'y a pas de frontière après le « 6 ».
 RE_REF_ANNEE = re.compile(r"((?:19|20)\d{2})\s*[-–_]\s*0*(\d{1,3})(?!\d)")
 RE_REF_NUMERO = re.compile(r"num[ée]ro\s*0*(\d{1,3})(?!\d)", re.IGNORECASE)
@@ -82,7 +82,7 @@ NATURES = (
 
 
 def nature(titre: str, nom_fichier: str) -> str:
-    """Décision, avis ou ordonnance — la rubrique mélange les trois.
+    """Décision, avis ou ordonnance - la rubrique mélange les trois.
 
     La nature se lit au DÉBUT du libellé, pas n'importe où : « Avis sur le
     projet d'ordonnance… » est un avis, pas une ordonnance. Les confondre
@@ -116,7 +116,7 @@ def date_publication(titre: str, nom_fichier: str, annee_page: int | None) -> da
     Les deux la portent selon les millésimes (« _du_10_juin_2026.pdf »,
     « Décision numéro 020/CC du 24 Octobre 2025 »). L'année manque parfois :
     celle de la page annuelle prend alors le relais. Sans jour ET mois
-    exploitables, on renvoie None — mieux vaut une date absente qu'inventée.
+    exploitables, on renvoie None - mieux vaut une date absente qu'inventée.
     """
     for source in (nom_fichier, titre):
         m = RE_DATE.search((source or "").replace("-", "_"))
@@ -195,7 +195,7 @@ class ConseilConstitutionnelCollector(Collector):
     # passe, seules les pages les plus récentes sont revisitées
     annees_revisitees = 2
     # rattrapage : repasser sur TOUTES les années. Nécessaire au premier
-    # remplissage, et après une collecte interrompue — sinon la passe
+    # remplissage, et après une collecte interrompue - sinon la passe
     # incrémentale ne redescendra jamais chercher les millésimes anciens.
     complet = False
 

@@ -34,7 +34,7 @@ watch(() => route.fullPath, () => {
 // Navigation à deux niveaux : 14 rubriques à plat débordaient sur trois lignes
 // dans un en-tête collant, soit un tiers de l'écran occupé en permanence sur un
 // portable. Les groupes suivent des familles de sens, pas des commodités de
-// rangement — « Budget & exécution » raconte d'ailleurs la chaîne budget →
+// rangement - « Budget & exécution » raconte d'ailleurs la chaîne budget →
 // marché → ouvrage livré, celle-là même que suivent les dossiers.
 const NAVIGATION = [
   { chemin: "/", libelle: "Tableau de bord" },
@@ -57,7 +57,7 @@ const NAVIGATION = [
   },
   {
     // « exécution » au sens budgétaire : ce qui advient du budget une fois voté
-    // — marchés passés, ouvrages livrés, écart entre l'annonce et la livraison.
+    // - marchés passés, ouvrages livrés, écart entre l'annonce et la livraison.
     libelle: "Budget & exécution",
     enfants: [
       ["/finances", "Budget de l'État"],
@@ -92,7 +92,7 @@ function basculerGroupe(libelle) {
   groupeOuvert.value = groupeOuvert.value === libelle ? null : libelle;
 }
 
-// Fermeture au clic extérieur et à la touche Échap — un menu déroulant qui
+// Fermeture au clic extérieur et à la touche Échap - un menu déroulant qui
 // reste ouvert quand on clique ailleurs donne l'impression d'une page figée.
 function fermerGroupe(evenement) {
   if (!evenement || !evenement.target.closest?.(".nav-groupe")) {
@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
 
   <footer v-if="!immersif" class="pied">
     <div class="conteneur">
-      <span>Plateforme citoyenne indépendante — données issues des sources officielles, chaque entrée liée à son document d'origine.</span>
+      <span>Plateforme citoyenne indépendante - données issues des sources officielles, chaque entrée liée à son document d'origine.</span>
       <router-link to="/glossaire">Glossaire</router-link>
       <router-link to="/a-propos">À propos & méthodologie</router-link>
       <a href="/api/docs" target="_blank" rel="noopener">API ouverte</a>

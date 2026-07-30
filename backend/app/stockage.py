@@ -1,6 +1,6 @@
 """Stockage du corpus archivé : disque local ou objet S3 (Garage).
 
-Le corpus brut — PDF et HTML collectés avant tout traitement — est **l'actif du
+Le corpus brut - PDF et HTML collectés avant tout traitement - est **l'actif du
 projet** : les sites officiels dépublient, et ce qu'on n'a pas archivé est
 perdu. D'où deux exigences qui gouvernent ce module :
 
@@ -14,11 +14,11 @@ perdu. D'où deux exigences qui gouvernent ce module :
 
 Trois usages seulement dans le code, d'où trois primitives :
 
-- `ecrire(cle, contenu)`        — archivage à la collecte ;
-- `fichier_local(cle)`          — extraction (pdfplumber, pypdf et Tesseract
+- `ecrire(cle, contenu)`        - archivage à la collecte ;
+- `fichier_local(cle)`          - extraction (pdfplumber, pypdf et Tesseract
                                   veulent un vrai fichier) ; en mode objet, le
                                   fichier est téléchargé puis supprimé ;
-- `url_ou_chemin(cle)`          — service du document au public.
+- `url_ou_chemin(cle)`          - service du document au public.
 
 Configuration : `FASO_STOCKAGE=local|s3` et les `FASO_S3_*` (cf. config.py).
 """
@@ -59,7 +59,7 @@ def normaliser_cle(cle: str | Path) -> str:
 
 
 class StockageLocal:
-    """Disque local — le mode de développement, et le défaut."""
+    """Disque local - le mode de développement, et le défaut."""
 
     mode = "local"
 
@@ -125,7 +125,7 @@ class StockageS3:
                 # boto3 ≥ 1.36 valide systématiquement une somme de contrôle sur
                 # la réponse. Sur un GET simple Garage la fournit correctement,
                 # mais `download_file` découpe les gros objets en requêtes par
-                # plages et la validation échoue alors — vérifié sur un objet de
+                # plages et la validation échoue alors - vérifié sur un objet de
                 # 39 Mo, dont l'empreinte SHA-256 est pourtant identique par les
                 # trois chemins de lecture. Le défaut ne se manifestait donc que
                 # sur les pièces volumineuses : rapports d'audit, Quotidiens.
@@ -181,7 +181,7 @@ class StockageS3:
             chemin.unlink(missing_ok=True)
 
     def url_ou_chemin(self, cle: str) -> tuple[str, Path | str]:
-        """URL du document — publique et stable si le bucket l'est.
+        """URL du document - publique et stable si le bucket l'est.
 
         Dans les deux cas le document part du bucket et non de l'API : faire
         transiter les PDF par FastAPI en ferait un serveur de fichiers.
@@ -189,7 +189,7 @@ class StockageS3:
         La forme publique est préférable pour un corpus d'actes officiels :
         l'URL ne périme pas, elle est citable dans un article ou un rapport,
         cachable par un CDN, et permet à un tiers de miroiter l'archive. La
-        signature ne sert qu'à protéger un contenu privé — ce corpus n'en est
+        signature ne sert qu'à protéger un contenu privé - ce corpus n'en est
         pas un. Le repli présigné reste là pour un bucket resté fermé.
         """
         cle = normaliser_cle(cle)
@@ -242,7 +242,7 @@ def migrer_depuis_local(racine: Path, *, supprimer_apres: bool, cible=None) -> d
 
     Reprenable : un fichier déjà présent à la bonne taille est sauté. La
     suppression locale n'intervient qu'après vérification de la taille côté
-    bucket — perdre l'original d'un document parce qu'un envoi a échoué à
+    bucket - perdre l'original d'un document parce qu'un envoi a échoué à
     moitié serait irréparable.
     """
     cible = cible or stockage

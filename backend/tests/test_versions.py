@@ -1,8 +1,8 @@
 """Versions d'un même document : la source réécrit ses pages après publication.
 
 Le gouvernement retouche ses comptes rendus (constaté : +5 Ko sur le n°024 entre
-le 24 et le 29 juillet 2026). L'archivage versionné est voulu — il établit le
-fait — mais toutes les versions ne doivent pas compter comme des documents
+le 24 et le 29 juillet 2026). L'archivage versionné est voulu - il établit le
+fait - mais toutes les versions ne doivent pas compter comme des documents
 distincts. Ces tests figent la règle et, surtout, ce qu'elle ne doit jamais
 détruire.
 """

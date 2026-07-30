@@ -1,7 +1,7 @@
 <template>
   <h1>Marchés publics</h1>
   <p class="sous-titre">
-    Qui décroche les marchés de l'État, pour quel montant — les attributions extraites du
+    Qui décroche les marchés de l'État, pour quel montant - les attributions extraites du
     <a href="https://www.dgcmef.gov.bf" target="_blank" rel="noopener">Quotidien des Marchés Publics</a>
     (DGCMEF). Chaque marché renvoie au journal officiel dont il est issu.
   </p>
@@ -53,9 +53,9 @@
         <span v-if="m.autorite">{{ m.autorite }}</span>
       </div>
       <div class="titre">
-        <!-- une présélection n'a pas de montant : afficher « — » à sa place
+        <!-- une présélection n'a pas de montant : afficher « - » à sa place
              laisserait croire à une donnée manquante -->
-        <template v-if="m.nature !== 'preselection'">{{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> — </template></template>
+        <template v-if="m.nature !== 'preselection'">{{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> - </template></template>
         <template v-if="m.attributaire">
           <router-link v-if="m.attributaire_id" :to="`/marches/entreprises/${m.attributaire_id}`">{{ m.attributaire }}</router-link>
           <template v-else>{{ m.attributaire }}</template>
@@ -106,7 +106,7 @@ const stats = ref(null);
 const plusGros = ref(null);
 const q = ref(route.query.q ? String(route.query.q) : "");
 const tri = ref("montant");
-// attribution | preselection | toutes — les statistiques du site ne comptent que
+// attribution | preselection | toutes - les statistiques du site ne comptent que
 // les attributions, la liste doit s'aligner par défaut
 const nature = ref(
   ["preselection", "toutes"].includes(String(route.query.nature))
@@ -120,7 +120,7 @@ let minuterie = null;
 const pages = computed(() => (stats.value ? Math.ceil(stats.value.total / PAR_PAGE) : 0));
 
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;

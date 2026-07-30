@@ -1,4 +1,4 @@
-/* Rôles de couleur aux teintes du Burkina Faso — vert (séries, accent) et doré
+/* Rôles de couleur aux teintes du Burkina Faso - vert (séries, accent) et doré
    (série 2) validés par le validateur dataviz (bande L, daltonisme ΔE 25,9,
    contraste) dans les deux modes ; le rouge du drapeau reste réservé aux
    liserés et états. Light par défaut, dark auto. */
@@ -59,7 +59,7 @@ a:hover { text-decoration: underline; }
 
 .conteneur { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
 
-/* En-tête — collant, léger flou pour la fluidité au défilement */
+/* En-tête - collant, léger flou pour la fluidité au défilement */
 .entete {
   position: sticky; top: 0; z-index: 60;
   background: color-mix(in srgb, var(--surface-1) 88%, transparent);
@@ -68,7 +68,7 @@ a:hover { text-decoration: underline; }
 }
 /* Deux rangs VOULUS plutôt qu'un débordement subi : marque + recherche en haut,
    navigation en dessous. Laissée à elle-même, la barre s'empilait sur trois
-   rangs — pour un en-tête collant, chaque rang est autant d'écran confisqué. */
+   rangs - pour un en-tête collant, chaque rang est autant d'écran confisqué. */
 .entete-inner {
   display: flex; align-items: center; gap: 12px 28px; padding: 12px 20px;
   max-width: 1080px; margin: 0 auto; flex-wrap: wrap;
@@ -84,7 +84,7 @@ a:hover { text-decoration: underline; }
 .nav a.router-link-active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); font-weight: 600; }
 .nav a:hover { text-decoration: none; color: var(--text-primary); }
 
-/* Navigation à deux niveaux — les groupes se comportent comme des liens, à la
+/* Navigation à deux niveaux - les groupes se comportent comme des liens, à la
    flèche près : mêmes tailles et mêmes états, pour que la barre reste homogène. */
 .nav-groupe { position: relative; }
 .nav-groupe > button {
@@ -231,11 +231,21 @@ button:not(:disabled):hover { border-color: var(--accent); }
 .item, .carte { transition: border-color 0.15s ease; }
 a.item-lien:hover, .item:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 
+/* Un tableau plus large que l'écran doit défiler DANS son bloc. Sans cela
+   c'est la page entière qui prend une barre horizontale, et le lecteur perd le
+   fil vertical dès qu'il effleure le tableau de côté. */
+.table-defilante { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-defilante > .tableau { min-width: 22rem; }
+
 /* Navigation mobile en bas d'écran (façon vie-publique.sn) */
 .nav-mobile { display: none; }
 @media (max-width: 768px) {
   .nav { display: none; }
-  main { padding-bottom: 96px; }
+  main { padding-bottom: 24px; }
+  /* La barre de navigation fixe recouvre les ~58 px du bas. La réserve était
+     posée sur `main`, qui n'englobe pas le pied de page : « API ouverte » et
+     « RSS » se retrouvaient dessous, visibles mais impossibles à toucher. */
+  .pied { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   .nav-mobile {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 70;
     display: flex; justify-content: space-around; align-items: stretch;

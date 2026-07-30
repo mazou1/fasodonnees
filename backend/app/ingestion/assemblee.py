@@ -1,4 +1,4 @@
-"""Assemblée législative — synchronisation de la liste des députés.
+"""Assemblée législative - synchronisation de la liste des députés.
 
 assembleenationale.bf sert la liste côté serveur : chaque député est une
 carte avec photo officielle (an.bf/storage/Photos/…) et le nom en attribut
@@ -41,7 +41,7 @@ class AssembleeCollector(Collector):
             if "storage/Photos" in src and len(nom) > 3:
                 vus.setdefault(nom, src)
         if not vus:
-            raise ValueError("Aucun député trouvé — le gabarit du site a probablement changé")
+            raise ValueError("Aucun député trouvé - le gabarit du site a probablement changé")
 
         existants = {d.nom_complet: d for d in self.db.scalars(select(Depute)).all()}
         for nom, photo in vus.items():
@@ -68,7 +68,7 @@ class AssembleeCollector(Collector):
         try:
             resp = self.get(self.url_bureau)
         except Exception:  # la page bureau ne doit pas casser la synchro des députés
-            logger.warning("Page bureau inaccessible — président non synchronisé")
+            logger.warning("Page bureau inaccessible - président non synchronisé")
             return
         m = re.search(
             r'src="([^"]*storage/president/[^"]+)"[^>]*>.*?<strong>([^<]+)</strong>'
@@ -93,6 +93,6 @@ class AssembleeCollector(Collector):
         for autre in self.db.scalars(select(Depute).where(Depute.role.is_not(None))).all():
             if autre is not depute:
                 autre.role = None
-        depute.role = role or "Président de l'Assemblée législative de Transition"
+        depute.role = role or "Président de l'Assemblée législative du peuple"
         depute.photo_url = photo
         logger.info("Président de l'Assemblée : %s (%s)", nom, depute.role)

@@ -1,7 +1,7 @@
 <template>
   <h1>Services numériques de l'État</h1>
   <p class="sous-titre">
-    L'annuaire des sites et téléservices officiels du Burkina Faso, regroupés au même endroit —
+    L'annuaire des sites et téléservices officiels du Burkina Faso, regroupés au même endroit -
     institutions, textes de loi, finances, statistiques, concours et services aux usagers.
     Chaque lien pointe vers un site public officiel.
   </p>
@@ -9,7 +9,7 @@
   <a v-if="!q.trim()" class="portail-phare" href="https://service-public.gov.bf" target="_blank" rel="noopener">
     <span class="pf-ico" aria-hidden="true">🪪</span>
     <span class="pf-txt">
-      <span class="pf-titre">Service Public BF — le guichet unique de l'administration</span>
+      <span class="pf-titre">Service Public BF - le guichet unique de l'administration</span>
       <span class="pf-desc">Le portail officiel de l'État qui centralise les démarches en ligne (guides pratiques, procédures dématérialisées, institutions). Le point de départ pour toute démarche.</span>
       <span class="pf-dom">service-public.gov.bf ↗</span>
     </span>
@@ -47,7 +47,7 @@
     Nous ne référençons que les sites officiels dont l'accès a été vérifié joignable
     (juillet 2026). Quelques services existants ont été écartés parce qu'ils étaient
     injoignables ou présentaient un certificat de sécurité invalide au moment de la
-    vérification (ex. SONABEL, La Poste BF) — ils seront ajoutés dès qu'ils redeviennent
+    vérification (ex. SONABEL, La Poste BF) - ils seront ajoutés dès qu'ils redeviennent
     accessibles en toute sécurité. Un site manque&nbsp;? Signalez-le sur le dépôt du projet.
   </p>
 </template>
@@ -62,7 +62,7 @@ const SECTIONS = [
     services: [
       { nom: "Présidence du Faso", url: "https://www.presidencedufaso.bf", desc: "Le site de la Présidence : communiqués, agenda et actes du Chef de l'État." },
       { nom: "Gouvernement du Burkina Faso", url: "https://www.gouvernement.gov.bf", desc: "Portail du Gouvernement : comptes rendus du Conseil des ministres, communiqués et action gouvernementale." },
-      { nom: "Assemblée législative de Transition", sigle: "ALT", url: "https://www.assembleenationale.bf", desc: "L'organe législatif de la Transition : lois votées, députés et travaux parlementaires." },
+      { nom: "Assemblée législative du peuple", sigle: "ALP", url: "https://www.assembleenationale.bf", desc: "L'organe législatif : lois votées, députés et travaux parlementaires." },
       { nom: "Conseil constitutionnel", url: "https://www.conseil-constitutionnel.gov.bf", desc: "La juridiction chargée du contrôle de constitutionnalité et de la régularité des élections." },
       { nom: "Service d'information du Gouvernement", sigle: "SIG", url: "https://sig.gov.bf", desc: "La communication institutionnelle de l'État : actualités et productions officielles." },
     ],
@@ -72,7 +72,7 @@ const SECTIONS = [
     emoji: "🪪",
     services: [
       { nom: "Service Public BF", url: "https://service-public.gov.bf", desc: "Le portail national unique des services publics en ligne : guides pratiques, procédures dématérialisées et orientation vers les téléservices officiels." },
-      { nom: "eSINTAX — impôts en ligne", sigle: "DGI", url: "https://esintax.bf", desc: "La télédéclaration et le télépaiement des impôts (TVA, IS, IR…) de la Direction générale des impôts, par banque ou mobile money." },
+      { nom: "eSINTAX - impôts en ligne", sigle: "DGI", url: "https://esintax.bf", desc: "La télédéclaration et le télépaiement des impôts (TVA, IS, IR…) de la Direction générale des impôts, par banque ou mobile money." },
       { nom: "Faso Arzeka", url: "https://fasoarzeka.bf", desc: "La plateforme nationale de paiements numériques à l'État (administration, collectivités, institutions). Accessible aussi au *700# et par mobile money." },
     ],
   },

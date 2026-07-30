@@ -11,13 +11,13 @@ Recoller ces trois maillons est ce que la plateforme peut faire et qu'aucune
 des trois sources ne fait. C'est aussi ce qui se prête le plus à l'erreur :
 « Construction d'infrastructures sanitaires » ressemble à tout. Le
 rapprochement est donc une PROPOSITION relue par un humain, jamais un fait
-publié d'office — même principe que `app/fusion.py`.
+publié d'office - même principe que `app/fusion.py`.
 
 Comment le score est construit
 ------------------------------
 Le trigramme brut sur les libellés ne discrimine rien : le vocabulaire des
 travaux publics (« construction », « acquisition », « travaux », « profit »)
-sature la similarité. On score donc sur les **tokens distinctifs** — ce qui
+sature la similarité. On score donc sur les **tokens distinctifs** - ce qui
 reste une fois ce vocabulaire retiré : toponymes, noms d'ouvrages, sigles,
 quantités. Trois indices corroborent ensuite, sans jamais suffire seuls :
 
@@ -82,7 +82,7 @@ MOTS_COURTS_UTILES = {"cm", "km", "mw", "kv", "r5", "r1", "chu", "chr", "csps"}
 # particulier. Deux pièces qui ne partagent QUE de tels mots (« centre »,
 # « hospitalier », « universitaire ») ne sont pas identifiées comme le même
 # projet : il leur manque le nom propre. Exprimé en IDF, ce seuil ne dépend pas
-# de la taille du corpus — log(1 / 0,015).
+# de la taille du corpus - log(1 / 0,015).
 SEUIL_IDENTIFIANT = math.log(1 / 0.015)
 
 
@@ -113,7 +113,7 @@ def poids_rarete(corpus: list[set[str]]) -> dict[str, float]:
 
     Sans cela, « CHU de Bogodogo » se rapproche de n'importe quel marché passé
     « au profit du centre hospitalier universitaire » : trois mots communs,
-    tous fréquents, et le toponyme — le seul qui identifie — absent. Pondérer
+    tous fréquents, et le toponyme - le seul qui identifie - absent. Pondérer
     par la rareté fait tomber ces paires et remonter celles qui partagent un
     nom propre.
     """
@@ -128,7 +128,7 @@ def poids_rarete(corpus: list[set[str]]) -> dict[str, float]:
 def similarite_tokens(a: set[str], b: set[str], poids: dict[str, float] | None = None) -> float:
     """Dice pondéré par la rareté des tokens (0 → 1).
 
-    Sans `poids`, retombe sur un Dice classique — pratique pour les tests.
+    Sans `poids`, retombe sur un Dice classique - pratique pour les tests.
     """
     if not a or not b:
         return 0.0
@@ -265,7 +265,7 @@ def proposer(db: Session, seuil: float) -> int:
     pieces = _pieces(db)
     poids = poids_rarete([p.tokens for p in pieces])
     # index inversé : deux pièces sans aucun token distinctif commun ne peuvent
-    # pas atteindre le seuil — inutile de les comparer (évite le produit complet)
+    # pas atteindre le seuil - inutile de les comparer (évite le produit complet)
     par_token: dict[str, list[int]] = {}
     for i, p in enumerate(pieces):
         for t in p.tokens:
@@ -321,7 +321,7 @@ def appliquer(db: Session, chemin: Path) -> tuple[int, int]:
 
     Les paires acceptées forment un graphe ; chaque composante connexe est un
     projet. Une pièce déjà rattachée à un projet y ramène toute sa composante :
-    accepter « A–B » puis « B–C » construit bien un seul dossier A-B-C.
+    accepter « A-B » puis « B-C » construit bien un seul dossier A-B-C.
     """
     parent: dict[tuple[str, int], tuple[str, int]] = {}
 
@@ -392,7 +392,7 @@ def _titre(membres, objets) -> str:
     return max(libelles, key=len)[:500]
 
 
-# Du plus avancé au moins avancé — l'ordre EST la règle de priorité.
+# Du plus avancé au moins avancé - l'ordre EST la règle de priorité.
 STADES = ("livre", "en_travaux", "attribue", "annonce")
 
 
@@ -400,7 +400,7 @@ def stade(a_un_marche: bool, statuts_realisations: list[str]) -> str:
     """Stade d'avancement, déduit des pièces rattachées.
 
     La nuance vient du `statut` des réalisations : une **première pierre** dit
-    que le chantier a commencé, pas qu'il est livré — le confondre avec une
+    que le chantier a commencé, pas qu'il est livré - le confondre avec une
     inauguration reviendrait à annoncer livré ce qui ne l'est pas.
     """
     statuts = set(statuts_realisations)
@@ -443,7 +443,7 @@ def main() -> int:
             seuil = float(sys.argv[2]) if len(sys.argv) > 2 else 0.30
             n = proposer(db, seuil)
             print(
-                f"{n} paire(s) candidate(s) dans {CSV_PROPOSITIONS} — mettre 'oui' dans la "
+                f"{n} paire(s) candidate(s) dans {CSV_PROPOSITIONS} - mettre 'oui' dans la "
                 f"colonne appliquer (colonnes tokens_communs/montants/chronologie pour juger), "
                 f"puis : python -m app.projets appliquer {CSV_PROPOSITIONS}"
             )

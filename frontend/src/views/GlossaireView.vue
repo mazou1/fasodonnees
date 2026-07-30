@@ -1,7 +1,7 @@
 <template>
   <h1>Glossaire</h1>
   <p class="sous-titre">
-    Les termes des finances publiques et des institutions burkinabè, expliqués simplement —
+    Les termes des finances publiques et des institutions burkinabè, expliqués simplement -
     ceux que vous croisez partout sur Faso Données Publiques.
   </p>
 
@@ -35,7 +35,7 @@ const SECTIONS = [
       { terme: "Recettes fiscales", definition: "L'argent des impôts et taxes : TVA, impôts sur les revenus et les bénéfices, droits de douane… C'est l'essentiel des ressources de l'État (environ 84 % en 2026)." },
       { terme: "Recettes non fiscales", definition: "Les ressources hors impôts : revenus du domaine et des entreprises publiques, droits et frais administratifs, amendes." },
       { terme: "Dons-projets", definition: "Les financements accordés par des partenaires extérieurs (institutions internationales, États) pour des projets précis, sans remboursement." },
-      { terme: "Dépenses de personnel", definition: "Les salaires et cotisations des agents publics — le premier poste de dépenses de l'État (plus du tiers du budget)." },
+      { terme: "Dépenses de personnel", definition: "Les salaires et cotisations des agents publics - le premier poste de dépenses de l'État (plus du tiers du budget)." },
       { terme: "Dépenses en capital (investissement)", definition: "Les dépenses qui construisent l'avenir : routes, écoles, hôpitaux, barrages, équipements. Par opposition aux dépenses courantes de fonctionnement." },
       { terme: "Charge de la dette", definition: "Les intérêts payés chaque année sur l'argent que l'État a emprunté. À distinguer de l'amortissement, qui est le remboursement du capital." },
       { terme: "Transferts courants", definition: "Les sommes versées sans contrepartie directe : bourses, subventions aux établissements publics, appuis sociaux." },
@@ -49,7 +49,7 @@ const SECTIONS = [
     termes: [
       { terme: "Conseil des ministres", definition: "La réunion hebdomadaire (le jeudi) du gouvernement sous la présidence du Chef de l'État. C'est là que sont adoptés décrets, projets de loi et nominations." },
       { terme: "Compte rendu (CR)", definition: "Le document officiel publié après chaque Conseil, qui relate les délibérations, communications et nominations. La matière première de Faso Données Publiques." },
-      { terme: "Engagement financier", definition: "Sur Faso Données Publiques : toute dépense chiffrée décidée en Conseil des ministres — marché public, convention, prêt, subvention ou garantie." },
+      { terme: "Engagement financier", definition: "Sur Faso Données Publiques : toute dépense chiffrée décidée en Conseil des ministres - marché public, convention, prêt, subvention ou garantie." },
       { terme: "Marché public", definition: "Un contrat par lequel l'État achète des travaux, des fournitures ou des services à une entreprise, normalement après mise en concurrence." },
       { terme: "Nomination", definition: "La désignation officielle d'une personne à un poste public, prononcée en Conseil des ministres et publiée au compte rendu." },
       { terme: "Matricule (Mle)", definition: "L'identifiant unique d'un agent de la fonction publique (ex. « Mle 39 652 W »). Faso Données Publiques l'utilise pour distinguer les homonymes dans l'annuaire." },
@@ -64,8 +64,8 @@ const SECTIONS = [
       { terme: "Arrêté", definition: "Une décision prise par un ministre ou une autorité locale, d'une portée plus limitée qu'un décret." },
       { terme: "Ordonnance", definition: "Un texte pris par l'exécutif dans le domaine normalement réservé à la loi, sur habilitation ou en période d'exception." },
       { terme: "Journal officiel (JO)", definition: "La publication officielle où paraissent lois, décrets et arrêtés. Un texte n'est opposable qu'une fois publié au JO." },
-      { terme: "Assemblée législative de Transition (ALT)", definition: "L'organe législatif de la Transition : 71 députés qui votent les lois et contrôlent l'action du gouvernement." },
-      { terme: "Légiburkina", definition: "La base de données juridique officielle du Secrétariat général du Gouvernement — la source des 4 900 textes de Faso Données Publiques." },
+      { terme: "Assemblée législative du peuple (ALP)", definition: "L'organe législatif : 71 députés qui votent les lois et contrôlent l'action du gouvernement. Dénomination en vigueur depuis l'adoption de la Charte de la Révolution le 27 mars 2026, qui a remplacé l'Assemblée législative de Transition (ALT)." },
+      { terme: "Légiburkina", definition: "La base de données juridique officielle du Secrétariat général du Gouvernement - la source des 4 900 textes de Faso Données Publiques." },
       { terme: "PND R.E.L.A.N.C.E.", definition: "Le Plan national de développement 2026-2030 : 36 191 milliards FCFA sur 5 ans, 4 piliers stratégiques. Voir le dossier dédié." },
     ],
   },

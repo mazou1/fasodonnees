@@ -1,7 +1,7 @@
 <template>
   <h1>L'Assemblée législative</h1>
   <p class="sous-titre">
-    Composition de l'Assemblée législative de Transition, synchronisée depuis le
+    Composition de l'Assemblée législative du peuple, synchronisée depuis le
     <a href="https://www.assembleenationale.bf" target="_blank" rel="noopener">site officiel</a>.
   </p>
 
@@ -29,7 +29,7 @@
         <span class="badge">{{ data.president.role }}</span>
         <div class="vedette-nom">Dr {{ data.president.nom_complet }}</div>
         <div class="vedette-poste">
-          Préside les travaux de l'Assemblée législative de Transition — 71 députés.
+          Préside les travaux de l'Assemblée législative du peuple - 71 députés.
         </div>
       </div>
     </article>

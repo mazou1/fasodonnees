@@ -1,5 +1,5 @@
 type,titre,description,statut,date,lieu,montant_fcfa,source_url
-barrage,Barrage de Samendéni,Barrage multifonctions sur le Mouhoun — 3e plus grand barrage du pays,mise_en_service,2019-11-30,Bama,,https://fr.wikipedia.org/wiki/Barrage_de_Samendéni
+barrage,Barrage de Samendéni,Barrage multifonctions sur le Mouhoun - 3e plus grand barrage du pays,mise_en_service,2019-11-30,Bama,,https://fr.wikipedia.org/wiki/Barrage_de_Samendéni
 energie,Centrale solaire de Zagtouli,"Plus grande centrale solaire d'Afrique de l'Ouest à sa mise en service (33 MWc), à Zagtouli",inauguration,2017-11-29,Ouagadougou,,https://lefaso.net/spip.php?article80707
 barrage,Barrage de Ziga,Barrage d'approvisionnement en eau potable de Ouagadougou sur le Nakambé,mise_en_service,2000-01-01,Ziniaré,,https://fr.wikipedia.org/wiki/Barrage_de_Ziga
 barrage,Barrage de Bagré,Barrage hydroélectrique et hydro-agricole sur le Nakambé,mise_en_service,1992-01-01,Bagré,,https://fr.wikipedia.org/wiki/Barrage_de_Bagré
@@ -10,7 +10,7 @@ route,Échangeur de l'Ouest de Ouagadougou,Échangeur routier de la sortie ouest
 route,Échangeur de Ouaga 2000,Premier grand échangeur de Ouagadougou (quartier Ouaga 2000),mise_en_service,2008-01-01,Ouagadougou,,https://leconomistedufaso.com/2015/12/21/echangeurs-3-deja-fonctionnels-sur-10-prevus/
 hopital,CHU de Bogodogo,Centre hospitalier universitaire de Bogodogo à Ouagadougou,mise_en_service,2017-01-01,Ouagadougou,,https://www.sante.gov.bf/detail?tx_news_pi1%5Bnews%5D=313
 universite,Université Thomas Sankara,"Université (ex-Ouaga II) inaugurée sous son nouveau nom, campus à Saaba",inauguration,2020-10-15,Saaba,,https://fr.wikipedia.org/wiki/Université_Thomas-Sankara
-aeroport,Aéroport de Ouagadougou-Donsin,"Nouvel aéroport international à Donsin (Loumbila) — chantier lancé, non encore ouvert",premiere_pierre,2021-09-01,Loumbila,,https://fr.wikipedia.org/wiki/Aéroport_de_Ouagadougou-Donsin
+aeroport,Aéroport de Ouagadougou-Donsin,"Nouvel aéroport international à Donsin (Loumbila) - chantier lancé, non encore ouvert",premiere_pierre,2021-09-01,Loumbila,,https://fr.wikipedia.org/wiki/Aéroport_de_Ouagadougou-Donsin
 batiment_public,Stade du 4-Août,"Grand stade de Ouagadougou (financé et construit par la Chine), ouvert en 1984",inauguration,1984-01-01,Ouagadougou,,https://fr.wikipedia.org/wiki/Stade_du_4_Août
 marche_infrastructure,Grand marché Rood Woko,"Grand marché central de Ouagadougou, reconstruit après l'incendie de 2003 (financement AFD)",inauguration,2009-04-16,Ouagadougou,,https://fr.wikipedia.org/wiki/Rood_Wooko
 barrage,Barrage de Toussiana,Barrage sur le Yannon aménagé par la SOSUCO (Hauts-Bassins),mise_en_service,1982-01-01,Toussiana,,https://www.aib.media/houet-les-autorites-senquierent-de-letat-davancement-du-curage-du-barrage-de-toussiana

@@ -1,7 +1,7 @@
 <template>
   <h1>Actualités</h1>
   <p class="sous-titre">
-    Le fil agrégé des médias burkinabè et des communiqués officiels — chaque article renvoie
+    Le fil agrégé des médias burkinabè et des communiqués officiels - chaque article renvoie
     à sa source d'origine.
   </p>
 

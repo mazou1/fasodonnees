@@ -1,7 +1,7 @@
 """Passe OCR ciblée sur les textes juridiques scannés.
 
 Légiburkina publie ~96 % de scans : cette passe océrise en priorité les
-textes à plus forte valeur citoyenne — Constitution, chartes, puis lois
+textes à plus forte valeur citoyenne - Constitution, chartes, puis lois
 (des plus récentes aux plus anciennes). Conçue pour tourner en fond dans
 le conteneur worker (Tesseract + français installés).
 
@@ -26,14 +26,14 @@ PRIORITE = case(
     (Document.type_doc == "constitution", 0),
     (Document.type_doc == "charte", 1),
     # jurisprudence constitutionnelle et rapports de contrôle : peu nombreux,
-    # entièrement scannés, et sans texte ils sont introuvables — donc tôt
+    # entièrement scannés, et sans texte ils sont introuvables - donc tôt
     (Document.type_doc == "decision_constitutionnelle", 2),
     (Document.type_doc == "avis_constitutionnel", 2),
     (Document.type_doc == "ordonnance_constitutionnelle", 2),
     (Document.type_doc == "rapport_controle", 2),
     (Document.type_doc == "loi", 3),
     (Document.type_doc == "ordonnance", 4),
-    else_=5,  # décrets, arrêtés… — le gros volume, en dernier
+    else_=5,  # décrets, arrêtés… - le gros volume, en dernier
 )
 TYPES_CIBLES = (
     "constitution", "charte", "loi", "ordonnance", "decret", "arrete", "texte_juridique",
@@ -42,9 +42,12 @@ TYPES_CIBLES = (
 )
 
 
-def main() -> int:
+def main(max_docs: int | None = None) -> int:
+    # `max_docs` permet au worker d'appeler cette passe avec un budget borné
+    # sans passer par la ligne de commande (cf. app/ingestion/scheduler.py)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 2000
+    if max_docs is None:
+        max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 2000
     with SessionLocal() as db:
         docs = db.scalars(
             select(Document)
@@ -62,7 +65,7 @@ def main() -> int:
         ok = echecs = 0
         for i, doc in enumerate(docs):
             # en stockage objet, chaque document est retiré du bucket dans un
-            # fichier temporaire puis effacé — d'où le context manager
+            # fichier temporaire puis effacé - d'où le context manager
             with stockage.fichier_local(doc.fichier) as chemin:
                 texte, statut = extraire_texte(chemin, ocr=True)
             meta = dict(doc.meta or {})

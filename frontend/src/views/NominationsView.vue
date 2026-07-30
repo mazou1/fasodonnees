@@ -32,7 +32,7 @@
         <router-link class="lien-personne" :to="`/personnes/${n.personne_id}`">{{ n.personne }}</router-link>
       </div>
       <div class="detail">
-        {{ n.poste }}<template v-if="n.structure"> — {{ n.structure }}</template>
+        {{ n.poste }}<template v-if="n.structure"> - {{ n.structure }}</template>
       </div>
       <a class="source" :href="n.document_url" target="_blank" rel="noopener">Voir le compte rendu officiel →</a>
     </article>

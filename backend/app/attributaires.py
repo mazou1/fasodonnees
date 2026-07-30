@@ -10,7 +10,7 @@ dans quels secteurs.
 
 Ce module construit une entité `Attributaire` DÉRIVÉE :
 
-- `marche.attributaire` garde toujours la chaîne exacte du document — comme
+- `marche.attributaire` garde toujours la chaîne exacte du document - comme
   les mandats gardent leur structure d'époque, la source brute n'est jamais
   réécrite ;
 - `consolider` est **idempotent** : on peut le relancer après chaque lot de
@@ -24,12 +24,12 @@ des structures (`app/fusion.py`) :
                           fusionne d'office les variantes dont la similarité
                           dépasse `SEUIL_FUSION_AUTO` (bruit d'extraction).
 - `proposer [seuil]`    : écrit attributaires_propositions.csv pour la bande
-                          AMBIGUË, sous le seuil automatique — mettre « oui » en
+                          AMBIGUË, sous le seuil automatique - mettre « oui » en
                           colonne `appliquer` pour fusionner.
 - `appliquer <csv>`     : applique les fusions relues.
 - `rapprocher [seuil]`  : signale les raisons sociales qui ressemblent au nom
                           d'une personne de l'annuaire. Rapport de relecture
-                          interne — cf. la note déontologique dans `rapprocher`.
+                          interne - cf. la note déontologique dans `rapprocher`.
 
 Usage : python -m app.attributaires consolider | proposer [seuil]
                                      | appliquer <csv> | rapprocher [seuil]
@@ -85,7 +85,7 @@ def normaliser_raison_sociale(nom: str) -> str:
 
     Volontairement modérée : elle unifie ce qui est typographique (accents,
     casse, ponctuation, forme juridique) et rien de plus. Deux entreprises
-    réellement distinctes ne doivent jamais tomber sur la même forme — le
+    réellement distinctes ne doivent jamais tomber sur la même forme - le
     rapprochement des variantes plus lointaines est une décision humaine
     (`proposer`/`appliquer`).
     """
@@ -124,7 +124,7 @@ def _resoudre(db: Session, attributaire_id: int) -> int:
     vu: set[int] = set()
     aid = attributaire_id
     while True:
-        if aid in vu:  # cycle — on s'arrête
+        if aid in vu:  # cycle - on s'arrête
             return aid
         vu.add(aid)
         cid = db.scalar(select(Attributaire.canonique_id).where(Attributaire.id == aid))
@@ -137,7 +137,7 @@ def consolider(db: Session) -> dict[str, int]:
     """(Re)construit les entités et rattache chaque marché à la sienne.
 
     Idempotent : relançable après chaque lot de validations. Porte sur TOUS
-    les marchés, y compris `a_valider` — le rattachement n'est pas une
+    les marchés, y compris `a_valider` - le rattachement n'est pas une
     publication ; l'API, elle, ne sert que le validé.
     """
     variantes: dict[str, Counter[str]] = defaultdict(Counter)
@@ -194,12 +194,12 @@ def _fusionner_variantes_evidentes(db: Session) -> int:
     """Fusionne sans relecture les raisons sociales très proches.
 
     Le rattachement strict ne voit que les variantes typographiques. Restait le
-    bruit d'extraction — un caractère parasite collé devant le nom — qui créait
+    bruit d'extraction - un caractère parasite collé devant le nom - qui créait
     une entité fantôme par occurrence. Au-dessus de `SEUIL_FUSION_AUTO`, ces
     paires sont sans ambiguïté ; en dessous, la relecture reste requise.
 
     Le nom conservé est le plus COURT des deux. Le bruit d'extraction ajoute des
-    caractères — un « u » ou un « à » happé devant la raison sociale — il n'en
+    caractères - un « u » ou un « à » happé devant la raison sociale - il n'en
     retire jamais. Se fonder sur l'ancienneté serait trompeur : « u HABIB TRADING
     INTERNATIONAL » porte un identifiant plus petit que la forme propre, et
     l'avoir pris pour canonique affichait le bruit sur la fiche publique.
@@ -347,7 +347,7 @@ def main() -> int:
         if commande == "consolider":
             stats = consolider(db)
             print(
-                f"{stats['entites']} entité(s) ({stats['creees']} nouvelle(s)) — "
+                f"{stats['entites']} entité(s) ({stats['creees']} nouvelle(s)) - "
                 f"{stats['marches_rattaches']} marché(s) rattaché(s), "
                 f"{stats['fusions_auto']} variante(s) fusionnée(s) automatiquement "
                 f"(similarité ≥ {SEUIL_FUSION_AUTO})."
@@ -356,7 +356,7 @@ def main() -> int:
             seuil = float(sys.argv[2]) if len(sys.argv) > 2 else 0.65
             n = proposer(db, seuil)
             print(
-                f"{n} proposition(s) écrites dans {CSV_PROPOSITIONS} — mettre 'oui' dans "
+                f"{n} proposition(s) écrites dans {CSV_PROPOSITIONS} - mettre 'oui' dans "
                 f"la colonne appliquer puis : python -m app.attributaires appliquer "
                 f"{CSV_PROPOSITIONS}"
             )
@@ -367,7 +367,7 @@ def main() -> int:
             seuil = float(sys.argv[2]) if len(sys.argv) > 2 else 0.75
             n = rapprocher(db, seuil)
             print(
-                f"{n} rapprochement(s) à vérifier dans {CSV_RAPPROCHEMENTS} — "
+                f"{n} rapprochement(s) à vérifier dans {CSV_RAPPROCHEMENTS} - "
                 "homonymies possibles, rien n'est publiable en l'état."
             )
         else:

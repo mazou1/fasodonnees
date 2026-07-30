@@ -5,7 +5,7 @@ Chaque « SYNTHÈSE DES RÉSULTATS » est un tableau à colonnes préservées pa
 pdfplumber : en-tête (autorité, référence + objet), puis les soumissionnaires
 avec leur montant et une appréciation ; le retenu porte « Conforme … 1er » et
 une ligne « Attributaire : NOM pour un montant de … » clôt le bloc. Pas de LLM,
-pas d'aléa — on lit la structure.
+pas d'aléa - on lit la structure.
 """
 
 from __future__ import annotations
@@ -103,7 +103,7 @@ def nettoyer_objet(brut: str | None) -> str | None:
     g = RE_OBJET_GEO.match(txt)
     if g and g.end() >= 8 and len(txt) - g.end() >= 12:
         txt = txt[g.end() :]
-    txt = txt.strip(" :.,;-–—")
+    txt = txt.strip(" :.,;---")
     if not txt:
         txt = brut.strip()
     # capture ratée : l'objet est resté une rubrique administrative
@@ -175,11 +175,11 @@ def nettoyer_attributaire(brut: str | None) -> str | None:
     return txt[:400]
 
 
-MONTANT_MAX = 500_000_000_000  # 500 Mds FCFA — au-delà = colonnes concaténées
+MONTANT_MAX = 500_000_000_000  # 500 Mds FCFA - au-delà = colonnes concaténées
 
 
 def _montant(brut: str) -> int | None:
-    """Un montant FCFA plausible extrait d'un fragment — None si aberrant."""
+    """Un montant FCFA plausible extrait d'un fragment - None si aberrant."""
     if not brut:
         return None
     # un nombre = suite de chiffres séparés par espaces/points ; on prend le

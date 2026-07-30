@@ -9,7 +9,7 @@ Règles :
 - une fin_fonction ferme le mandat ouvert le plus récent de la même personne
   (même structure si renseignée) ;
 - SUCCESSION : nommer quelqu'un à un siège à titulaire unique (DG, SG,
-  préfet… — cf. annuaire_succession) met fin au mandat du titulaire précédent
+  préfet… - cf. annuaire_succession) met fin au mandat du titulaire précédent
   à la date de la nouvelle nomination. Les postes collégiaux (administrateurs,
   conseillers, inspecteurs…) n'entraînent jamais de fin : plusieurs titulaires
   coexistent ;

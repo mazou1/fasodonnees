@@ -2,7 +2,7 @@
   <h1>Suivi des annonces</h1>
   <p class="sous-titre">
     Ce que l'État annonce en Conseil des ministres, ce qu'il attribue dans le Quotidien des
-    marchés publics, et ce qui est finalement livré — les trois réunis dans un même dossier.
+    marchés publics, et ce qui est finalement livré - les trois réunis dans un même dossier.
     Aucune de ces sources ne porte d'identifiant de projet commun : chaque rapprochement a été
     relu à la main, et chaque maillon renvoie à son document officiel.
   </p>
@@ -32,7 +32,7 @@
           v-for="s in STADES"
           :key="s.cle"
           :class="{ atteint: p.etapes_constatees.includes(s.cle) }"
-          :title="p.etapes_constatees.includes(s.cle) ? `${s.libelle} — documenté` : `${s.libelle} — aucune pièce au dossier`"
+          :title="p.etapes_constatees.includes(s.cle) ? `${s.libelle} - documenté` : `${s.libelle} - aucune pièce au dossier`"
         >
           <span class="puce" aria-hidden="true"></span>{{ s.libelle }}
         </li>
@@ -69,7 +69,7 @@
     Un dossier réunit des pièces venues de trois corpus distincts, sans identifiant partagé :
     le rapprochement est une <strong>interprétation</strong>, proposée automatiquement puis
     acceptée par un relecteur, jamais publiée d'office. Le stade affiché se déduit des pièces
-    rattachées — une <em>première pierre</em> indique un chantier engagé, pas un ouvrage livré.
+    rattachées - une <em>première pierre</em> indique un chantier engagé, pas un ouvrage livré.
     Un dossier ne prétend pas retracer l'intégralité d'un projet : seuls y figurent les
     documents que la plateforme a collectés et validés.
   </p>
@@ -106,7 +106,7 @@ function libelleStade(cle) {
   return STADES.find((s) => s.cle === cle)?.libelle ?? cle;
 }
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;

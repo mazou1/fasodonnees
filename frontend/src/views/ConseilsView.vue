@@ -39,7 +39,7 @@
              plutôt que de servir la dernière version comme si rien n'avait
              bougé. La date est celle du CONSTAT, pas de la retouche. -->
         <div v-if="c.nb_versions > 1" class="reecriture" :title="`${c.nb_versions} versions de ce compte rendu sont archivées`">
-          ✎ Réécrit par la source — constaté le {{ formatDate(c.modification_constatee_le) }}
+          ✎ Réécrit par la source - constaté le {{ formatDate(c.modification_constatee_le) }}
         </div>
       </div>
     </router-link>

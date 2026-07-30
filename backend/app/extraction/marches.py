@@ -3,13 +3,13 @@
 Extraction **LLM à schéma Pydantic** (`marches_llm.py`). Elle remplace la
 lecture déterministe des tableaux, qui dépendait de la géométrie des colonnes
 détectée par pdfplumber : celle-ci ratait les numéros dont la mise en page
-changeait, et surtout ne produisait aucun score de confiance — si bien qu'aucune
+changeait, et surtout ne produisait aucun score de confiance - si bien qu'aucune
 validation automatique n'était défendable sur ces lignes, qui s'accumulaient
 dans la file de `/admin`.
 
 `marches_tableau.py` reste utilisé par `renettoyer` pour nettoyer l'existant.
 
-Les résultats arrivent en statut_validation='a_valider' — validation humaine
+Les résultats arrivent en statut_validation='a_valider' - validation humaine
 avant publication, comme le reste.
 
 ⚠️ Le Quotidien REPUBLIE la même synthèse de résultats dans des numéros
@@ -44,7 +44,7 @@ def empreinte(reference, attributaire, montant_fcfa, objet) -> str:
     """Identifie une ATTRIBUTION, indépendamment du numéro qui la publie.
 
     Deux lignes de même référence, même attributaire, même montant et même
-    objet sont la même attribution republiée — jamais deux marchés distincts.
+    objet sont la même attribution republiée - jamais deux marchés distincts.
     La normalisation ne touche qu'à la casse et aux espaces : elle absorbe les
     variations de mise en page du PDF, pas une différence de fond.
     """
@@ -121,8 +121,8 @@ def traiter_document(db, doc: Document, connues: set[str] | None = None) -> tupl
 def dedoublonner() -> int:
     """Supprime les republications déjà en base (stock antérieur au garde-fou).
 
-    On garde la PREMIÈRE parution — la date d'attribution en est d'autant plus
-    juste — et on lui reporte le statut `valide` si une des republications
+    On garde la PREMIÈRE parution - la date d'attribution en est d'autant plus
+    juste - et on lui reporte le statut `valide` si une des republications
     avait déjà été validée à la main : le travail du valideur n'est pas perdu.
     Les Quotidiens eux-mêmes restent archivés, seule la ligne dérivée part.
     """

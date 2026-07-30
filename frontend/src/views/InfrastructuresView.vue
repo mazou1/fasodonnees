@@ -10,8 +10,8 @@
     <summary>Méthode &amp; limites</summary>
     <p>
       Ce registre recense ce qui est <strong>rapporté</strong> par les sources officielles
-      (gouvernement.gov.bf), avec pour chaque ouvrage un <strong>statut</strong> —
-      annonce, pose de première pierre, inauguration ou mise en service — afin de ne pas
+      (gouvernement.gov.bf), avec pour chaque ouvrage un <strong>statut</strong> -
+      annonce, pose de première pierre, inauguration ou mise en service - afin de ne pas
       présenter une annonce comme un ouvrage livré. La présence d'un élément ne vaut pas
       vérification indépendante de son achèvement ou de son fonctionnement. Les points sont
       localisés à la commune (source&nbsp;: GeoNames).
@@ -23,7 +23,7 @@
       antérieures proviennent d'un <strong>jeu de référence saisi à la main</strong>
       (grandes infrastructures documentées : barrages, échangeurs, centrales…), non
       exhaustif. Le point de départ d'une période <em>ne signifie donc pas</em> qu'aucune
-      infrastructure n'existait avant — seulement que la source ne la couvre pas encore.
+      infrastructure n'existait avant - seulement que la source ne la couvre pas encore.
     </p>
   </details>
 
@@ -69,7 +69,7 @@
         <input type="range" class="dual-in" :min="anneeMin" :max="anneeMax" step="1"
           :value="anneeFin" @input="majFin" aria-label="Année de fin" />
       </div>
-      <span class="chrono-an">{{ plein ? "toutes les années" : anneeDebut + " – " + anneeFin }}</span>
+      <span class="chrono-an">{{ plein ? "toutes les années" : anneeDebut + " - " + anneeFin }}</span>
       <button v-if="!plein" class="btn-tout" @click="toutAfficher">tout</button>
     </div>
     <div class="carte-wrap">

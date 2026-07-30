@@ -1,14 +1,14 @@
-"""DGCMEF (dgcmef.gov.bf) — Quotidien des Marchés Publics.
+"""DGCMEF (dgcmef.gov.bf) - Quotidien des Marchés Publics.
 
 La Direction générale du contrôle des marchés publics publie chaque jour un
 « Quotidien des Marchés Publics » : le journal officiel de la commande publique
-(avis d'appels d'offres et surtout SYNTHÈSE DES RÉSULTATS — attributions avec
+(avis d'appels d'offres et surtout SYNTHÈSE DES RÉSULTATS - attributions avec
 autorité contractante, objet, attributaire et montant). PDF en texte natif.
 
 Le site (Drupal) dépublie au fil du temps : on archive chaque numéro et on en
 extrait le texte intégral pour le rendre cherchable. L'extraction structurée
 des marchés individuels (attributaire/montant par contrat) est un chantier
-ultérieur — ici on archive et on indexe le plein texte.
+ultérieur - ici on archive et on indexe le plein texte.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ MOIS = {
     "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12,
 }
 RE_NUMERO = re.compile(r"n[°ºo]?\s*0*(\d{3,5})", re.IGNORECASE)
-# la date d'édition suit le numéro : « N° 4442 – Lundi 13 juillet 2026 »
+# la date d'édition suit le numéro : « N° 4442 - Lundi 13 juillet 2026 »
 RE_DATE = re.compile(
     r"N[°ºo]?\s*\d{3,5}\s*[–\-]\s*(?:\w+\s+)?(\d{1,2})\s+([A-Za-zéûôà]+)\s+(\d{4})",
     re.IGNORECASE,
@@ -120,7 +120,7 @@ class DgcmefCollector(Collector):
             statut_extraction="ok" if statut == "ok" else "scan",
         )
         logger.info("%s : %s (%s)", self.slug, titre, pub or "date ?")
-        # extraction déterministe des marchés attribués (a_valider) — pas de LLM
+        # extraction déterministe des marchés attribués (a_valider) - pas de LLM
         if doc is not None:
             self.db.commit()  # persiste l'archivage d'abord (doc.id affecté)
             try:

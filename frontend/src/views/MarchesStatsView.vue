@@ -1,7 +1,7 @@
 <template>
   <h1>Marchés publics</h1>
   <p class="sous-titre">
-    Qui décroche les marchés de l'État, par secteur et par année — statistiques agrégées
+    Qui décroche les marchés de l'État, par secteur et par année - statistiques agrégées
     des attributions du <a href="https://www.dgcmef.gov.bf" target="_blank" rel="noopener">Quotidien des Marchés Publics</a> (DGCMEF).
   </p>
 
@@ -52,46 +52,50 @@
       <div ref="elAnnees" class="canvas" style="height: 260px"></div>
     </section>
     <section class="carte bloc-graphe">
-      <h2>Top 15 des entreprises{{ secteur ? " — " + secteur : "" }}</h2>
+      <h2>Top 15 des entreprises{{ secteur ? " - " + secteur : "" }}</h2>
       <div ref="elEntreprises" class="canvas" :style="hauteur(stats.top_entreprises.length)"></div>
     </section>
   </div>
 
   <section v-if="stats" class="carte">
     <h2>Détail par secteur</h2>
-    <table class="tableau">
-      <thead>
-        <tr><th>Secteur</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="s in stats.par_secteur" :key="s.cle" class="cliquable" @click="secteur = s.cle; annee = ''; charger()">
-          <td>{{ s.cle }}</td>
-          <td class="num">{{ s.nombre }}</td>
-          <td class="num">{{ fmtFCFA(s.montant_fcfa) }}</td>
-          <td class="num">{{ part(s.montant_fcfa) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-defilante">
+      <table class="tableau">
+        <thead>
+          <tr><th>Secteur</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="s in stats.par_secteur" :key="s.cle" class="cliquable" @click="secteur = s.cle; annee = ''; charger()">
+            <td>{{ s.cle }}</td>
+            <td class="num">{{ s.nombre }}</td>
+            <td class="num">{{ fmtFCFA(s.montant_fcfa) }}</td>
+            <td class="num">{{ part(s.montant_fcfa) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <section v-if="stats && stats.top_entreprises.length" class="carte">
-    <h2>Top 15 des entreprises attributaires{{ secteur ? " — " + secteur : "" }}</h2>
-    <table class="tableau">
-      <thead>
-        <tr><th>Entreprise</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="e in stats.top_entreprises" :key="e.cle">
-          <td>
-            <router-link v-if="e.id" :to="`/marches/entreprises/${e.id}`">{{ e.cle }}</router-link>
-            <template v-else>{{ e.cle }}</template>
-          </td>
-          <td class="num">{{ e.nombre }}</td>
-          <td class="num">{{ fmtFCFA(e.montant_fcfa) }}</td>
-          <td class="num">{{ part(e.montant_fcfa) }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <h2>Top 15 des entreprises attributaires{{ secteur ? " - " + secteur : "" }}</h2>
+    <div class="table-defilante">
+      <table class="tableau">
+        <thead>
+          <tr><th>Entreprise</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
+        </thead>
+        <tbody>
+          <tr v-for="e in stats.top_entreprises" :key="e.cle">
+            <td>
+              <router-link v-if="e.id" :to="`/marches/entreprises/${e.id}`">{{ e.cle }}</router-link>
+              <template v-else>{{ e.cle }}</template>
+            </td>
+            <td class="num">{{ e.nombre }}</td>
+            <td class="num">{{ fmtFCFA(e.montant_fcfa) }}</td>
+            <td class="num">{{ part(e.montant_fcfa) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
   <p v-if="chargement" class="chargement">Chargement…</p>
@@ -129,14 +133,14 @@ const lienApi = computed(() => {
 });
 
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;
 }
 function part(m) {
   const t = stats.value?.montant_total_fcfa || 0;
-  return t ? `${((100 * m) / t).toFixed(1)} %` : "—";
+  return t ? `${((100 * m) / t).toFixed(1)} %` : "-";
 }
 function hauteur(n) {
   return `height: ${Math.max(160, n * 30 + 60)}px`;
@@ -167,7 +171,7 @@ function barreH(el, items, couleur) {
       },
       tooltip: {
         ...baseOptions(c).tooltip,
-        formatter: (p) => `${p[0].name}<br/><b>${fmtFCFA(p[0].value)}</b> — ${items[p[0].dataIndex].nombre} marché(s)`,
+        formatter: (p) => `${p[0].name}<br/><b>${fmtFCFA(p[0].value)}</b> - ${items[p[0].dataIndex].nombre} marché(s)`,
       },
       series: [
         {
@@ -197,7 +201,7 @@ function barreV(el, items) {
       yAxis: { type: "value", splitLine: { lineStyle: { color: c.grille } }, axisLabel: { show: false } },
       tooltip: {
         ...baseOptions(c).tooltip,
-        formatter: (p) => `${p[0].name}<br/><b>${fmtFCFA(p[0].value)}</b> — ${items[p[0].dataIndex].nombre} marché(s)`,
+        formatter: (p) => `${p[0].name}<br/><b>${fmtFCFA(p[0].value)}</b> - ${items[p[0].dataIndex].nombre} marché(s)`,
       },
       series: [
         {
@@ -242,7 +246,7 @@ onBeforeUnmount(purger);
 .entete-recherche select { min-width: 180px; }
 .raz { align-self: flex-end; }
 /* pas de grid : les canvas ECharts ont une largeur intrinsèque qui casse les
-   pistes 1fr — on empile en pleine largeur, chaque carte grandit avec son canvas */
+   pistes 1fr - on empile en pleine largeur, chaque carte grandit avec son canvas */
 .grille-graphes { display: flex; flex-direction: column; gap: 16px; margin: 16px 0; }
 .bloc-graphe h2, .carte > h2 { font-size: 0.95rem; margin: 0 0 10px; }
 .canvas { width: 100%; }

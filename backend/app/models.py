@@ -1,4 +1,4 @@
-"""Modèle de données — cf. cadrage-plateforme-civique-v2.md §4.
+"""Modèle de données - cf. cadrage-plateforme-civique-v2.md §4.
 
 Tout gravite autour du `Document` source ; les entités structurées
 (nominations, mandats…) y sont rattachées pour garantir la traçabilité.
@@ -73,7 +73,7 @@ class Document(Base):
     date_structuration: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     meta: Mapped[dict | None] = mapped_column(JSONB)
     # NB : colonne `tsv` (tsvector générée, index GIN) créée en SQL brut dans la
-    # migration initiale — volontairement non mappée dans l'ORM.
+    # migration initiale - volontairement non mappée dans l'ORM.
 
     source: Mapped[Source] = relationship(back_populates="documents")
 
@@ -87,7 +87,7 @@ class Personne(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     nom_complet: Mapped[str] = mapped_column(String(300))
     nom_normalise: Mapped[str] = mapped_column(String(300), index=True)
-    # matricule de la fonction publique (« Mle 39 652 W ») — identifiant fort
+    # matricule de la fonction publique (« Mle 39 652 W ») - identifiant fort
     # pour distinguer les homonymes ; plusieurs Personne peuvent partager un nom
     matricule: Mapped[str | None] = mapped_column(String(30), index=True)
     notes: Mapped[str | None] = mapped_column(Text)
@@ -106,7 +106,7 @@ class Structure(Base):
     type: Mapped[str] = mapped_column(String(50), default="autre")
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("structure.id"))
     # fusion des doublons/renommages : pointe vers la structure canonique
-    # (les stats regroupent par coalesce(canonique_id, id)) — cf. app/fusion.py
+    # (les stats regroupent par coalesce(canonique_id, id)) - cf. app/fusion.py
     canonique_id: Mapped[int | None] = mapped_column(ForeignKey("structure.id"), index=True)
 
     parent: Mapped[Structure | None] = relationship(
@@ -134,7 +134,7 @@ class Nomination(Base):
     type: Mapped[str] = mapped_column(String(20), default="nomination")  # nomination | fin_fonction
     matricule: Mapped[str | None] = mapped_column(String(30))  # relevé dans le texte du CR
     score_confiance: Mapped[float | None] = mapped_column(Float)
-    # a_valider | valide | rejete — l'extraction automatique ne publie jamais seule
+    # a_valider | valide | rejete - l'extraction automatique ne publie jamais seule
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
 
     document: Mapped[Document] = relationship()
@@ -179,7 +179,7 @@ class EngagementFinancier(Base):
     montant_fcfa: Mapped[int | None] = mapped_column(BigInteger, index=True)
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
-    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    # dossier de suivi (rapprochement relu par un humain - cf. app/projets.py)
     projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document] = relationship()
@@ -221,7 +221,7 @@ class MembreGouvernement(Base):
     nom_complet: Mapped[str] = mapped_column(String(300))
     poste: Mapped[str] = mapped_column(String(500))
     photo_url: Mapped[str | None] = mapped_column(String(500))  # portrait officiel (Présidence)
-    genre: Mapped[str | None] = mapped_column(String(1))  # F/M — la civilité (grade) ne suffit pas
+    genre: Mapped[str | None] = mapped_column(String(1))  # F/M - la civilité (grade) ne suffit pas
     actif: Mapped[bool] = mapped_column(Boolean, default=True)
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
@@ -229,7 +229,7 @@ class MembreGouvernement(Base):
     document: Mapped[Document] = relationship()
 
     def __str__(self) -> str:
-        return f"{self.nom_complet} — {self.poste[:50]}"
+        return f"{self.nom_complet} - {self.poste[:50]}"
 
 
 class Depute(Base):
@@ -241,7 +241,7 @@ class Depute(Base):
     nom_complet: Mapped[str] = mapped_column(String(300), unique=True)
     legislature: Mapped[str | None] = mapped_column(String(50))
     photo_url: Mapped[str | None] = mapped_column(String(500))
-    role: Mapped[str | None] = mapped_column(String(200))  # Président de l'ALT, etc. (page bureau)
+    role: Mapped[str | None] = mapped_column(String(200))  # Président de l'ALP, etc. (page bureau)
     actif: Mapped[bool] = mapped_column(Boolean, default=True)
 
     def __str__(self) -> str:
@@ -252,7 +252,7 @@ class DotationBudgetaire(Base):
     """Dotation d'un ministère/institution dans la loi de finances d'un exercice.
 
     Alimentée par saisie assistée (admin) depuis les documents budgétaires
-    officiels — les LF récentes ne sont pas disponibles en données ouvertes.
+    officiels - les LF récentes ne sont pas disponibles en données ouvertes.
     """
 
     __tablename__ = "dotation_budgetaire"
@@ -269,14 +269,14 @@ class DotationBudgetaire(Base):
     document: Mapped[Document | None] = relationship()
 
     def __str__(self) -> str:
-        return f"{self.exercice} — {self.ministere[:40]}"
+        return f"{self.exercice} - {self.ministere[:40]}"
 
 
 class RepartitionBudgetaire(Base):
     """Répartition du budget d'un exercice : recettes par catégorie, dépenses par nature.
 
     Alimentée depuis les documents officiels (loi de finances, Budget citoyen,
-    comptes rendus) — saisie assistée, chaque ligne sourcée.
+    comptes rendus) - saisie assistée, chaque ligne sourcée.
     """
 
     __tablename__ = "repartition_budgetaire"
@@ -293,12 +293,12 @@ class RepartitionBudgetaire(Base):
     document: Mapped[Document | None] = relationship()
 
     def __str__(self) -> str:
-        return f"{self.exercice} {self.sens} — {self.libelle[:40]}"
+        return f"{self.exercice} {self.sens} - {self.libelle[:40]}"
 
 
 class Projet(Base):
     """Dossier de suivi : un même projet public, aux trois stades où l'État en
-    parle — annoncé en Conseil des ministres (`EngagementFinancier`), attribué
+    parle - annoncé en Conseil des ministres (`EngagementFinancier`), attribué
     dans le Quotidien des marchés (`Marche`), livré et inauguré
     (`Realisation`).
 
@@ -328,7 +328,7 @@ class Attributaire(Base):
     Le Quotidien de la DGCMEF écrit la même entreprise de dix façons
     (« ETS WEND-KUUNI », « Ets Wend Kuuni SARL », « E.W.K. Sarl »…). Cette
     table est une vue DÉRIVÉE, recalculable : `marche.attributaire` conserve
-    toujours la chaîne exacte du document — même principe que
+    toujours la chaîne exacte du document - même principe que
     `mandat`/`nomination`, la source brute n'est jamais réécrite.
 
     Recalcul : `python -m app.attributaires consolider` (idempotent).
@@ -355,7 +355,7 @@ class Attributaire(Base):
 class Marche(Base):
     """Marché public attribué, extrait des « Synthèses des résultats » du
     Quotidien des Marchés Publics (DGCMEF). Qui décroche quel marché, pour
-    quel montant, sous quelle autorité contractante — extraction LLM, validée
+    quel montant, sous quelle autorité contractante - extraction LLM, validée
     avant publication comme le reste.
     """
 
@@ -367,14 +367,14 @@ class Marche(Base):
     objet: Mapped[str] = mapped_column(Text)
     reference: Mapped[str | None] = mapped_column(String(300))  # n° de l'appel/demande
     mode: Mapped[str | None] = mapped_column(String(120))  # demande de prix, AOO…
-    # attribution | preselection — un avis à manifestation d'intérêt aboutit à
+    # attribution | preselection - un avis à manifestation d'intérêt aboutit à
     # une PRÉSÉLECTION de candidats, pas à un contrat chiffré : le montant se
     # négocie ensuite. Les compter comme des attributions gonflerait le nombre de
     # marchés sans rien ajouter au total, et ferait passer un candidat retenu
     # pour un adjudicataire sur sa fiche entreprise.
     nature: Mapped[str] = mapped_column(String(20), default="attribution", index=True)
     attributaire: Mapped[str | None] = mapped_column(String(400))  # entreprise retenue (texte source)
-    # rattachement à l'entité consolidée — dérivé, jamais saisi par l'extraction
+    # rattachement à l'entité consolidée - dérivé, jamais saisi par l'extraction
     attributaire_id: Mapped[int | None] = mapped_column(
         ForeignKey("attributaire.id"), index=True
     )
@@ -384,7 +384,7 @@ class Marche(Base):
     date_attribution: Mapped[date | None] = mapped_column(Date)
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
-    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    # dossier de suivi (rapprochement relu par un humain - cf. app/projets.py)
     projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document] = relationship()
@@ -392,11 +392,11 @@ class Marche(Base):
     projet: Mapped[Projet | None] = relationship()
 
     def __str__(self) -> str:
-        return f"{self.attributaire or '?'} — {self.objet[:50]}"
+        return f"{self.attributaire or '?'} - {self.objet[:50]}"
 
 
 class Mandat(Base):
-    """Vue consolidée dérivée des nominations validées — alimente l'annuaire."""
+    """Vue consolidée dérivée des nominations validées - alimente l'annuaire."""
 
     __tablename__ = "mandat"
 
@@ -414,7 +414,7 @@ class Mandat(Base):
 
 
 class Run(Base):
-    """Journal d'exécution des collecteurs — alimente l'alerte « source muette »."""
+    """Journal d'exécution des collecteurs - alimente l'alerte « source muette »."""
 
     __tablename__ = "run"
 
@@ -458,7 +458,7 @@ class Localite(Base):
 class Realisation(Base):
     """Inauguration / ouverture d'une infrastructure publique, telle que
     RAPPORTÉE par une source (officielle : gouvernement.gov.bf, présidence ;
-    ou presse). Registre factuel et sourcé — chaque entrée renvoie à son
+    ou presse). Registre factuel et sourcé - chaque entrée renvoie à son
     document. Extraction automatique validée avant publication comme le reste.
 
     Le champ `statut` distingue une annonce d'un ouvrage livré, pour ne pas
@@ -498,7 +498,7 @@ class Realisation(Base):
     photo_url: Mapped[str | None] = mapped_column(String(1000))
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
-    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    # dossier de suivi (rapprochement relu par un humain - cf. app/projets.py)
     projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document | None] = relationship()
@@ -506,4 +506,4 @@ class Realisation(Base):
     projet: Mapped[Projet | None] = relationship()
 
     def __str__(self) -> str:
-        return f"{self.type} — {self.titre[:60]}"
+        return f"{self.type} - {self.titre[:60]}"

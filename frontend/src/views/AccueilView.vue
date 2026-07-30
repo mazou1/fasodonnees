@@ -3,7 +3,7 @@
     <h1 class="hero-titre">L'information publique du Burkina&nbsp;Faso, en clair</h1>
     <p class="hero-sous">
       Décisions du Conseil des ministres, nominations, lois, budget, marchés et
-      infrastructures — extraits des sources officielles et reliés à leur document d'origine.
+      infrastructures - extraits des sources officielles et reliés à leur document d'origine.
     </p>
     <form class="hero-recherche" @submit.prevent="lancerRecherche">
       <span class="loupe" aria-hidden="true">🔍</span>
@@ -218,7 +218,7 @@ onBeforeUnmount(() => nettoyages.forEach((fn) => fn()));
 </script>
 
 <style scoped>
-/* Hero — accès à l'information, inspiré de vie-publique.sn */
+/* Hero - accès à l'information, inspiré de vie-publique.sn */
 .hero { text-align: center; padding: 18px 0 34px; }
 .hero-titre {
   font-size: clamp(1.9rem, 4.5vw, 3rem); font-weight: 800; letter-spacing: -0.02em;

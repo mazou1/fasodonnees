@@ -7,7 +7,7 @@ on dépose en `a_valider`. Registre FACTUEL : le champ `statut` distingue une
 annonce d'un ouvrage livré ; chaque entrée renvoie à son document source.
 
 Économie d'appels LLM : un PRÉ-FILTRE par mots-clés écarte d'emblée les
-actualités hors sujet (sport, diplomatie…) — l'immense majorité du fil.
+actualités hors sujet (sport, diplomatie…) - l'immense majorité du fil.
 
 Usage : python -m app.extraction.realisations [max_docs]
 """
@@ -137,7 +137,7 @@ l'article ne rapporte aucun ouvrage concret, retourne une liste VIDE.
 Pour chaque ouvrage : sa nature (type), un intitulé court et NEUTRE (sans \
 emphase ni jugement), le lieu (commune/ville) et la région, la date si elle est \
 écrite, le statut exact (annonce / première pierre / inauguration / mise en \
-service — ne présente pas une annonce comme un ouvrage livré), le maître \
+service - ne présente pas une annonce comme un ouvrage livré), le maître \
 d'ouvrage et le montant si chiffré. N'invente rien : laisse null ce qui manque."""
 
 
@@ -288,7 +288,7 @@ def _candidats_termini(titre: str) -> list[tuple[str, str]]:
     m = _SEG_LINEAIRE.search(titre)
     if m:
         seg = m.group(1).strip()
-        for sep in ["–", "—", " à ", " a ", " et "]:
+        for sep in ["-", "-", " à ", " a ", " et "]:
             if sep in seg:
                 a, b = seg.split(sep, 1)
                 paires.append((a.strip(), b.strip()))
@@ -352,7 +352,7 @@ def traiter_lot(db: Session, max_docs: int) -> tuple[int, int, int, int]:
         try:
             total += traiter_document(db, doc)
         except Exception:  # noqa: BLE001
-            logging.exception("Échec sur le document %s — on continue", doc.id)
+            logging.exception("Échec sur le document %s - on continue", doc.id)
             db.rollback()
             echecs += 1
     db.commit()

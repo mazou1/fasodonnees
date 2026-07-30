@@ -28,13 +28,13 @@ class _CollecteurNu(Collector):
         code = self._reponses[min(self.appels - 1, len(self._reponses) - 1)]
         return httpx.Response(code, request=request)
 
-    def collect(self):  # pragma: no cover — non utilisé ici
+    def collect(self):  # pragma: no cover - non utilisé ici
         raise NotImplementedError
 
 
 def test_un_404_nest_pas_reessaye():
     """Les sites officiels publient des liens morts vers leurs propres
-    documents. Réessayer ne les ressuscite pas — une seule requête suffit."""
+    documents. Réessayer ne les ressuscite pas - une seule requête suffit."""
     c = _CollecteurNu([404])
     with pytest.raises(httpx.HTTPStatusError):
         c.get("https://exemple.bf/mort.pdf", min_interval=0)

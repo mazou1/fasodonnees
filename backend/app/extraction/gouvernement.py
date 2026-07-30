@@ -2,7 +2,7 @@
 
 Le décret « portant composition du Gouvernement » liste les membres dans
 l'ordre protocolaire. On extrait (ordre, civilité/grade, nom, poste) via le
-fournisseur LLM configuré, en a_valider — la revue se fait dans l'admin.
+fournisseur LLM configuré, en a_valider - la revue se fait dans l'admin.
 
 Usage : python -m app.extraction.gouvernement <document_id>
 """
@@ -106,7 +106,7 @@ def main() -> int:
         db.commit()
         print(f"{len(composition.membres)} membre(s) extraits (à valider dans /admin).")
         for m in composition.membres[:5]:
-            print(f"  {m.ordre}. {m.poste[:60]} — {m.civilite or ''} {m.nom_complet}")
+            print(f"  {m.ordre}. {m.poste[:60]} - {m.civilite or ''} {m.nom_complet}")
     return 0
 
 

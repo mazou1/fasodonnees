@@ -3,7 +3,7 @@
 Les comptes rendus annoncent rarement une fin de fonction explicite : ils
 nomment un successeur au même poste. Pour savoir qui est encore en fonction,
 il faut reconnaître qu'une nouvelle nomination au même siège chasse le
-titulaire précédent — mais seulement pour les postes à titulaire UNIQUE
+titulaire précédent - mais seulement pour les postes à titulaire UNIQUE
 (directeur général, secrétaire général, préfet…), jamais pour les postes
 collégiaux (administrateurs d'un conseil, conseillers, inspecteurs…) où
 plusieurs personnes coexistent.
@@ -26,7 +26,7 @@ def _plier(texte: str) -> str:
     return re.sub(r"\s+", " ", sans).strip().lower()
 
 
-# Postes collégiaux : plusieurs titulaires simultanés légitimes — jamais de
+# Postes collégiaux : plusieurs titulaires simultanés légitimes - jamais de
 # succession. Testé sur le début du poste plié.
 _COLLEGIAL = re.compile(
     r"^(?:administrateur|administratrice|membre|conseiller|conseillere|"
@@ -77,8 +77,8 @@ def cle_siege(poste: str | None, structure_unique: bool = True) -> str | None:
     nom (cas ANPTIC : « DG pour la promotion des TIC » → « DG de promotion des
     TIC »).
 
-    Si `structure_unique` est faux — structure « Ministère … » qui héberge
-    plusieurs entités (DG des impôts, DG des douanes, DG du budget…) — le repli
+    Si `structure_unique` est faux - structure « Ministère … » qui héberge
+    plusieurs entités (DG des impôts, DG des douanes, DG du budget…) - le repli
     court serait DANGEREUX : tous ces DG partageraient la clé « dg » et se
     fermeraient l'un l'autre. On garde alors l'intitulé complet plié, distinct
     par objet ; on suit moins bien les reformulations mais on ne ferme jamais à

@@ -25,30 +25,30 @@ from app.models import Source
 
 # (slug, nom, url_base, type, cadence)
 SEEDS: list[tuple[str, str, str, str, str]] = [
-    # Médias — flux RSS vérifiés (rapport v1 §1)
+    # Médias - flux RSS vérifiés (rapport v1 §1)
     ("lefaso", "leFaso.net", "https://lefaso.net", "media", "30min"),
     ("sidwaya", "Sidwaya", "https://www.sidwaya.info", "media", "30min"),
     ("burkina24", "Burkina24", "https://burkina24.com", "media", "30min"),
     ("aib", "Agence d'Information du Burkina", "https://www.aib.media", "media", "30min"),
     ("lepays", "Le Pays", "https://lepays.bf", "media", "30min"),
-    # Institutionnel — vérifié HTTP 200 le 2026-07-09, scrapers à venir (phases 1-2)
+    # Institutionnel - vérifié HTTP 200 le 2026-07-09, scrapers à venir (phases 1-2)
     ("conseil_ministres", "Conseil des ministres", "https://www.gouvernement.gov.bf", "institutionnel", "hebdo"),
     ("actualites_gouv", "Actualités du gouvernement", "https://www.gouvernement.gov.bf", "institutionnel", "quotidien"),
     ("sig", "Service d'information du gouvernement", "https://www.sig.gov.bf", "institutionnel", "quotidien"),
     ("presidence", "Présidence du Faso", "https://www.presidencedufaso.bf", "institutionnel", "quotidien"),
     ("legiburkina", "Légiburkina (SGG-CM)", "https://www.legiburkina.gov.bf", "institutionnel", "quotidien"),
-    ("assemblee", "Assemblée législative", "https://www.assembleenationale.bf", "institutionnel", "quotidien"),
+    ("assemblee", "Assemblée législative du peuple", "https://www.assembleenationale.bf", "institutionnel", "quotidien"),
     ("finances", "Ministère de l'Économie et des Finances", "https://www.finances.gov.bf", "institutionnel", "quotidien"),
     ("dgcmef", "Marchés publics (DGCMEF)", "https://www.dgcmef.gov.bf", "institutionnel", "quotidien"),
     ("jobf", "Journal officiel du Burkina Faso", "https://www.jobf.gov.bf", "institutionnel", "hebdo"),
-    # Justice & contrôle — vérifié HTTP 200 le 2026-07-29. Publication peu
+    # Justice & contrôle - vérifié HTTP 200 le 2026-07-29. Publication peu
     # fréquente (quelques pièces par mois) : une passe hebdomadaire suffit.
     ("conseil_constitutionnel", "Conseil constitutionnel",
      "https://www.conseil-constitutionnel.gov.bf", "institutionnel", "hebdo"),
     ("asce_lc", "ASCE-LC (contrôle d'État et lutte anticorruption)",
      "https://www.asce-lc.bf", "institutionnel", "hebdo"),
     # NB : la Cour des comptes n'a pas de site accessible (aucun domaine ne
-    # répond au 2026-07-29) — ses rapports ne sont donc pas collectables.
+    # répond au 2026-07-29) - ses rapports ne sont donc pas collectables.
 ]
 
 RSS_FEEDS: dict[str, str] = {
@@ -70,12 +70,12 @@ COLLECTORS: dict[str, type[Collector]] = {
     DgcmefCollector.slug: DgcmefCollector,
     ConseilConstitutionnelCollector.slug: ConseilConstitutionnelCollector,
     AsceLcCollector.slug: AsceLcCollector,
-    # Présidence : wp-json fermé (401) mais flux RSS actif — communiqués officiels
+    # Présidence : wp-json fermé (401) mais flux RSS actif - communiqués officiels
     "presidence": make_rss_collector(
         "presidence", "https://www.presidencedufaso.bf/feed/", type_doc="communique"
     ),
     # NB : sig.gov.bf n'est pas collectable à ce jour (wp-json, /feed et
-    # wp-sitemap redirigent tous vers l'accueil) — vérifié le 2026-07-10.
+    # wp-sitemap redirigent tous vers l'accueil) - vérifié le 2026-07-10.
 }
 
 

@@ -1,4 +1,4 @@
-"""marche.nature — distinguer attribution et présélection
+"""marche.nature - distinguer attribution et présélection
 
 Revision ID: c8e1f4a7b902
 Revises: a7d3e5f1b820
@@ -25,13 +25,13 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_marche_nature"), "marche", ["nature"], unique=False)
     # Classement de l'existant. Les avis à manifestation d'intérêt se nomment
-    # explicitement dans la référence, l'objet ou le mode — inutile de repasser
+    # explicitement dans la référence, l'objet ou le mode - inutile de repasser
     # le LLM sur 2 629 lignes pour retrouver ce que le texte dit en toutes lettres.
     #
     # Mais nommer la procédure ne suffit PAS : la manifestation d'intérêt sert
     # aussi de mode de passation pour les prestations intellectuelles, et le
     # Quotidien publie alors une vraie attribution sous cette référence. Sur
-    # 77 lignes ainsi repérées, 24 portaient un montant — dont une explicitement
+    # 77 lignes ainsi repérées, 24 portaient un montant - dont une explicitement
     # « attribution provisoire ». Le montant tranche : une présélection retient
     # un candidat sans contrat, donc sans somme. Il n'y en a donc pas.
     op.execute(
@@ -55,7 +55,7 @@ def upgrade() -> None:
         """
     )
     # Les lignes chiffrées portant la même référence restent des attributions,
-    # mais on les renvoie en revue humaine plutôt que de trancher à leur place —
+    # mais on les renvoie en revue humaine plutôt que de trancher à leur place -
     # même règle que `MarcheExtrait._preselection_chiffree_est_douteuse`. Elles
     # comptent dans les totaux publics : une erreur s'y verrait.
     op.execute(

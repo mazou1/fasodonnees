@@ -2,7 +2,7 @@
 
 Un Quotidien fait 277 000 caractères en médiane, jusqu'à 1,1 million : il faut le
 découper. Le repérage se fait sur « attributaire », pas sur les sections
-« SYNTHÈSE DES RÉSULTATS » — celles-ci couvrent 99 % du texte et certains numéros
+« SYNTHÈSE DES RÉSULTATS » - celles-ci couvrent 99 % du texte et certains numéros
 n'en contiennent aucune tout en publiant des attributions.
 
 Ces tests portent sur le découpage, seule partie déterministe qui reste : la

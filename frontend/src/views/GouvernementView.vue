@@ -40,7 +40,7 @@
         <img :src="m.photo_url" :alt="m.nom_complet" loading="lazy" />
         <div class="voile">
           <div class="nom">{{ m.nom_complet }}</div>
-          <div class="poste">{{ m.civilite && !civil(m.civilite) ? m.civilite + " — " : "" }}{{ m.poste }}</div>
+          <div class="poste">{{ m.civilite && !civil(m.civilite) ? m.civilite + " - " : "" }}{{ m.poste }}</div>
         </div>
       </article>
     </div>
@@ -73,7 +73,7 @@ function prefixeGrade(m) {
   return m.civilite && !civil(m.civilite) ? `${m.civilite} ` : "";
 }
 function pct(n, total) {
-  return total ? `${Math.round((n / total) * 100)} %` : "—";
+  return total ? `${Math.round((n / total) * 100)} %` : "-";
 }
 function formatDate(d) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -87,7 +87,7 @@ onMounted(async () => {
 <style scoped>
 .titre-section { margin-top: 28px; }
 
-/* Cartes vedettes (Président, Premier ministre) — photo officielle entière */
+/* Cartes vedettes (Président, Premier ministre) - photo officielle entière */
 .vedette { display: flex; gap: 24px; padding: 0; overflow: hidden; align-items: stretch; }
 .vedette-photo { width: 260px; flex: none; aspect-ratio: 1 / 1.05; object-fit: cover; object-position: 50% 22%; }
 .vedette-texte { display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 22px 22px 22px 0; }
@@ -100,7 +100,7 @@ onMounted(async () => {
   .vedette-texte { padding: 0 18px 18px; }
 }
 
-/* Grille des ministres — portrait plein cadre, nom en surimpression */
+/* Grille des ministres - portrait plein cadre, nom en surimpression */
 .grille-ministres { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .carte-ministre {
   position: relative; aspect-ratio: 1 / 1.05; border-radius: 12px; overflow: hidden;

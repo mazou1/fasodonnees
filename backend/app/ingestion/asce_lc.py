@@ -1,4 +1,4 @@
-"""ASCE-LC (asce-lc.bf) — Autorité supérieure de contrôle d'État et de lutte
+"""ASCE-LC (asce-lc.bf) - Autorité supérieure de contrôle d'État et de lutte
 contre la corruption.
 
 L'ASCE-LC est l'organe de contrôle interne de l'État : elle audite les sociétés
@@ -13,7 +13,7 @@ Le site est un WordPress à API REST ouverte, donc :
 - les **articles** viennent structurés (titre, date, contenu, catégories) ;
 - mais l'essentiel est dans les **PDF joints** : l'article annonce l'audit, le
   PDF *est* l'audit. On archive donc les deux, le PDF comme document à part
-  entière — c'est lui qui sera cherchable en plein texte.
+  entière - c'est lui qui sera cherchable en plein texte.
 
 Les identifiants numériques de catégories WordPress changent si le site est
 refondu : on les résout à l'exécution depuis leurs *slugs*, plus stables.
@@ -172,7 +172,7 @@ class AsceLcCollector(WordPressCollector):
         """Le rapport lui-même : c'est la pièce qui compte, pas son annonce.
 
         Le serveur coupe la connexion sur ses plus gros fichiers (constaté sur
-        les annexes SONABEL, ~16 Mo — `curl` échoue pareil, ce n'est pas notre
+        les annexes SONABEL, ~16 Mo - `curl` échoue pareil, ce n'est pas notre
         client). Après les trois tentatives de `get()`, on renonce et on
         journalise : comme aucun document n'est créé, l'URL reste absente des
         connues et la passe suivante réessaiera d'elle-même.

@@ -1,7 +1,7 @@
 """Lecteur de secours pour les PDF que pdfminer n'ouvre pas.
 
 pdfminer (moteur de pdfplumber) rend parfois 0 page sur un PDF valide et
-complet — ~23 % du corpus du Conseil constitutionnel. Le piège est le silence :
+complet - ~23 % du corpus du Conseil constitutionnel. Le piège est le silence :
 aucune erreur n'est levée, le document ressort simplement sans texte, donc
 introuvable. Ces tests verrouillent le comportement du repli.
 """

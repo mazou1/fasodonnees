@@ -63,7 +63,7 @@ def test_un_mot_rare_pese_plus_quun_mot_frequent():
 
 def test_partager_un_mot_rare_vaut_mieux_que_partager_trois_mots_courants():
     """Cas réel : « CHU de Bogodogo » et un marché « au profit du centre
-    hospitalier universitaire » partagent trois mots — tous fréquents, et le
+    hospitalier universitaire » partagent trois mots - tous fréquents, et le
     toponyme qui identifie manque. Une paire qui partage le toponyme doit
     passer devant."""
     corpus = [{"centre", "hospitalier", "universitaire", f"ville{i}"} for i in range(60)]

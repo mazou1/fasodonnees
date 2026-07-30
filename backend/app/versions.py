@@ -1,7 +1,7 @@
 """Versions d'un même document : la source réécrit ses pages après publication.
 
 `upsert_document` versionne au lieu d'écraser : même URL + hash différent = une
-nouvelle ligne. C'est délibéré et précieux — cela **établit** que le
+nouvelle ligne. C'est délibéré et précieux - cela **établit** que le
 gouvernement retouche ses comptes rendus après coup. Constaté sur le Conseil des
 ministres n°024 du 23 juillet 2026 : la page est passée de 66 571 à 71 390
 octets entre le 24 et le 29 juillet, près de 5 Ko de contenu ajouté.
@@ -9,7 +9,7 @@ octets entre le 24 et le 29 juillet, près de 5 Ko de contenu ajouté.
 Mais toutes les versions ne doivent pas être traitées comme des documents
 distincts, sinon :
 
-- le LLM ré-extrait chaque version — appels gaspillés, entités en double à
+- le LLM ré-extrait chaque version - appels gaspillés, entités en double à
   valider (15 décisions et 86 nominations deux fois pour le même conseil) ;
 - le site liste le même conseil deux à quatre fois.
 
@@ -28,7 +28,7 @@ from app.models import Document
 def ids_versions_de_reference():
     """Sous-requête des `document.id` les plus récents pour chaque (source, url).
 
-    `date_collecte` départage, `id` tranche les ex æquo — deux collectes dans la
+    `date_collecte` départage, `id` tranche les ex æquo - deux collectes dans la
     même transaction partageraient l'horodatage par défaut de PostgreSQL.
     """
     rang = (
@@ -58,7 +58,7 @@ def historique_versions(db, doc: Document) -> list[Document]:
 
 # Une entité est « la même » d'une version à l'autre si son contenu l'est. Pas
 # d'identifiant côté source : on se rabat sur les champs de fond, en ignorant la
-# casse et les espaces — le gouvernement retouche justement la typographie.
+# casse et les espaces - le gouvernement retouche justement la typographie.
 def _cle_decision(d) -> tuple:
     return ("decision", _normaliser(d.ministere), d.type, _normaliser(d.objet))
 
@@ -98,7 +98,7 @@ def consolider_entites(db) -> dict[str, int]:
 
     Sans cela, basculer l'affichage sur la version la plus récente rendrait
     invisible tout le travail de validation déjà fait sur les versions
-    antérieures — et la file de `/admin` afficherait deux fois le même conseil.
+    antérieures - et la file de `/admin` afficherait deux fois le même conseil.
     """
     from sqlalchemy import update
 
@@ -146,7 +146,7 @@ def consolider_entites(db) -> dict[str, int]:
                 elif e.statut_validation == meilleures[k].statut_validation:
                     # même contenu, même statut : c'est un doublon, y compris
                     # entre deux « valide ». Supprimer n'efface aucun jugement
-                    # humain — le même verdict subsiste sur l'entité conservée.
+                    # humain - le même verdict subsiste sur l'entité conservée.
                     if modele is Nomination:
                         reporter_mandats(e.id, meilleures[k].id)
                     db.delete(e)

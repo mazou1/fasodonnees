@@ -14,7 +14,7 @@
         <p>
           Ce projet n'est affilié à aucun gouvernement, parti ou organisation politique. Il ne publie
           <strong>que des informations déjà publiques</strong>, issues des sites officiels, et chaque
-          donnée affichée est reliée à son document source — vous pouvez toujours vérifier par vous-même.
+          donnée affichée est reliée à son document source - vous pouvez toujours vérifier par vous-même.
         </p>
       </div>
     </section>
@@ -25,16 +25,16 @@
         <ul>
           <li>
             <a href="https://gouvernement.gov.bf" target="_blank" rel="noopener">gouvernement.gov.bf</a>
-            — comptes rendus officiels du Conseil des ministres (texte intégral ou PDF).
+            - comptes rendus officiels du Conseil des ministres (texte intégral ou PDF).
           </li>
           <li>
             <a href="https://www.legiburkina.gov.bf" target="_blank" rel="noopener">Légiburkina (SGG-CM)</a>
-            — décrets, lois, arrêtés et autres textes juridiques, avec leur Journal officiel de publication
+            - décrets, lois, arrêtés et autres textes juridiques, avec leur Journal officiel de publication
             (<a href="https://www.jobf.gov.bf" target="_blank" rel="noopener">jobf.gov.bf</a>).
           </li>
           <li>
             <a href="https://www.presidencedufaso.bf" target="_blank" rel="noopener">presidencedufaso.bf</a>
-            — communiqués de la Présidence du Faso.
+            - communiqués de la Présidence du Faso.
           </li>
         </ul>
         <p>
@@ -52,14 +52,14 @@
           Toutes les collectes sont à jour au regard de leur cadence.
         </p>
         <p v-else>
-          <strong>{{ etat.muettes }} source{{ etat.muettes > 1 ? "s" : "" }}</strong> en retard de collecte —
+          <strong>{{ etat.muettes }} source{{ etat.muettes > 1 ? "s" : "" }}</strong> en retard de collecte -
           nous en avons connaissance et travaillons à la remise à niveau.
         </p>
         <ul class="fraicheur">
           <li v-for="s in etat.sources" :key="s.slug">
             <span class="pastille" :class="{ ok: !s.muette }"></span>
             {{ s.nom }}
-            <span class="quand">— {{ s.dernier_run_ok ? depuis(s.dernier_run_ok) : "jamais collectée" }}</span>
+            <span class="quand">- {{ s.dernier_run_ok ? depuis(s.dernier_run_ok) : "jamais collectée" }}</span>
           </li>
         </ul>
       </div>
@@ -69,12 +69,12 @@
       <h2>La méthode</h2>
       <div class="detail">
         <ol>
-          <li><strong>Collecte</strong> — les documents sont récupérés depuis les sites officiels et archivés à l'identique.</li>
-          <li><strong>Extraction</strong> — un modèle d'intelligence artificielle structure la prose officielle
+          <li><strong>Collecte</strong> - les documents sont récupérés depuis les sites officiels et archivés à l'identique.</li>
+          <li><strong>Extraction</strong> - un modèle d'intelligence artificielle structure la prose officielle
             (décisions, nominations, montants), avec un score de confiance pour chaque information extraite.</li>
-          <li><strong>Validation humaine</strong> — rien n'est publié automatiquement : chaque décision, nomination
+          <li><strong>Validation humaine</strong> - rien n'est publié automatiquement : chaque décision, nomination
             ou engagement est revu avant d'apparaître sur ce site.</li>
-          <li><strong>Traçabilité</strong> — chaque information affichée porte le lien vers le compte rendu ou
+          <li><strong>Traçabilité</strong> - chaque information affichée porte le lien vers le compte rendu ou
             le texte officiel dont elle provient.</li>
         </ol>
       </div>
@@ -84,7 +84,7 @@
       <h2>Les limites</h2>
       <div class="detail">
         <p>
-          L'extraction automatique peut contenir des erreurs malgré la validation — un montant mal converti,
+          L'extraction automatique peut contenir des erreurs malgré la validation - un montant mal converti,
           une fonction mal rattachée. Les intitulés des ministères sont ceux en vigueur à la date de chaque
           document : un même ministère peut apparaître sous plusieurs noms au fil des remaniements.
           Les statistiques financières reflètent <em>ce qui est annoncé en Conseil des ministres</em>,
@@ -105,11 +105,11 @@
         </p>
         <p><strong>Télécharger les données (CSV) :</strong></p>
         <ul class="telechargements">
-          <li><a href="/api/export/nominations.csv">Nominations</a> — toutes les nominations validées</li>
-          <li><a href="/api/export/annuaire.csv">Annuaire de l'État</a> — mandats consolidés</li>
-          <li><a href="/api/export/decisions.csv">Décisions</a> — décisions du Conseil des ministres</li>
-          <li><a href="/api/export/engagements.csv">Engagements financiers</a> — dépenses chiffrées en Conseil</li>
-          <li><a href="/api/export/textes.csv">Lois &amp; décrets</a> — références des textes juridiques</li>
+          <li><a href="/api/export/nominations.csv">Nominations</a> - toutes les nominations validées</li>
+          <li><a href="/api/export/annuaire.csv">Annuaire de l'État</a> - mandats consolidés</li>
+          <li><a href="/api/export/decisions.csv">Décisions</a> - décisions du Conseil des ministres</li>
+          <li><a href="/api/export/engagements.csv">Engagements financiers</a> - dépenses chiffrées en Conseil</li>
+          <li><a href="/api/export/textes.csv">Lois &amp; décrets</a> - références des textes juridiques</li>
         </ul>
         <p class="note-licence">
           Réutilisation libre en citant « Faso Données Publiques » et la source officielle d'origine.

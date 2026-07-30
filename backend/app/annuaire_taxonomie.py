@@ -1,7 +1,7 @@
 """Taxonomie de l'annuaire : type d'institution (déduit du nom, le champ
 `structure.type` n'ayant jamais été peuplé) et catégorie de fonction (déduite
 de l'intitulé du poste). Heuristiques déterministes par mots-clés, priorité du
-spécifique au générique — la première règle qui matche gagne.
+spécifique au générique - la première règle qui matche gagne.
 """
 
 from __future__ import annotations
@@ -156,7 +156,7 @@ def sigle_fiable(
 ) -> bool:
     """Un sigle accolé à un nom de ministère provient d'une nomination voisine
     (« Directeur général de l'ONEA ») et ne désigne pas la structure : on ne
-    l'affiche pas — sauf si les mandats montrent que la structure est bien
+    l'affiche pas - sauf si les mandats montrent que la structure est bien
     l'entité du sigle."""
     return bool(sigle) and type_institution(nom, sigle, part_ca) != "ministere"
 
@@ -196,7 +196,7 @@ def _mots_significatifs(nom: str) -> list[str]:
 # sans se chevaucher. Les intitulés successifs restent affichés sur la fiche.
 #
 # Écarté faute de preuve : « Guerre et Défense patriotique » ↔ « Défense et
-# Anciens Combattants » — 0 agent commun et des plages qui se chevauchent
+# Anciens Combattants » - 0 agent commun et des plages qui se chevauchent
 # depuis 2023 (la structure porteuse est en fait le CA de la SOGEMAB).
 _ALIAS_PORTEFEUILLE = {
     # « Défense et Anciens Combattants » → « Guerre et Défense patriotique »,
@@ -262,7 +262,7 @@ def meme_intitule(a: str | None, b: str | None) -> bool:
 def portefeuille(nom: str | None, type_deduit: str | None = None) -> str | None:
     """Clé de regroupement des intitulés successifs d'un même ministère, ou
     None hors ministère. Heuristique volontairement prudente : deux intitulés
-    ne sont regroupés que s'ils partagent leur(s) mot(s) de tête — les cas que
+    ne sont regroupés que s'ils partagent leur(s) mot(s) de tête - les cas que
     le nom ne rattrape pas passent par `_ALIAS_PORTEFEUILLE`.
 
     `type_deduit` évite de recalculer le type quand l'appelant le connaît (et

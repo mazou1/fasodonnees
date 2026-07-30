@@ -10,12 +10,12 @@
           <span class="badge" :class="{ actif: fiche.en_fonction }">
             {{ fiche.en_fonction ? "● En fonction" : "Plus en fonction" }}
           </span>
-          <span class="badge" v-if="fiche.matricule" title="Matricule de la fonction publique — identifie la personne dans les comptes rendus">
+          <span class="badge" v-if="fiche.matricule" title="Matricule de la fonction publique - identifie la personne dans les comptes rendus">
             Mle {{ fiche.matricule }}
           </span>
         </div>
         <div class="fonction-actuelle" v-if="actuelle">
-          {{ actuelle.poste }}<template v-if="actuelle.structure"> — {{ actuelle.structure }}</template>
+          {{ actuelle.poste }}<template v-if="actuelle.structure"> - {{ actuelle.structure }}</template>
           <span class="depuis" v-if="actuelle.date_debut"> · depuis le {{ formatDate(actuelle.date_debut) }}</span>
         </div>
       </div>
@@ -43,7 +43,7 @@
           <div class="dates">
             <template v-if="f.date_debut">{{ formatDate(f.date_debut) }}</template>
             <template v-else>Date inconnue</template>
-            —
+            -
             <template v-if="f.date_fin">{{ formatDate(f.date_fin) }}</template>
             <strong v-else>en cours</strong>
           </div>

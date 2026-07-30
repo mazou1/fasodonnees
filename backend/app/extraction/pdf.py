@@ -5,8 +5,8 @@ vide, on bascule en OCR. Renvoie (texte, statut) avec statut ∈ ok | ocr | eche
 
 Deuxième filet, moins évident : **pdfminer (le moteur de pdfplumber) rend
 parfois 0 page sur un PDF pourtant valide et complet**. Le Conseil
-constitutionnel en publie beaucoup — fins de ligne à l'ancienne (`\\r` seul) et
-table xref non standard — soit ~23 % de son corpus. Le fichier n'est pas
+constitutionnel en publie beaucoup - fins de ligne à l'ancienne (`\\r` seul) et
+table xref non standard - soit ~23 % de son corpus. Le fichier n'est pas
 tronqué (le marqueur `%%EOF` est bien là) : c'est le parseur qui renonce, sans
 lever d'erreur. Un document à 0 page ressort alors avec un texte vide, donc
 introuvable, et **rien ne le signale**. `pypdf`, plus tolérant, sert de lecteur

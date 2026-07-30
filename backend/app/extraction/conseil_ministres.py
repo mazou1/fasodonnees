@@ -4,7 +4,7 @@
 par l'API Claude avec sortie structurée validée Pydantic. Un seul appel
 extrait les DÉCISIONS (adoptions de décrets, rapports, communications,
 autorisations…) et les NOMINATIONS individuelles. Tout arrive avec
-statut_validation='a_valider' — l'extraction automatique ne publie jamais seule.
+statut_validation='a_valider' - l'extraction automatique ne publie jamais seule.
 """
 
 from __future__ import annotations
@@ -71,7 +71,7 @@ class ExtractionCR(BaseModel):
 PROMPT_SYSTEME = """\
 Tu structures un compte rendu officiel du Conseil des ministres du Burkina Faso.
 
-1. DÉCISIONS : relève chaque mesure délibérée — adoption de décret ou de projet \
+1. DÉCISIONS : relève chaque mesure délibérée - adoption de décret ou de projet \
 de loi, rapport adopté, communication, autorisation (missions, marchés…). Pour \
 chacune : le ministère de rattachement (rubrique « AU TITRE DE … »), sa nature, \
 et un résumé fidèle en 1 à 3 phrases, sans interprétation ni commentaire.
@@ -81,19 +81,19 @@ fonctions) : nom complet, poste, structure de rattachement, date d'effet si elle
 est écrite. Une mesure qui nomme des personnes va dans NOMINATIONS (une entrée \
 par personne), pas dans DÉCISIONS.
 
-N'invente rien — si une information manque, laisse le champ null. Si le texte ne \
+N'invente rien - si une information manque, laisse le champ null. Si le texte ne \
 contient rien pour une catégorie, retourne une liste vide."""
 
 
 def extraire_cr(texte: str) -> ExtractionCR:
-    """Point d'entrée unique — le fournisseur se choisit via FASO_LLM_PROVIDER."""
+    """Point d'entrée unique - le fournisseur se choisit via FASO_LLM_PROVIDER."""
     if settings.llm_provider == "anthropic":
         return _extraire_anthropic(texte)
     return _extraire_mistral(texte)
 
 
 def _extraire_mistral(texte: str) -> ExtractionCR:
-    """Mistral La Plateforme — tier gratuit : ~1 req/s, retry sur 429."""
+    """Mistral La Plateforme - tier gratuit : ~1 req/s, retry sur 429."""
     from mistralai.client import Mistral
 
     client = Mistral(api_key=settings.mistral_api_key)
@@ -109,17 +109,17 @@ def _extraire_mistral(texte: str) -> ExtractionCR:
                 temperature=0,
             )
             break
-        except Exception as exc:  # noqa: BLE001 — le SDK lève des types variés selon le transport
+        except Exception as exc:  # noqa: BLE001 - le SDK lève des types variés selon le transport
             status = getattr(exc, "status_code", None)
             if status == 429 and tentative < 3:
                 attente = 5 * (tentative + 1)
-                logger.info("Mistral 429 (tier gratuit) — nouvelle tentative dans %ds", attente)
+                logger.info("Mistral 429 (tier gratuit) - nouvelle tentative dans %ds", attente)
                 time.sleep(attente)
                 continue
             raise
     parsed = response.choices[0].message.parsed
     if parsed is None:
-        raise RuntimeError("Réponse Mistral non conforme au schéma — document à traiter manuellement")
+        raise RuntimeError("Réponse Mistral non conforme au schéma - document à traiter manuellement")
     return parsed
 
 
@@ -136,7 +136,7 @@ def _extraire_anthropic(texte: str) -> ExtractionCR:
         output_format=ExtractionCR,
     )
     if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens) — document à traiter manuellement")
+        raise RuntimeError("Sortie tronquée (max_tokens) - document à traiter manuellement")
     return response.parsed_output
 
 
@@ -175,7 +175,7 @@ def traiter_document(db: Session, doc: Document) -> tuple[int, int]:
     if doc.date_structuration is not None:
         return (0, 0)
     if not doc.texte_extrait or len(doc.texte_extrait) < TEXTE_MINIMUM:
-        logger.info("Document %s ignoré (texte insuffisant) — marqué structuré", doc.id)
+        logger.info("Document %s ignoré (texte insuffisant) - marqué structuré", doc.id)
         doc.date_structuration = datetime.now(timezone.utc)
         db.commit()
         return (0, 0)

@@ -43,10 +43,10 @@ const DOSSIERS = [
   },
   {
     categorie: "Développement · 2026-2030",
-    titre: "Plan de relance — PND R.E.L.A.N.C.E.",
+    titre: "Plan de relance - PND R.E.L.A.N.C.E.",
     description:
       "Le Plan national de développement 2026-2030 décortiqué : 36 191 milliards FCFA, "
-      + "4 piliers, trajectoire de croissance, pauvreté par région, financement et risques — "
+      + "4 piliers, trajectoire de croissance, pauvreté par région, financement et risques - "
       + "un dossier interactif complet.",
     etiquettes: ["36 191 Mds FCFA", "4 piliers", "Interactif"],
     lien: "/dossiers/plan-relance",

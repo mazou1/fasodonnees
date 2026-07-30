@@ -62,7 +62,7 @@ def test_forme_affichee_prend_la_graphie_la_plus_frequente():
 
 def test_forme_affichee_departage_a_egalite_par_la_plus_complete():
     """À fréquence égale, la graphie la plus longue porte en général la raison
-    sociale entière — et le départage doit rester déterministe."""
+    sociale entière - et le départage doit rester déterministe."""
     variantes = Counter({"ETS WEND-KUUNI": 3, "ETS WEND-KUUNI SARL": 3})
     assert _forme_affichee(variantes) == "ETS WEND-KUUNI SARL"
 
@@ -84,8 +84,8 @@ def test_le_seuil_automatique_laisse_les_faux_amis_a_la_relecture():
 
 
 def test_le_nom_le_plus_court_est_canonique():
-    """Le bruit d'extraction AJOUTE des caractères — un « u » ou un « à » happé
-    devant la raison sociale — il n'en retire jamais. Se fonder sur l'ancienneté
+    """Le bruit d'extraction AJOUTE des caractères - un « u » ou un « à » happé
+    devant la raison sociale - il n'en retire jamais. Se fonder sur l'ancienneté
     affichait le bruit : « u HABIB TRADING INTERNATIONAL » porte un identifiant
     plus petit que la forme propre."""
     propre = ("habib trading international", 265)

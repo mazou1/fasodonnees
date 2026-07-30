@@ -1,7 +1,7 @@
 """Couche de stockage de l'archive brute.
 
 Le corpus archivé est l'actif du projet : ces tests protègent surtout contre
-deux façons de le perdre — écrire hors du périmètre, et supprimer un original
+deux façons de le perdre - écrire hors du périmètre, et supprimer un original
 avant de s'être assuré que la copie est bonne.
 """
 
@@ -146,7 +146,7 @@ def test_migration_reprenable_saute_ce_qui_est_deja_la(tmp_path):
 
 def test_un_envoi_echoue_ne_supprime_jamais_loriginal(tmp_path):
     """Le point critique : perdre l'original d'un document officiel parce que
-    l'envoi a échoué serait irréparable — le site source l'a peut-être
+    l'envoi a échoué serait irréparable - le site source l'a peut-être
     dépublié depuis."""
     racine = _archive(tmp_path)
     cible = _CibleFactice(echoue_sur="legiburkina/2026/a.pdf")
@@ -179,7 +179,7 @@ class _S3Nu(StockageS3):
 
 def test_une_url_publique_est_stable_et_sans_signature():
     """Le point capital : un lien vers un acte officiel doit rester valable des
-    années. Une URL présignée expire — ici, aucune signature, aucune date."""
+    années. Une URL présignée expire - ici, aucune signature, aucune date."""
     genre, url = _S3Nu("/archives").url_ou_chemin("conseil_constitutionnel/2026/a.pdf")
     assert genre == "url"
     assert url == "/archives/conseil_constitutionnel/2026/a.pdf"

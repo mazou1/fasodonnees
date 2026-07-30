@@ -77,7 +77,7 @@ def verifier_sources_muettes(db: Session | None = None) -> list[dict]:
     muettes = [e for e in etat_sources(db) if e["muette"]]
     for e in muettes:
         logger.warning(
-            "SOURCE MUETTE : %s (%s) — dernier run réussi : %s",
+            "SOURCE MUETTE : %s (%s) - dernier run réussi : %s",
             e["slug"],
             e["cadence"],
             e["dernier_run_ok"] or "jamais",

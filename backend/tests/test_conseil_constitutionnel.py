@@ -24,7 +24,7 @@ from app.ingestion.conseil_constitutionnel import (
 
 def test_un_avis_sur_un_projet_dordonnance_reste_un_avis():
     """Cas réel : « Avis sur le projet d'ordonnance portant… ». Chercher
-    « ordonnance » n'importe où le classait en ordonnance — un avis n'a pas la
+    « ordonnance » n'importe où le classait en ordonnance - un avis n'a pas la
     portée d'une décision ni d'une ordonnance."""
     titre = "Avis sur le projet d'ordonnance portant conditions exceptionnelles"
     assert nature(titre, "avis_n__002_du_30_decembre_2025.pdf") == "avis_constitutionnel"
@@ -52,7 +52,7 @@ def test_nature(titre, fichier, attendu):
 # --- référence ------------------------------------------------------------
 
 def test_reference_avec_annee_dans_le_nom_de_fichier():
-    """Piège : « 2026-06_du_17_fev » — l'underscore est un caractère de mot,
+    """Piège : « 2026-06_du_17_fev » - l'underscore est un caractère de mot,
     donc un `\\b` après le numéro ne matche pas."""
     assert reference("Décision sur la conformité", "decision_n__2026-06_du_17_fev.pdf") == "2026-06"
 
@@ -98,7 +98,7 @@ def test_date_lue_dans_le_titre_quand_le_fichier_ne_la_porte_pas():
 
 def test_pas_de_date_inventee():
     """Sans jour ni mois exploitables, mieux vaut une date absente qu'une date
-    fausse — la date d'une décision de justice est un fait, pas une estimation."""
+    fausse - la date d'une décision de justice est un fait, pas une estimation."""
     assert date_publication("Décision 2025-01 CC", "decision_n__2025-01-cc.pdf", 2025) is None
     assert date_publication("", "decision_du_32_juin_2026.pdf", 2026) is None
     assert date_publication("", "decision_du_10_brumaire_2026.pdf", 2026) is None

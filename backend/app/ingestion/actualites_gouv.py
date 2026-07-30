@@ -1,8 +1,8 @@
-"""Actualités du gouvernement — gouvernement.gov.bf, catégorie 13.
+"""Actualités du gouvernement - gouvernement.gov.bf, catégorie 13.
 
 WordPress à API REST ouverte (comme les CR). La catégorie 13 « Actualités »
 (1 600+ billets depuis oct. 2022, vérifiée le 2026-07-23) contient les
-inaugurations, poses de première pierre et lancements de chantiers — la source
+inaugurations, poses de première pierre et lancements de chantiers - la source
 OFFICIELLE qui alimente la page « Infrastructures & inaugurations ».
 
 Chaîne : collecte → texte → extraction LLM des réalisations

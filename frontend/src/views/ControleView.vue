@@ -66,14 +66,14 @@
       avec ceux de l'ASCE-LC, les documents de redevabilité les plus importants du pays.
     </p>
     <p>
-      <strong>Elle n'a aujourd'hui aucun site accessible</strong> — aucun des domaines connus ne
+      <strong>Elle n'a aujourd'hui aucun site accessible</strong> - aucun des domaines connus ne
       répond (vérifié le 29 juillet 2026). Ses rapports ne sont donc pas collectables, et cette
       page en est amputée. Nous l'écrivons plutôt que de laisser croire à une couverture
       complète du contrôle de l'État.
     </p>
     <p class="appel">
       Vous connaissez une source officielle publiant ces rapports ?
-      <a href="https://github.com/mazou1/fasodonnees/issues" target="_blank" rel="noopener">Signalez-la</a> —
+      <a href="https://github.com/mazou1/fasodonnees/issues" target="_blank" rel="noopener">Signalez-la</a> -
       c'est la contribution la plus utile que l'on puisse apporter à cette page.
     </p>
   </section>
@@ -81,7 +81,7 @@
   <p class="note-methode">
     Corpus archivé tel que publié par les institutions : la plateforme ne commente ni ne résume
     les décisions et les rapports. Le Conseil constitutionnel publie ses décisions, avis et
-    ordonnances par année — ils sont ici distingués, un avis n'ayant pas la portée d'une
+    ordonnances par année - ils sont ici distingués, un avis n'ayant pas la portée d'une
     décision. Côté ASCE-LC, l'article d'annonce et le rapport lui-même sont archivés séparément :
     c'est le PDF qui porte le contenu de l'audit.
   </p>

@@ -1,6 +1,6 @@
 """Jeu de référence saisi à la main : grandes infrastructures ANTÉRIEURES au
 fil officiel (qui ne remonte qu'à 2022). Documenté et sourcé (Wikipédia,
-presse), non exhaustif — signalé comme « Référence historique » et affiché
+presse), non exhaustif - signalé comme « Référence historique » et affiché
 comme tel dans la note de méthode de la page.
 
 Idempotent (clé = titre). Publié directement `valide` (données de référence
@@ -37,7 +37,7 @@ def seed(db) -> int:
                 continue
             loc = geocoder(db, row["lieu"])
             if loc is None:
-                logger.warning("Curé : lieu non géocodé « %s » (%s) — ignoré", row["lieu"], titre)
+                logger.warning("Curé : lieu non géocodé « %s » (%s) - ignoré", row["lieu"], titre)
                 continue
             db.add(
                 Realisation(

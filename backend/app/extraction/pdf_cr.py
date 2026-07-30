@@ -116,8 +116,8 @@ def main() -> int:
                 time.sleep(1.0)  # politesse envers gouvernement.gov.bf
             try:
                 statut = traiter(db, doc, client)
-            except Exception:  # noqa: BLE001 — un PDF en échec ne doit pas arrêter le lot
-                logging.exception("Échec sur le document %s — on continue", doc.id)
+            except Exception:  # noqa: BLE001 - un PDF en échec ne doit pas arrêter le lot
+                logging.exception("Échec sur le document %s - on continue", doc.id)
                 db.rollback()
                 statut = "echec"
             stats[statut] = stats.get(statut, 0) + 1

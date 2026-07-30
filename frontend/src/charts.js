@@ -1,6 +1,6 @@
 // Aides ECharts : couleurs lues depuis les rôles CSS (light/dark suivent le thème),
 // specs de marques du guide dataviz (barres fines, bouts arrondis 4px côté données,
-// grille discrète, texte en encres — jamais en couleur de série).
+// grille discrète, texte en encres - jamais en couleur de série).
 import * as echarts from "echarts/core";
 import { BarChart } from "echarts/charts";
 import { GridComponent, TooltipComponent, LegendComponent } from "echarts/components";

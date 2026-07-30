@@ -40,7 +40,7 @@
           <article v-for="e in conseil.engagements" :key="e.id" class="item">
             <div class="meta"><span class="badge">{{ LIBELLES_ENGAGEMENT[e.type] ?? e.type }}</span></div>
             <div class="titre">
-              {{ fmtFCFA(e.montant_fcfa) }}<template v-if="e.beneficiaire"> — {{ e.beneficiaire }}</template>
+              {{ fmtFCFA(e.montant_fcfa) }}<template v-if="e.beneficiaire"> - {{ e.beneficiaire }}</template>
             </div>
             <div class="detail">{{ e.objet }}</div>
             <ContexteSource v-if="e.beneficiaire" genre="engagement" :id="e.id" />
@@ -56,7 +56,7 @@
               <span class="badge">{{ n.type === "fin_fonction" ? "Fin de fonction" : "Nomination" }}</span>
             </div>
             <div class="titre">{{ n.personne }}</div>
-            <div class="detail">{{ n.poste }}<template v-if="n.structure"> — {{ n.structure }}</template></div>
+            <div class="detail">{{ n.poste }}<template v-if="n.structure"> - {{ n.structure }}</template></div>
             <ContexteSource genre="nomination" :id="n.id" />
           </article>
         </div>
@@ -68,7 +68,7 @@
         <p v-for="(par, i) in paragraphes" :key="i" :class="{ 'titre-section': estTitre(par) }">{{ par }}</p>
       </article>
       <p v-else class="vide">
-        Le texte de ce compte rendu n'a pas encore été extrait —
+        Le texte de ce compte rendu n'a pas encore été extrait -
         <a :href="conseil.url" target="_blank" rel="noopener">consulter la source officielle</a>.
       </p>
     </template>
@@ -134,7 +134,7 @@ function formatDate(d) {
   });
 }
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;

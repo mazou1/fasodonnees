@@ -55,7 +55,7 @@ def test_lots_distincts_du_meme_appel_ne_se_confondent_pas():
 
 def test_attribution_sans_reference_reste_identifiable():
     """Le Quotidien omet parfois la référence : l'empreinte tient alors sur
-    l'attributaire, le montant et l'objet — et distingue toujours deux
+    l'attributaire, le montant et l'objet - et distingue toujours deux
     attributions différentes."""
     assert empreinte(None, "COOL SHOP Sarl", 38_615_000, "fourniture de mobilier") == empreinte(
         "", "COOL SHOP Sarl", 38_615_000, "fourniture de mobilier"

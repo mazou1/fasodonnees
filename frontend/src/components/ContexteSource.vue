@@ -6,7 +6,7 @@
     <blockquote v-if="ouvert && passage" class="passage" v-html="passage"></blockquote>
     <p v-else-if="ouvert && chargement" class="etat">Recherche du passage…</p>
     <p v-else-if="ouvert" class="etat">
-      Passage non localisé automatiquement —
+      Passage non localisé automatiquement -
       <a v-if="doc" :href="doc.url" target="_blank" rel="noopener">consulter le compte rendu</a>.
     </p>
   </div>

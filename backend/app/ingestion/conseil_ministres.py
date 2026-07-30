@@ -1,4 +1,4 @@
-"""Comptes rendus du Conseil des ministres — gouvernement.gov.bf.
+"""Comptes rendus du Conseil des ministres - gouvernement.gov.bf.
 
 Le site est un WordPress avec API REST ouverte ; la catégorie 23
 (« Compte rendu », vérifiée le 2026-07-10) contient les CR officiels.
@@ -12,7 +12,7 @@ import re
 
 from app.ingestion.wordpress import WordPressCollector
 
-# traductions en langues nationales publiées à côté de la version française —
+# traductions en langues nationales publiées à côté de la version française -
 # archivées mais typées à part (l'extraction LLM sur ces textes divague)
 LANGUES_NATIONALES = re.compile(
     r"GULI?MANCEMA|MOOR[EÉ]|FULFULD[EÉ]|DIOULA|JULA", re.IGNORECASE

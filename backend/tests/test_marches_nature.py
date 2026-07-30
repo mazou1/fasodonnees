@@ -2,8 +2,8 @@
 
 Un avis à manifestation d'intérêt retient un candidat pour la suite de la
 procédure ; il ne lui attribue ni contrat ni montant. Les mêler aux attributions
-gonflerait le nombre de marchés sans rien ajouter au total — donc fausserait le
-montant moyen — et ferait passer un candidat présélectionné pour un
+gonflerait le nombre de marchés sans rien ajouter au total - donc fausserait le
+montant moyen - et ferait passer un candidat présélectionné pour un
 adjudicataire sur sa fiche entreprise.
 """
 
@@ -54,7 +54,7 @@ def test_le_mode_de_passation_nest_pas_la_nature():
 def test_une_preselection_chiffree_part_en_revue_humaine():
     """Contradiction dans les termes : la manifestation d'intérêt sert aussi de
     mode de passation, et le Quotidien publie alors une vraie attribution sous
-    cette référence. On ne tranche pas à l'aveugle — on descend sous le seuil de
+    cette référence. On ne tranche pas à l'aveugle - on descend sous le seuil de
     validation automatique (0,9)."""
     m = _marche(nature="preselection", montant_fcfa=178_541_401, confiance=0.95)
     assert m.confiance <= 0.5

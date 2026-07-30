@@ -4,7 +4,7 @@ from alembic import context
 
 from app.config import settings
 from app.db import Base, engine
-from app import models  # noqa: F401 — enregistre les tables sur Base.metadata
+from app import models  # noqa: F401 - enregistre les tables sur Base.metadata
 
 config = context.config
 if config.config_file_name is not None:

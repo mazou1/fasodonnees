@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://faso:faso@localhost:5434/faso"
     # Archive brute : disque local, ou bucket S3-compatible (cf. app/stockage.py).
-    # `data_dir` reste le dossier local — racine du stockage local, et source de
+    # `data_dir` reste le dossier local - racine du stockage local, et source de
     # la migration vers le bucket.
     data_dir: Path = Path("data")
     stockage: str = "local"  # local | s3
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # Identification claire auprès des sites collectés (politesse)
     user_agent: str = "FasoDonnees/0.1 (plateforme civique open source)"
 
-    # Extraction LLM : mistral (tier gratuit) | anthropic — cf. extraction/conseil_ministres.py
+    # Extraction LLM : mistral (tier gratuit) | anthropic - cf. extraction/conseil_ministres.py
     llm_provider: str = "mistral"
     mistral_api_key: str = ""
     anthropic_api_key: str = ""

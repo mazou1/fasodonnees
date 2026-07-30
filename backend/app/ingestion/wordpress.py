@@ -1,7 +1,7 @@
 """Collecteur générique pour sites WordPress via l'API REST wp-json.
 
 Beaucoup de sites institutionnels burkinabè (gouvernement.gov.bf, …) sont
-des WordPress avec l'API REST ouverte — bien plus robuste que le scraping
+des WordPress avec l'API REST ouverte - bien plus robuste que le scraping
 HTML : titres, dates et contenu arrivent structurés, et la pagination est
 native (en-tête X-WP-TotalPages).
 """
@@ -23,7 +23,7 @@ class WordPressCollector(Collector):
     type_doc: str = "communique"
 
     def type_doc_pour(self, titre: str) -> str:
-        """Type du document selon son titre — surchargé par les collecteurs."""
+        """Type du document selon son titre - surchargé par les collecteurs."""
         return self.type_doc
     par_page: int = 20
 

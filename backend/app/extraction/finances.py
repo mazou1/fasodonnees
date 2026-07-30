@@ -73,14 +73,14 @@ Tu analyses un compte rendu officiel du Conseil des ministres du Burkina Faso \
 pour en extraire les informations FINANCIÈRES uniquement.
 
 1. ENGAGEMENTS : relève chaque décision portant un MONTANT EXPLICITE en francs \
-CFA — attribution de marché public, convention, subvention, prêt ou accord de \
+CFA - attribution de marché public, convention, subvention, prêt ou accord de \
 financement, garantie, décaissement. Pour chacune : le ministère de rattachement, \
 la nature, l'objet (1-2 phrases fidèles), le bénéficiaire ou attributaire s'il est \
 nommé, et le montant TOTAL converti en FCFA entier (1 milliard = 1000000000, \
 1 million = 1000000). Ignore les décisions sans montant chiffré. Si plusieurs \
 lots d'un même marché sont détaillés, une entrée par lot attribué. \
 N'inclus PAS dans les engagements : l'adoption ou l'exécution du budget de \
-l'État, les lois de finances et de règlement, les situations de trésorerie — \
+l'État, les lois de finances et de règlement, les situations de trésorerie - \
 ces montants relèvent de la partie BUDGETS ci-dessous.
 
 2. BUDGETS : si le conseil adopte une loi de finances (initiale ou rectificative) \
@@ -210,7 +210,7 @@ def main() -> int:
             try:
                 e, b = traiter_document(db, doc)
             except Exception:  # noqa: BLE001
-                logging.exception("Échec sur le document %s — on continue", doc.id)
+                logging.exception("Échec sur le document %s - on continue", doc.id)
                 db.rollback()
                 echecs += 1
                 continue

@@ -34,51 +34,57 @@
     <div class="grille-tableaux">
       <section class="carte" v-if="fiche.par_autorite.length">
         <h2>Auprès de quelles autorités contractantes</h2>
-        <table class="tableau">
-          <thead>
-            <tr><th>Autorité</th><th class="num">Marchés</th><th class="num">Montant</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in fiche.par_autorite" :key="a.cle">
-              <td>{{ a.cle }}</td>
-              <td class="num">{{ a.nombre }}</td>
-              <td class="num">{{ fmtFCFA(a.montant_fcfa) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-defilante">
+          <table class="tableau">
+            <thead>
+              <tr><th>Autorité</th><th class="num">Marchés</th><th class="num">Montant</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in fiche.par_autorite" :key="a.cle">
+                <td>{{ a.cle }}</td>
+                <td class="num">{{ a.nombre }}</td>
+                <td class="num">{{ fmtFCFA(a.montant_fcfa) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="carte" v-if="fiche.par_secteur.length">
         <h2>Par secteur</h2>
-        <table class="tableau">
-          <thead>
-            <tr><th>Secteur</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in fiche.par_secteur" :key="s.cle">
-              <td>{{ s.cle }}</td>
-              <td class="num">{{ s.nombre }}</td>
-              <td class="num">{{ fmtFCFA(s.montant_fcfa) }}</td>
-              <td class="num">{{ part(s.montant_fcfa) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-defilante">
+          <table class="tableau">
+            <thead>
+              <tr><th>Secteur</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in fiche.par_secteur" :key="s.cle">
+                <td>{{ s.cle }}</td>
+                <td class="num">{{ s.nombre }}</td>
+                <td class="num">{{ fmtFCFA(s.montant_fcfa) }}</td>
+                <td class="num">{{ part(s.montant_fcfa) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section class="carte" v-if="fiche.par_annee.length > 1">
         <h2>Par année</h2>
-        <table class="tableau">
-          <thead>
-            <tr><th>Année</th><th class="num">Marchés</th><th class="num">Montant</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in fiche.par_annee" :key="a.cle">
-              <td>{{ a.cle }}</td>
-              <td class="num">{{ a.nombre }}</td>
-              <td class="num">{{ fmtFCFA(a.montant_fcfa) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-defilante">
+          <table class="tableau">
+            <thead>
+              <tr><th>Année</th><th class="num">Marchés</th><th class="num">Montant</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in fiche.par_annee" :key="a.cle">
+                <td>{{ a.cle }}</td>
+                <td class="num">{{ a.nombre }}</td>
+                <td class="num">{{ fmtFCFA(a.montant_fcfa) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
 
@@ -108,7 +114,7 @@
       </article>
     </div>
     <p v-if="fiche.marches.length < fiche.nb_marches" class="note-methode">
-      Les {{ fiche.marches.length }} plus gros marchés sont affichés ici —
+      Les {{ fiche.marches.length }} plus gros marchés sont affichés ici -
       <a :href="`/api/marches?attributaire_id=${fiche.id}&par_page=100`">les voir tous via l'API</a>.
     </p>
 
@@ -116,7 +122,7 @@
       Cette entreprise figure en outre parmi les candidats présélectionnés de
       {{ fiche.nb_preselections }} avis à manifestation d'intérêt. Une présélection
       n'attribue ni marché ni montant : elle n'entre donc dans aucun des chiffres
-      ci-dessus —
+      ci-dessus -
       <router-link :to="`/marches?nature=preselection&q=${encodeURIComponent(fiche.nom)}`">les consulter</router-link>.
     </p>
 
@@ -127,7 +133,7 @@
         (<template v-for="(v, i) in fiche.variantes" :key="v">« {{ v }} »<template v-if="i < fiche.variantes.length - 1">, </template></template>)</template>.
       Le regroupement est automatique et strictement typographique (casse, accents, forme
       juridique) ; deux raisons sociales différentes ne sont jamais réunies sans relecture
-      humaine. Seuls les marchés validés sont comptés — en cas de doute, le journal officiel
+      humaine. Seuls les marchés validés sont comptés - en cas de doute, le journal officiel
       fait foi.
     </p>
   </template>
@@ -146,7 +152,7 @@ const fiche = ref(null);
 const erreur = ref(false);
 
 function fmtFCFA(n) {
-  if (n == null) return "—";
+  if (n == null) return "-";
   if (n >= 1e9) return `${(n / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Mds FCFA`;
   if (n >= 1e6) return `${(n / 1e6).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} M FCFA`;
   return `${n.toLocaleString("fr-FR")} FCFA`;
@@ -159,7 +165,7 @@ function annee(d) {
 }
 function part(m) {
   const t = fiche.value?.montant_fcfa || 0;
-  return t ? `${((100 * m) / t).toFixed(1)} %` : "—";
+  return t ? `${((100 * m) / t).toFixed(1)} %` : "-";
 }
 function initiales(nom) {
   return nom
