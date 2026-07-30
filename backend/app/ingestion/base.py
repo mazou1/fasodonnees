@@ -13,7 +13,6 @@ import hashlib
 import logging
 import time
 from datetime import date, datetime, timezone
-from pathlib import Path
 
 import httpx
 from sqlalchemy import select
@@ -21,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models import Document, Run, Source
+from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
@@ -55,24 +55,38 @@ class Collector:
                     raise httpx.HTTPStatusError("5xx", request=resp.request, response=resp)
                 resp.raise_for_status()
                 return resp
-            except (httpx.TransportError, httpx.HTTPStatusError):
+            except httpx.HTTPStatusError as exc:
+                # 4xx = la ressource est en faute, pas le réseau : réessayer
+                # n'y changera rien. Les sites officiels publient des liens
+                # morts vers leurs propres documents (404 constatés sur des
+                # décisions du Conseil constitutionnel) — insister trois fois
+                # avec backoff ne fait que les marteler pour rien. Seul 429
+                # (trop de requêtes) mérite d'attendre et de recommencer.
+                if 400 <= exc.response.status_code < 500 and exc.response.status_code != 429:
+                    raise
                 if attempt == retries - 1:
                     raise
                 time.sleep(2**attempt * 2)  # backoff 2s, 4s
+            except httpx.TransportError:
+                if attempt == retries - 1:
+                    raise
+                time.sleep(2**attempt * 2)
         raise RuntimeError("unreachable")
 
     # ---- Archivage ----
 
     def archive(self, content: bytes, ext: str) -> tuple[str, str]:
-        """Écrit le brut sous DATA_DIR/<slug>/<annee>/<hash>.<ext> ; renvoie (chemin relatif, sha256)."""
+        """Archive le brut sous <slug>/<annee>/<hash>.<ext> ; renvoie (clé, sha256).
+
+        La clé est indépendante du support : disque local ou bucket S3 selon
+        `FASO_STOCKAGE` (cf. app/stockage.py). `Document.fichier` la stocke
+        telle quelle, ce qui rend le basculement transparent pour la base.
+        """
         digest = hashlib.sha256(content).hexdigest()
         year = datetime.now(timezone.utc).strftime("%Y")
-        rel = Path(self.slug) / year / f"{digest[:16]}.{ext}"
-        path = settings.data_dir / rel
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if not path.exists():
-            path.write_bytes(content)
-        return str(rel), digest
+        cle = f"{self.slug}/{year}/{digest[:16]}.{ext}"
+        stockage.ecrire(cle, content)
+        return cle, digest
 
     # ---- Persistance ----
 

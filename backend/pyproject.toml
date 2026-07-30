@@ -1,5 +1,5 @@
 [project]
-name = "faso-reperes"
+name = "fasodonnees"
 version = "0.1.0"
 description = "Plateforme civique Burkina Faso — agrégation d'informations publiques officielles"
 requires-python = ">=3.12"
@@ -18,7 +18,12 @@ dependencies = [
     "selectolax>=0.3",
     "feedparser>=6.0",
     "pdfplumber>=0.11",
+    # lecteur de secours : pdfminer (sous pdfplumber) rend 0 page sur les PDF
+    # à xref non standard du Conseil constitutionnel — pypdf les lit
+    "pypdf>=5.0",
     "pytesseract>=0.3",
+    # client S3 : Garage (conteneur du compose) ou tout S3 externe
+    "boto3>=1.35",
     "apscheduler>=3.10,<4",
     "mistralai>=2.6",
     "anthropic>=0.34",

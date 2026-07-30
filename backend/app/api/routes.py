@@ -3,17 +3,21 @@ from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.db import SessionLocal
 from app.models import (
+    Attributaire,
     BudgetExercice,
     Decision,
     Document,
     EngagementFinancier,
     Mandat,
+    Marche,
     Nomination,
     Personne,
+    Projet,
+    Realisation,
     Source,
     Structure,
 )
@@ -1262,19 +1266,34 @@ def contexte(genre: str, entite_id: int, db: Session = Depends(get_db)) -> dict:
 
 @router.get("/documents/{doc_id}/fichier")
 def get_document_fichier(doc_id: int, db: Session = Depends(get_db)):
-    """Sert le fichier archivé d'un document (PDF officiel téléchargé à la collecte)."""
-    from fastapi.responses import FileResponse
+    """Sert le fichier archivé d'un document (PDF officiel téléchargé à la collecte).
 
-    from app.config import settings
+    En stockage objet, on **redirige** vers une URL présignée plutôt que de
+    faire transiter les octets : le corpus pèse plusieurs gigaoctets et l'API
+    n'a pas à devenir un serveur de fichiers.
+    """
+    from fastapi.responses import FileResponse, RedirectResponse
+
+    from app.stockage import CleInvalide, stockage
 
     d = db.get(Document, doc_id)
     if d is None or not d.fichier:
         raise HTTPException(404, "Fichier introuvable")
-    chemin = settings.data_dir / d.fichier
-    if not chemin.is_file():
-        raise HTTPException(404, "Fichier absent de l'archive")
-    nom = f"{(d.titre or 'document').strip()[:80]}.pdf" if d.mime == "application/pdf" else chemin.name
-    return FileResponse(chemin, media_type=d.mime or "application/octet-stream", filename=nom)
+    try:
+        if not stockage.existe(d.fichier):
+            raise HTTPException(404, "Fichier absent de l'archive")
+        genre, valeur = stockage.url_ou_chemin(d.fichier)
+    except CleInvalide:
+        raise HTTPException(404, "Fichier introuvable") from None
+
+    if genre == "url":
+        return RedirectResponse(valeur, status_code=307)
+    nom = (
+        f"{(d.titre or 'document').strip()[:80]}.pdf"
+        if d.mime == "application/pdf"
+        else valeur.name
+    )
+    return FileResponse(valeur, media_type=d.mime or "application/octet-stream", filename=nom)
 
 
 TYPES_TEXTES = ("decret", "loi", "arrete", "ordonnance", "charte", "constitution", "texte_juridique")
@@ -1627,7 +1646,7 @@ def rss_conseils(request: Request, db: Session = Depends(get_db)):
     ]
     xml = flux_rss(
         request,
-        titre="Faso Repères — Conseils des ministres",
+        titre="Faso Données Publiques — Conseils des ministres",
         description="Les comptes rendus du Conseil des ministres du Burkina Faso.",
         chemin="/rss/conseils.xml",
         items=items,
@@ -1662,7 +1681,7 @@ def rss_actualites(request: Request, db: Session = Depends(get_db)):
         )
     xml = flux_rss(
         request,
-        titre="Faso Repères — Actualités",
+        titre="Faso Données Publiques — Actualités",
         description="Le fil d'actualités agrégé : médias burkinabè et communiqués officiels.",
         chemin="/rss/actualites.xml",
         items=items,
@@ -1694,7 +1713,7 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
     ]
     xml = flux_rss(
         request,
-        titre="Faso Repères — Lois & décrets",
+        titre="Faso Données Publiques — Lois & décrets",
         description="Les nouveaux textes juridiques publiés (Légiburkina).",
         chemin="/rss/textes.xml",
         items=items,
@@ -1705,7 +1724,8 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
 # ── Marchés publics (attributions) ────────────────────────────────────────
 class MarcheOut(BaseModel):
     id: int
-    attributaire: str | None
+    attributaire: str | None  # la graphie exacte du document source
+    attributaire_id: int | None  # l'entité consolidée (fiche entreprise)
     montant_fcfa: int | None
     autorite: str | None
     objet: str
@@ -1722,9 +1742,10 @@ class MarchesPage(BaseModel):
 
 
 class CategorieStat(BaseModel):
-    cle: str  # secteur, entreprise ou année
+    cle: str  # secteur, entreprise, autorité contractante ou année
     montant_fcfa: int
     nombre: int
+    id: int | None = None  # renseigné quand la clé désigne une entité liable
 
 
 class MarchesStats(BaseModel):
@@ -1738,12 +1759,202 @@ class MarchesStats(BaseModel):
     top_entreprises: list[CategorieStat]
 
 
+class AttributaireOut(BaseModel):
+    id: int
+    nom: str
+    nb_marches: int
+    montant_fcfa: int
+
+
+class AttributairesPage(BaseModel):
+    total: int
+    attributaires: list[AttributaireOut]
+
+
+class AttributaireDetail(BaseModel):
+    id: int
+    nom: str
+    # toutes les graphies rencontrées dans les Quotidiens, pour que le lecteur
+    # puisse vérifier ce que le regroupement a réuni
+    variantes: list[str]
+    nb_marches: int
+    montant_fcfa: int
+    premiere_attribution: date | None
+    derniere_attribution: date | None
+    par_secteur: list[CategorieStat]
+    par_annee: list[CategorieStat]
+    par_autorite: list[CategorieStat]
+    marches: list[MarcheOut]
+
+
+def _ids_du_groupe(db: Session, attributaire_id: int) -> list[int]:
+    """Identifiants de l'entité consolidée : la racine et ses variantes fusionnées.
+
+    Accepte indifféremment l'id de la racine ou celui d'une variante — une
+    URL déjà partagée reste valable après une fusion.
+    """
+    racine = db.scalar(
+        select(func.coalesce(Attributaire.canonique_id, Attributaire.id)).where(
+            Attributaire.id == attributaire_id
+        )
+    )
+    if racine is None:
+        return []
+    membres = list(
+        db.scalars(select(Attributaire.id).where(Attributaire.canonique_id == racine))
+    )
+    return [racine, *membres]
+
+
+@router.get("/attributaires", response_model=AttributairesPage)
+def list_attributaires(
+    db: Session = Depends(get_db),
+    q: str | None = Query(None, min_length=2, description="Raison sociale"),
+    tri: str = Query("montant", description="montant | nombre | nom"),
+    page: int = Query(1, ge=1),
+    par_page: int = Query(20, ge=1, le=100),
+):
+    """Entreprises attributaires de marchés publics, consolidées.
+
+    Chaque entrée regroupe les graphies d'une même raison sociale rencontrées
+    dans les Quotidiens de la DGCMEF (cf. `app/attributaires.py`). Les montants
+    ne portent que sur les marchés **validés**.
+    """
+    montant = func.coalesce(func.sum(Marche.montant_fcfa), 0)
+    racine = func.coalesce(Attributaire.canonique_id, Attributaire.id)
+    agg = (
+        select(
+            racine.label("gid"),
+            func.count().label("nb"),
+            montant.label("montant"),
+        )
+        .select_from(Marche)
+        .join(Attributaire, Marche.attributaire_id == Attributaire.id)
+        .where(Marche.statut_validation == "valide")
+        .group_by(racine)
+        .subquery()
+    )
+    base = select(Attributaire, agg.c.nb, agg.c.montant).join(
+        agg, agg.c.gid == Attributaire.id
+    )
+    if q:
+        base = base.where(Attributaire.nom.ilike(f"%{q}%"))
+    total = int(db.scalar(select(func.count()).select_from(base.subquery())) or 0)
+    if tri == "nombre":
+        base = base.order_by(agg.c.nb.desc())
+    elif tri == "nom":
+        base = base.order_by(Attributaire.nom)
+    else:
+        base = base.order_by(agg.c.montant.desc())
+    lignes = db.execute(base.offset((page - 1) * par_page).limit(par_page)).all()
+    return AttributairesPage(
+        total=total,
+        attributaires=[
+            AttributaireOut(
+                id=a.id, nom=a.nom, nb_marches=int(nb), montant_fcfa=int(m or 0)
+            )
+            for a, nb, m in lignes
+        ],
+    )
+
+
+@router.get("/attributaires/{attributaire_id}", response_model=AttributaireDetail)
+def fiche_attributaire(
+    attributaire_id: int,
+    db: Session = Depends(get_db),
+    par_page: int = Query(50, ge=1, le=200, description="Marchés listés dans la fiche"),
+):
+    """Fiche d'une entreprise attributaire : ce qu'elle a remporté, auprès de
+    qui, dans quels secteurs — uniquement à partir de marchés validés et
+    sourcés."""
+    ids = _ids_du_groupe(db, attributaire_id)
+    if not ids:
+        raise HTTPException(status_code=404, detail="Attributaire inconnu")
+    racine = db.get(Attributaire, ids[0])
+
+    marches_valides = select(Marche).where(
+        Marche.attributaire_id.in_(ids), Marche.statut_validation == "valide"
+    )
+    montant = func.coalesce(func.sum(Marche.montant_fcfa), 0)
+    an = func.extract("year", Marche.date_attribution)
+
+    def agrege(colonne, limite=None):
+        s = (
+            marches_valides.with_only_columns(
+                colonne.label("cle"), montant.label("m"), func.count().label("n")
+            )
+            .where(colonne.is_not(None))
+            .group_by(colonne)
+            .order_by(montant.desc())
+        )
+        if limite:
+            s = s.limit(limite)
+        from numbers import Number  # l'année sort en Decimal de PostgreSQL
+
+        return [
+            CategorieStat(
+                cle=str(int(r.cle)) if isinstance(r.cle, Number) else str(r.cle),
+                montant_fcfa=int(r.m or 0),
+                nombre=int(r.n),
+            )
+            for r in db.execute(s)
+        ]
+
+    bornes = db.execute(
+        marches_valides.with_only_columns(
+            func.count(),
+            montant,
+            func.min(Marche.date_attribution),
+            func.max(Marche.date_attribution),
+        )
+    ).one()
+    variantes = sorted(
+        v for v in db.scalars(
+            marches_valides.with_only_columns(Marche.attributaire).distinct()
+        ) if v
+    )
+    marches = db.scalars(
+        marches_valides.order_by(Marche.montant_fcfa.desc().nulls_last()).limit(par_page)
+    ).all()
+
+    return AttributaireDetail(
+        id=racine.id,
+        nom=racine.nom,
+        variantes=variantes,
+        nb_marches=int(bornes[0] or 0),
+        montant_fcfa=int(bornes[1] or 0),
+        premiere_attribution=bornes[2],
+        derniere_attribution=bornes[3],
+        par_secteur=agrege(Marche.secteur),
+        par_annee=sorted(agrege(an.label("annee")), key=lambda c: c.cle),
+        par_autorite=agrege(Marche.autorite, limite=15),
+        marches=[
+            MarcheOut(
+                id=m.id,
+                attributaire=m.attributaire,
+                attributaire_id=m.attributaire_id,
+                montant_fcfa=m.montant_fcfa,
+                autorite=m.autorite,
+                objet=m.objet,
+                secteur=m.secteur,
+                reference=m.reference,
+                date=m.date_attribution,
+                document_id=m.document_id,
+            )
+            for m in marches
+        ],
+    )
+
+
 @router.get("/marches", response_model=MarchesPage)
 def list_marches(
     db: Session = Depends(get_db),
     q: str | None = Query(None, min_length=2, description="Attributaire, autorité ou objet"),
     secteur: str | None = Query(None, description="Filtrer par secteur déduit"),
     annee: int | None = Query(None, description="Filtrer par année d'attribution"),
+    attributaire_id: int | None = Query(
+        None, description="Restreindre à une entreprise consolidée (variantes incluses)"
+    ),
     tri: str = Query("montant", description="montant | date"),
     page: int = Query(1, ge=1),
     par_page: int = Query(20, ge=1, le=100),
@@ -1763,6 +1974,8 @@ def list_marches(
         base = base.where(Marche.secteur == secteur)
     if annee:
         base = base.where(func.extract("year", Marche.date_attribution) == annee)
+    if attributaire_id:
+        base = base.where(Marche.attributaire_id.in_(_ids_du_groupe(db, attributaire_id)))
     total = db.scalar(select(func.count()).select_from(base.subquery()))
     # somme sur la même sélection filtrée (pas select_from(subquery) : la colonne
     # de l'entité y provoquerait un produit cartésien)
@@ -1781,6 +1994,7 @@ def list_marches(
             MarcheOut(
                 id=m.id,
                 attributaire=m.attributaire,
+                attributaire_id=m.attributaire_id,
                 montant_fcfa=m.montant_fcfa,
                 autorite=m.autorite,
                 objet=m.objet,
@@ -1815,10 +2029,25 @@ def marches_stats(
             s = s.where(an == annee)
         return s
 
+    # Une entreprise = son entité consolidée (app/attributaires.py) si le marché
+    # y est rattaché, sinon la graphie brute du document. Le `outerjoin` fait
+    # donc tenir les deux mondes dans la même agrégation : la page reste juste
+    # avant le premier `consolider`, et se regroupe d'elle-même après.
+    Canon = aliased(Attributaire)
+    cle_entreprise = func.coalesce(Canon.nom, Marche.attributaire)
+
+    def par_entreprise(*colonnes):
+        return (
+            filtree(*colonnes)
+            .select_from(Marche)
+            .outerjoin(Attributaire, Marche.attributaire_id == Attributaire.id)
+            .outerjoin(Canon, Canon.id == func.coalesce(Attributaire.canonique_id, Attributaire.id))
+        )
+
     total = int(db.scalar(filtree(func.count()).order_by(None)) or 0)
     montant_total = int(db.scalar(filtree(montant).order_by(None)) or 0)
     nb_entreprises = int(
-        db.scalar(filtree(func.count(func.distinct(Marche.attributaire))).order_by(None)) or 0
+        db.scalar(par_entreprise(func.count(func.distinct(cle_entreprise))).order_by(None)) or 0
     )
 
     # options de filtre : toujours calculées sur l'ensemble validé (pas restreint)
@@ -1853,10 +2082,27 @@ def marches_stats(
         ]
 
     par_secteur = agrege(Marche.secteur)
-    top_entreprises = agrege(Marche.attributaire, limite=15)
     par_annee = sorted(
         agrege(an.label("annee")), key=lambda c: c.cle
     )
+
+    top_entreprises = [
+        CategorieStat(
+            cle=str(r.cle), montant_fcfa=int(r.m or 0), nombre=int(r.n), id=r.gid
+        )
+        for r in db.execute(
+            par_entreprise(
+                cle_entreprise.label("cle"),
+                Canon.id.label("gid"),
+                montant.label("m"),
+                func.count().label("n"),
+            )
+            .where(cle_entreprise.is_not(None))
+            .group_by(cle_entreprise, Canon.id)
+            .order_by(montant.desc())
+            .limit(15)
+        )
+    ]
 
     return MarchesStats(
         total=total,
@@ -2038,4 +2284,185 @@ def realisations_stats(
         par_annee=par_annee,
         par_statut=agrege(Realisation.statut),
         types_dispo=types_dispo, regions_dispo=regions_dispo, annees_dispo=annees_dispo,
+    )
+
+
+# ── Dossiers de suivi : annonce → attribution → livraison ────────────────────
+# Le rapprochement des trois corpus est une INTERPRÉTATION relue par un humain
+# (cf. app/projets.py) : seuls les dossiers validés sortent ici, et chaque
+# maillon reste rattaché à son document d'origine.
+
+class MaillonOut(BaseModel):
+    genre: str  # engagement | marche | realisation
+    id: int
+    libelle: str
+    montant_fcfa: int | None
+    date: date | None
+    detail: str | None  # ministère, attributaire, ou stade de la réalisation
+    document_id: int | None
+    document_url: str | None
+
+
+class ProjetOut(BaseModel):
+    id: int
+    titre: str
+    secteur: str | None
+    region: str | None
+    # le stade le plus avancé dont on ait une pièce
+    # annonce | attribue (marché) | en_travaux (première pierre) | livre
+    stade: str
+    # les étapes RÉELLEMENT documentées, dans l'ordre de la chaîne. Une étape
+    # absente n'est pas « pas encore franchie » : elle n'est pas attestée dans
+    # notre corpus. Un ouvrage peut être en travaux sans qu'on ait retrouvé le
+    # marché qui l'a lancé — l'afficher comme attribué serait une invention.
+    etapes_constatees: list[str]
+    montant_annonce_fcfa: int | None
+    montant_attribue_fcfa: int | None
+    nb_annonces: int
+    nb_marches: int
+    nb_realisations: int
+
+
+class ProjetsPage(BaseModel):
+    total: int
+    projets: list[ProjetOut]
+
+
+class ProjetDetail(ProjetOut):
+    notes: str | None
+    maillons: list[MaillonOut]
+
+
+def _maillons_par_projet(db: Session, projet_ids: list[int]) -> dict[int, list[MaillonOut]]:
+    """Les trois corpus rattachés, ramenés à une forme commune et ordonnés
+    comme la chaîne : ce qui est annoncé, puis attribué, puis livré."""
+    if not projet_ids:
+        return {}
+    par_projet: dict[int, list[MaillonOut]] = {pid: [] for pid in projet_ids}
+
+    for e in db.scalars(
+        select(EngagementFinancier).where(
+            EngagementFinancier.projet_id.in_(projet_ids),
+            EngagementFinancier.statut_validation == "valide",
+        )
+    ):
+        par_projet[e.projet_id].append(
+            MaillonOut(
+                genre="engagement", id=e.id, libelle=e.objet, montant_fcfa=e.montant_fcfa,
+                date=e.document.date_publication if e.document else None,
+                detail=e.ministere or e.beneficiaire,
+                document_id=e.document_id,
+                document_url=e.document.url if e.document else None,
+            )
+        )
+    for m in db.scalars(
+        select(Marche).where(
+            Marche.projet_id.in_(projet_ids), Marche.statut_validation == "valide"
+        )
+    ):
+        par_projet[m.projet_id].append(
+            MaillonOut(
+                genre="marche", id=m.id, libelle=m.objet, montant_fcfa=m.montant_fcfa,
+                date=m.date_attribution, detail=m.attributaire,
+                document_id=m.document_id,
+                document_url=m.document.url if m.document else None,
+            )
+        )
+    for r in db.scalars(
+        select(Realisation).where(
+            Realisation.projet_id.in_(projet_ids), Realisation.statut_validation == "valide"
+        )
+    ):
+        par_projet[r.projet_id].append(
+            MaillonOut(
+                genre="realisation", id=r.id, libelle=r.titre, montant_fcfa=r.montant_fcfa,
+                date=r.date_evenement, detail=r.statut,
+                document_id=r.document_id,
+                document_url=r.source_url or (r.document.url if r.document else None),
+            )
+        )
+
+    rang = {"engagement": 0, "marche": 1, "realisation": 2}
+    for maillons in par_projet.values():
+        maillons.sort(key=lambda x: (rang[x.genre], x.date or date.min))
+    return par_projet
+
+
+def _resume_projet(projet: Projet, maillons: list[MaillonOut]) -> ProjetOut:
+    from app.projets import stade
+
+    annonces = [m for m in maillons if m.genre == "engagement"]
+    marches = [m for m in maillons if m.genre == "marche"]
+    realisations = [m for m in maillons if m.genre == "realisation"]
+
+    def somme(items):
+        montants = [m.montant_fcfa for m in items if m.montant_fcfa]
+        return sum(montants) if montants else None
+
+    statuts_realisations = {m.detail or "" for m in realisations}
+    etapes = []
+    if annonces:
+        etapes.append("annonce")
+    if marches:
+        etapes.append("attribue")
+    if "premiere_pierre" in statuts_realisations:
+        etapes.append("en_travaux")
+    if statuts_realisations & {"inauguration", "mise_en_service"}:
+        etapes.append("livre")
+
+    return ProjetOut(
+        id=projet.id,
+        titre=projet.titre,
+        secteur=projet.secteur,
+        region=projet.region,
+        etapes_constatees=etapes,
+        # le `detail` d'une réalisation porte son statut (inauguration,
+        # première pierre…) — c'est lui qui distingue livré de « en travaux »
+        stade=stade(bool(marches), [m.detail or "" for m in realisations]),
+        montant_annonce_fcfa=somme(annonces),
+        montant_attribue_fcfa=somme(marches),
+        nb_annonces=len(annonces),
+        nb_marches=len(marches),
+        nb_realisations=len(realisations),
+    )
+
+
+@router.get("/projets", response_model=ProjetsPage)
+def list_projets(
+    db: Session = Depends(get_db),
+    stade: str | None = Query(None, description="annonce | attribue | en_travaux | livre"),
+    secteur: str | None = Query(None),
+    q: str | None = Query(None, min_length=2, description="Titre du dossier"),
+    page: int = Query(1, ge=1),
+    par_page: int = Query(20, ge=1, le=100),
+):
+    """Dossiers de suivi : ce que l'État a annoncé, attribué, puis livré."""
+    base = select(Projet).where(Projet.statut_validation == "valide")
+    if secteur:
+        base = base.where(Projet.secteur == secteur)
+    if q:
+        base = base.where(Projet.titre.ilike(f"%{q}%"))
+    projets = db.scalars(base.order_by(Projet.id)).all()
+
+    maillons = _maillons_par_projet(db, [p.id for p in projets])
+    resumes = [_resume_projet(p, maillons.get(p.id, [])) for p in projets]
+    if stade:
+        resumes = [r for r in resumes if r.stade == stade]
+    # les plus engageants d'abord : le montant annoncé fait la portée du dossier
+    resumes.sort(key=lambda r: (r.montant_annonce_fcfa or r.montant_attribue_fcfa or 0), reverse=True)
+    debut = (page - 1) * par_page
+    return ProjetsPage(total=len(resumes), projets=resumes[debut : debut + par_page])
+
+
+@router.get("/projets/{projet_id}", response_model=ProjetDetail)
+def fiche_projet(projet_id: int, db: Session = Depends(get_db)):
+    """Chaîne complète d'un dossier : chaque maillon avec son document source."""
+    projet = db.get(Projet, projet_id)
+    if projet is None or projet.statut_validation != "valide":
+        raise HTTPException(status_code=404, detail="Dossier de suivi inconnu")
+    maillons = _maillons_par_projet(db, [projet.id]).get(projet.id, [])
+    return ProjetDetail(
+        **_resume_projet(projet, maillons).model_dump(),
+        notes=projet.notes,
+        maillons=maillons,
     )

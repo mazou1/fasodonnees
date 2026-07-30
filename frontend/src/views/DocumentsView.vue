@@ -38,7 +38,7 @@
       <div class="titre">{{ d.titre || d.url }}</div>
       <div class="meta" style="margin-top: 6px">
         <router-link v-if="d.type_doc === 'cr_conseil'" class="source" :to="`/conseils/${d.id}`">
-          Voir sur Faso Repères →
+          Voir sur Faso Données Publiques →
         </router-link>
         <a v-if="d.pdf" class="source" :href="`/api/documents/${d.id}/fichier`" target="_blank" rel="noopener">
           📄 PDF archivé →
@@ -77,6 +77,13 @@ const LIBELLES = {
   rapport: "Rapport",
   page_officielle: "Page officielle",
   marche_public: "Marchés publics (Quotidien)",
+  decision_constitutionnelle: "Décision du Conseil constitutionnel",
+  avis_constitutionnel: "Avis du Conseil constitutionnel",
+  ordonnance_constitutionnelle: "Ordonnance du Conseil constitutionnel",
+  rapport_controle: "Rapport de contrôle (ASCE-LC)",
+  affaire_anticorruption: "Affaire anticorruption (ASCE-LC)",
+  declaration_patrimoine: "Déclaration de patrimoine",
+  plainte_denonciation: "Plaintes & dénonciations",
 };
 const PAR_PAGE = 20;
 

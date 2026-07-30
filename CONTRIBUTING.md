@@ -1,6 +1,6 @@
-# Contribuer à FasoCivic
+# Contribuer à Faso Données Publiques
 
-Merci de votre intérêt ! FasoCivic est un projet **citoyen, indépendant et
+Merci de votre intérêt ! Faso Données Publiques est un projet **citoyen, indépendant et
 libre** (GPL-3.0) qui rend l'information publique burkinabè accessible et
 vérifiable. Il vit de contributions de toutes sortes — et beaucoup ne demandent
 aucune compétence technique.
@@ -88,6 +88,37 @@ modèle de `apps/plan-relance/` (build embarqué dans `frontend/public/`).
   dans `alembic/env.py`). Vérifiez toujours une migration autogénérée.
 - L'OCR (Tesseract) tourne dans le worker et monopolise le CPU : mettez le
   conteneur en pause pendant les builds npm.
+- **Le Quotidien de la DGCMEF republie ses synthèses de résultats** dans des
+  numéros successifs : une même attribution peut apparaître dans une dizaine
+  de PDF. Toute agrégation sur les marchés (total par entreprise, par secteur)
+  compterait plusieurs fois la même chose. `app/extraction/marches.py` ne
+  retient une attribution qu'à sa première parution, via une empreinte
+  (référence, attributaire, montant, objet) — n'insérez jamais un `Marche`
+  sans passer par `traiter_document`.
+- **Ne construisez jamais un chemin vers `settings.data_dir`.** L'archive vit
+  sur le disque *ou* dans un bucket S3 selon `FASO_STOCKAGE` : un chemin
+  fabriqué à la main marche en local et casse en production, sans bruit. Tout
+  passe par `app/stockage.py` — `stockage.ecrire()` pour archiver,
+  `with stockage.fichier_local(cle) as chemin:` quand une bibliothèque exige un
+  vrai fichier (pdfplumber, pypdf, Tesseract), `stockage.url_ou_chemin()` pour
+  servir. `Document.fichier` contient une **clé**, pas un chemin.
+- **Un PDF téléchargé n'est pas un texte cherchable.** Un collecteur qui
+  archive un PDF doit poser `meta["pdf_statut"]` : c'est ce marqueur — et non
+  `statut_extraction` — que suit la passe OCR (`app/extraction/ocr_textes.py`),
+  et un nouveau `type_doc` doit être ajouté à ses `TYPES_CIBLES`. Sans les
+  deux, les scans restent invisibles à la recherche, en silence.
+- **Un dossier de suivi n'est pas une donnée officielle** : relier une
+  inauguration à un marché et à une annonce est une *interprétation* de la
+  plateforme. Ne créez jamais de rattachement automatique publié d'office —
+  `app/projets.py` propose, un humain accepte. Et n'affichez une étape de la
+  chaîne comme franchie que si une pièce l'atteste : sur ce sujet, laisser
+  croire qu'un ouvrage est livré ou qu'un marché existe est une faute, pas une
+  approximation.
+- **Les raisons sociales des marchés ne sont pas un référentiel** : la même
+  entreprise y est écrite de plusieurs façons. Comptez les entreprises sur
+  l'entité consolidée (`attributaire.id`, regroupée par
+  `coalesce(canonique_id, id)`), jamais sur la chaîne `marche.attributaire`
+  — celle-ci reste la trace exacte du document et ne doit pas être réécrite.
 
 ## Issues et pull requests
 

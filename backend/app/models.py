@@ -179,8 +179,11 @@ class EngagementFinancier(Base):
     montant_fcfa: Mapped[int | None] = mapped_column(BigInteger, index=True)
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document] = relationship()
+    projet: Mapped[Projet | None] = relationship()
 
     def __str__(self) -> str:
         return f"[{self.type}] {self.objet[:60]}"
@@ -293,6 +296,62 @@ class RepartitionBudgetaire(Base):
         return f"{self.exercice} {self.sens} — {self.libelle[:40]}"
 
 
+class Projet(Base):
+    """Dossier de suivi : un même projet public, aux trois stades où l'État en
+    parle — annoncé en Conseil des ministres (`EngagementFinancier`), attribué
+    dans le Quotidien des marchés (`Marche`), livré et inauguré
+    (`Realisation`).
+
+    Aucune de ces trois sources ne porte d'identifiant de projet commun : le
+    rapprochement est une INTERPRÉTATION, jamais une donnée officielle. Un
+    projet n'existe donc que si un humain a accepté le rapprochement
+    (cf. `app/projets.py`, propositions relues en CSV) ; le stade d'avancement,
+    lui, est recalculé à partir des pièces rattachées.
+    """
+
+    __tablename__ = "projet"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    titre: Mapped[str] = mapped_column(String(500))
+    secteur: Mapped[str | None] = mapped_column(String(60), index=True)
+    region: Mapped[str | None] = mapped_column(String(120))
+    notes: Mapped[str | None] = mapped_column(Text)
+    statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+
+    def __str__(self) -> str:
+        return self.titre[:80]
+
+
+class Attributaire(Base):
+    """Entité consolidée derrière les raisons sociales des marchés.
+
+    Le Quotidien de la DGCMEF écrit la même entreprise de dix façons
+    (« ETS WEND-KUUNI », « Ets Wend Kuuni SARL », « E.W.K. Sarl »…). Cette
+    table est une vue DÉRIVÉE, recalculable : `marche.attributaire` conserve
+    toujours la chaîne exacte du document — même principe que
+    `mandat`/`nomination`, la source brute n'est jamais réécrite.
+
+    Recalcul : `python -m app.attributaires consolider` (idempotent).
+    """
+
+    __tablename__ = "attributaire"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nom: Mapped[str] = mapped_column(String(400))  # forme retenue pour l'affichage
+    nom_normalise: Mapped[str] = mapped_column(String(400), index=True)
+    # fusion des variantes trop éloignées pour le rattachement strict :
+    # pointe vers l'attributaire canonique (cf. app/attributaires.py)
+    canonique_id: Mapped[int | None] = mapped_column(ForeignKey("attributaire.id"), index=True)
+    # nom corrigé à la main dans le back-office : la consolidation ne le réécrit plus
+    nom_fige: Mapped[bool] = mapped_column(Boolean, default=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+
+    canonique: Mapped[Attributaire | None] = relationship(remote_side=[id])
+
+    def __str__(self) -> str:
+        return self.nom
+
+
 class Marche(Base):
     """Marché public attribué, extrait des « Synthèses des résultats » du
     Quotidien des Marchés Publics (DGCMEF). Qui décroche quel marché, pour
@@ -308,15 +367,23 @@ class Marche(Base):
     objet: Mapped[str] = mapped_column(Text)
     reference: Mapped[str | None] = mapped_column(String(300))  # n° de l'appel/demande
     mode: Mapped[str | None] = mapped_column(String(120))  # demande de prix, AOO…
-    attributaire: Mapped[str | None] = mapped_column(String(400))  # entreprise retenue
+    attributaire: Mapped[str | None] = mapped_column(String(400))  # entreprise retenue (texte source)
+    # rattachement à l'entité consolidée — dérivé, jamais saisi par l'extraction
+    attributaire_id: Mapped[int | None] = mapped_column(
+        ForeignKey("attributaire.id"), index=True
+    )
     montant_fcfa: Mapped[int | None] = mapped_column(BigInteger)
     secteur: Mapped[str | None] = mapped_column(String(60), index=True)  # déduit de l'objet
     region: Mapped[str | None] = mapped_column(String(120))
     date_attribution: Mapped[date | None] = mapped_column(Date)
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document] = relationship()
+    entreprise: Mapped[Attributaire | None] = relationship()
+    projet: Mapped[Projet | None] = relationship()
 
     def __str__(self) -> str:
         return f"{self.attributaire or '?'} — {self.objet[:50]}"
@@ -425,9 +492,12 @@ class Realisation(Base):
     photo_url: Mapped[str | None] = mapped_column(String(1000))
     score_confiance: Mapped[float | None] = mapped_column(Float)
     statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+    # dossier de suivi (rapprochement relu par un humain — cf. app/projets.py)
+    projet_id: Mapped[int | None] = mapped_column(ForeignKey("projet.id"), index=True)
 
     document: Mapped[Document | None] = relationship()
     localite: Mapped[Localite | None] = relationship()
+    projet: Mapped[Projet | None] = relationship()
 
     def __str__(self) -> str:
         return f"{self.type} — {self.titre[:60]}"

@@ -33,7 +33,7 @@ résolu pour obtenir le certificat).
 ## 3. Déployer
 
 ```bash
-git clone git@github.com:mazou1/faso-reperes.git /srv/faso
+git clone git@github.com:mazou1/fasodonnees.git /srv/faso
 cd /srv/faso
 cp deploy/.env.prod.example .env
 nano .env          # domaine + secrets (voir les commandes openssl dans le fichier)
@@ -86,7 +86,95 @@ docker compose -f docker-compose.prod.yml exec api python -m app.validation 0.9
 docker compose -f docker-compose.prod.yml exec api python -m app.annuaire
 ```
 
+## 5 bis. Archive brute : disque ou stockage objet
+
+L'archive (`data/`) pèse plus de 5 Go et grandit à chaque collecte. Deux modes,
+choisis par `FASO_STOCKAGE` :
+
+| | `local` (défaut) | `s3` |
+|---|---|---|
+| Où | disque du VPS | bucket S3-compatible |
+| Dépendance | aucune | un endpoint S3 |
+| Sauvegarde | `backup.sh` (tar) | réplication/versioning du bucket |
+| Service des PDF | FastAPI lit le fichier | redirection vers une URL présignée |
+
+En mode `s3`, l'endpoint peut être **Garage** (conteneur fourni) ou **n'importe
+quel S3 externe** (Hetzner Object Storage, Scaleway, Cloudflare R2…). Le code ne
+voit qu'un endpoint : basculer de l'un à l'autre ne change que des variables.
+
+> ⚠️ **Garage sur ce même VPS n'apporte aucune durabilité** : même disque, même
+> domaine de panne. Si le serveur est perdu, le bucket l'est aussi. Il ne
+> protège vraiment que sur une **autre machine**, en réplication multi-nœud, ou
+> si vous pointez vers un S3 externe. Lancé ici, il apporte surtout le service
+> par URL présignée et la préparation d'une bascule ultérieure.
+
+### Activer Garage
+
+```bash
+# secrets distincts dans le .env
+for v in GARAGE_RPC_SECRET GARAGE_ADMIN_TOKEN GARAGE_METRICS_TOKEN; do
+  echo "$v=$(openssl rand -hex 32)" >> .env
+done
+
+docker compose -f docker-compose.prod.yml --profile garage up -d garage
+
+# initialisation du cluster (une seule fois)
+NODE=$(docker compose -f docker-compose.prod.yml exec -T garage /garage node id -q | cut -d@ -f1)
+docker compose -f docker-compose.prod.yml exec -T garage /garage layout assign -z faso -c 100G "$NODE"
+docker compose -f docker-compose.prod.yml exec -T garage /garage layout apply --version 1
+
+# bucket et clé applicative
+docker compose -f docker-compose.prod.yml exec -T garage /garage bucket create faso-archives
+docker compose -f docker-compose.prod.yml exec -T garage /garage key create faso-app
+KEYID=$(docker compose -f docker-compose.prod.yml exec -T garage /garage key info faso-app | awk '/^Key ID/{print $3}')
+docker compose -f docker-compose.prod.yml exec -T garage /garage bucket allow --read --write --owner faso-archives --key "$KEYID"
+```
+
+Reporter le *Key ID* et le *Secret key* dans le `.env` (`FASO_S3_ACCESS_KEY`,
+`FASO_S3_SECRET_KEY`), avec `FASO_S3_ENDPOINT=http://garage:3900`.
+
+### Pointer vers un S3 externe
+
+Ne pas activer le profil `garage` ; renseigner l'endpoint, le bucket, les clés
+et la région du fournisseur. Rien d'autre ne change.
+
+### Migrer l'archive existante
+
+```bash
+FASO_STOCKAGE=s3 docker compose -f docker-compose.prod.yml exec -T api \
+  python -m app.stockage migrer            # ajouter --garder-local pour ne rien supprimer
+docker compose -f docker-compose.prod.yml up -d api worker   # bascule effective
+```
+
+La migration est **reprenable** (un objet déjà présent à la bonne taille est
+sauté) et ne supprime un fichier local qu'après avoir vérifié la taille côté
+bucket : un envoi interrompu laisse l'original intact. En cas d'échec partiel,
+la commande sort en erreur et les fichiers concernés restent sur le disque.
+
+> Sans `--garder-local`, chaque passe d'OCR ou d'extraction retéléchargera son
+> fichier depuis le bucket (dans un temporaire, supprimé aussitôt). C'est le
+> compromis assumé du disque libéré.
+
 ## 6. Sauvegardes
+
+`deploy/backup.sh` **suit le mode de stockage** déclaré dans le `.env` — c'est
+important : sauvegarder `backend/data/` sans regarder produirait, après la
+bascule en stockage objet, une archive vide sans que rien ne l'annonce.
+
+| `FASO_STOCKAGE` | Ce qui est sauvegardé | Comment |
+|---|---|---|
+| `local` | `backend/data/` | archive `tar.gz` horodatée, 14 générations |
+| `s3` + Garage local | volumes `garage_meta` et `garage_data` | snapshot des métadonnées puis miroir `rsync` incrémental |
+| `s3` externe | rien ici | la durabilité relève du fournisseur (versioning, réplication) |
+
+En mode Garage, les noms de volumes sont **lus sur le conteneur** et non déduits
+du nom du dossier : plusieurs projets peuvent cohabiter sur une machine avec des
+volumes `<projet>_garage_data`, et se tromper de préfixe sauvegarderait les
+données d'un autre. Le miroir est incrémental — seuls les nouveaux blocs
+traversent, les blocs de données Garage étant immuables (adressés par contenu).
+
+En mode `local`, le script **échoue** si `backend/data/` est vide : mieux vaut
+une sauvegarde en erreur qu'une archive vide passée inaperçue.
 
 ```bash
 chmod +x deploy/backup.sh

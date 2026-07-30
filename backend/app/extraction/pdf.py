@@ -2,6 +2,16 @@
 
 Les sites .gov.bf publient beaucoup de scans : si le texte natif est quasi
 vide, on bascule en OCR. Renvoie (texte, statut) avec statut ∈ ok | ocr | echec.
+
+Deuxième filet, moins évident : **pdfminer (le moteur de pdfplumber) rend
+parfois 0 page sur un PDF pourtant valide et complet**. Le Conseil
+constitutionnel en publie beaucoup — fins de ligne à l'ancienne (`\\r` seul) et
+table xref non standard — soit ~23 % de son corpus. Le fichier n'est pas
+tronqué (le marqueur `%%EOF` est bien là) : c'est le parseur qui renonce, sans
+lever d'erreur. Un document à 0 page ressort alors avec un texte vide, donc
+introuvable, et **rien ne le signale**. `pypdf`, plus tolérant, sert de lecteur
+de secours ; sur un scan, chaque page porte une image plein cadre qu'on envoie
+à Tesseract.
 """
 
 from __future__ import annotations
@@ -25,6 +35,9 @@ def extraire_texte(path: Path, ocr: bool = True) -> tuple[str, str]:
     """
     try:
         with pdfplumber.open(path) as pdf:
+            if not pdf.pages:
+                # pdfminer a renoncé sans le dire : on repasse par pypdf
+                return _via_pypdf(path, ocr)
             natif = "\n\n".join(page.extract_text() or "" for page in pdf.pages).strip()
             if len(natif) >= SEUIL_TEXTE_NATIF:
                 return natif, "ok"
@@ -44,3 +57,32 @@ def _ocr(pdf: pdfplumber.PDF) -> str:
         image = page.to_image(resolution=200).original
         pages.append(pytesseract.image_to_string(image, lang="fra"))
     return "\n\n".join(pages).strip()
+
+
+def _via_pypdf(path: Path, ocr: bool) -> tuple[str, str]:
+    """Lecteur de secours pour les PDF que pdfminer n'ouvre pas.
+
+    Même contrat de retour que `extraire_texte`. Sur un scan, on océrise les
+    images plein cadre portées par chaque page plutôt que de rastériser le PDF
+    (pas de dépendance à poppler, absent des images Docker).
+    """
+    from pypdf import PdfReader
+
+    lecteur = PdfReader(str(path))
+    if not lecteur.pages:
+        logger.warning("PDF illisible même par pypdf : %s", path)
+        return "", "echec"
+
+    natif = "\n\n".join(page.extract_text() or "" for page in lecteur.pages).strip()
+    if len(natif) >= SEUIL_TEXTE_NATIF:
+        return natif, "ok"
+    if not ocr:
+        return natif, "scan"
+
+    import pytesseract
+
+    pages = []
+    for page in lecteur.pages:
+        for image in page.images:
+            pages.append(pytesseract.image_to_string(image.image, lang="fra"))
+    return "\n\n".join(pages).strip(), "ocr"

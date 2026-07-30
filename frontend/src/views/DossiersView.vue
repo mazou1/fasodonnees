@@ -30,6 +30,18 @@
 <script setup>
 const DOSSIERS = [
   {
+    categorie: "Redevabilité · transversal",
+    titre: "Suivi des annonces",
+    description:
+      "De l'annonce en Conseil des ministres au ruban coupé : les engagements financiers, "
+      + "les marchés attribués et les ouvrages livrés réunis en dossiers, chaque maillon "
+      + "renvoyant à son document officiel.",
+    etiquettes: ["Annoncé → livré", "Rapprochements relus", "Sources officielles"],
+    lien: "/suivi",
+    externe: false,
+    couleur: "#1f5c9c",
+  },
+  {
     categorie: "Développement · 2026-2030",
     titre: "Plan de relance — PND R.E.L.A.N.C.E.",
     description:

@@ -28,6 +28,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.extraction.pdf import extraire_texte
 from app.models import Document
+from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +39,10 @@ LANGUES_NATIONALES = r"(GULIMANCEMA|MOORE|MOORÉ|FULFULDE|DIOULA|JULA)"
 def _lien_pdf(doc: Document) -> str | None:
     if not doc.fichier:
         return None
-    chemin = settings.data_dir / doc.fichier
-    if not chemin.exists():
-        logger.warning("Archive HTML introuvable pour le document %s : %s", doc.id, chemin)
+    if not stockage.existe(doc.fichier):
+        logger.warning("Archive HTML introuvable pour le document %s : %s", doc.id, doc.fichier)
         return None
-    tree = HTMLParser(chemin.read_text(errors="replace"))
+    tree = HTMLParser(stockage.lire(doc.fichier).decode(errors="replace"))
     for a in tree.css("a[href]"):
         href = a.attributes.get("href") or ""
         if ".pdf" in href.lower():
@@ -53,10 +53,7 @@ def _lien_pdf(doc: Document) -> str | None:
 def _archiver_pdf(contenu: bytes, annee: str) -> tuple[str, str]:
     digest = hashlib.sha256(contenu).hexdigest()
     rel = f"conseil_ministres/pdf/{annee}/{digest[:16]}.pdf"
-    chemin = settings.data_dir / rel
-    chemin.parent.mkdir(parents=True, exist_ok=True)
-    if not chemin.exists():
-        chemin.write_bytes(contenu)
+    stockage.ecrire(rel, contenu)
     return rel, digest
 
 
@@ -75,7 +72,8 @@ def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     annee = str(doc.date_publication.year) if doc.date_publication else "inconnue"
     rel, _digest = _archiver_pdf(resp.content, annee)
 
-    texte, statut = extraire_texte(settings.data_dir / rel)
+    with stockage.fichier_local(rel) as chemin:
+        texte, statut = extraire_texte(chemin)
     meta.update({"pdf_url": url, "pdf_statut": statut, "html_fichier": doc.fichier})
     doc.meta = meta
     doc.fichier = rel

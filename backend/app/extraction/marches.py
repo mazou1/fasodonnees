@@ -6,30 +6,88 @@ Quotidien (DGCMEF) sont des tableaux à colonnes préservées par pdfplumber ;
 référence, l'attributaire retenu et son montant. Les résultats arrivent en
 statut_validation='a_valider' — validation humaine avant publication.
 
+⚠️ Le Quotidien REPUBLIE la même synthèse de résultats dans des numéros
+successifs (une attribution vue dans 18 numéros d'affilée, constatée en
+juillet 2026). Sans garde-fou, chaque republication crée une ligne de plus et
+multiplie d'autant le total attribué à l'entreprise. Une attribution est donc
+identifiée par son EMPREINTE (référence, attributaire, montant, objet) et
+n'est enregistrée qu'à sa première parution.
+
 Usage : python -m app.extraction.marches [max_docs]
+        python -m app.extraction.marches renettoyer | dedoublonner
 """
 
 from __future__ import annotations
 
 import logging
+import re
 import sys
+from datetime import date
 
 from sqlalchemy import select
 
-from app.config import settings
 from app.db import SessionLocal
 from app.extraction.marches_tableau import extraire_marches
 from app.models import Document, Marche
+from app.stockage import stockage
 
 
-def traiter_document(db, doc: Document) -> int:
-    """Extrait les marchés attribués d'un Quotidien depuis son PDF archivé."""
+def _normaliser(valeur) -> str:
+    return re.sub(r"\s+", " ", str(valeur or "")).strip().lower()
+
+
+def empreinte(reference, attributaire, montant_fcfa, objet) -> str:
+    """Identifie une ATTRIBUTION, indépendamment du numéro qui la publie.
+
+    Deux lignes de même référence, même attributaire, même montant et même
+    objet sont la même attribution republiée — jamais deux marchés distincts.
+    La normalisation ne touche qu'à la casse et aux espaces : elle absorbe les
+    variations de mise en page du PDF, pas une différence de fond.
+    """
+    return "|".join(
+        [
+            _normaliser(reference),
+            _normaliser(attributaire),
+            str(montant_fcfa if montant_fcfa is not None else ""),
+            _normaliser(objet),
+        ]
+    )
+
+
+def empreinte_de(m: Marche) -> str:
+    return empreinte(m.reference, m.attributaire, m.montant_fcfa, m.objet)
+
+
+def empreintes_connues(db) -> set[str]:
+    lignes = db.execute(
+        select(Marche.reference, Marche.attributaire, Marche.montant_fcfa, Marche.objet)
+    ).all()
+    return {empreinte(*ligne) for ligne in lignes}
+
+
+def traiter_document(db, doc: Document, connues: set[str] | None = None) -> tuple[int, int]:
+    """Extrait les marchés attribués d'un Quotidien depuis son PDF archivé.
+
+    Retourne (ajoutés, republications ignorées). `connues` permet à l'appelant
+    de porter l'ensemble des empreintes d'un document à l'autre plutôt que de
+    le relire à chaque fois.
+    """
     if not doc.fichier:
-        return 0
+        return 0, 0
     from app.extraction.secteurs import secteur_de
 
-    marches = extraire_marches(settings.data_dir / doc.fichier)
+    if connues is None:
+        connues = empreintes_connues(db)
+
+    ajoutes = ignores = 0
+    with stockage.fichier_local(doc.fichier) as chemin:
+        marches = extraire_marches(chemin)
     for m in marches:
+        cle = empreinte(m.get("reference"), m["attributaire"], m["montant_fcfa"], m["objet"])
+        if cle in connues:  # déjà parue dans un numéro précédent (ou plus haut
+            ignores += 1    # dans ce même numéro)
+            continue
+        connues.add(cle)
         db.add(
             Marche(
                 document_id=doc.id,
@@ -46,8 +104,46 @@ def traiter_document(db, doc: Document) -> int:
                 statut_validation="a_valider",
             )
         )
+        ajoutes += 1
     db.commit()
-    return len(marches)
+    return ajoutes, ignores
+
+
+def dedoublonner() -> int:
+    """Supprime les republications déjà en base (stock antérieur au garde-fou).
+
+    On garde la PREMIÈRE parution — la date d'attribution en est d'autant plus
+    juste — et on lui reporte le statut `valide` si une des republications
+    avait déjà été validée à la main : le travail du valideur n'est pas perdu.
+    Les Quotidiens eux-mêmes restent archivés, seule la ligne dérivée part.
+    """
+    with SessionLocal() as db:
+        groupes: dict[str, list[Marche]] = {}
+        for m in db.scalars(select(Marche)):
+            groupes.setdefault(empreinte_de(m), []).append(m)
+
+        supprimes = valides_reportes = 0
+        for lignes in groupes.values():
+            if len(lignes) < 2:
+                continue
+            lignes.sort(key=lambda m: (m.date_attribution or date.max, m.id))
+            garde, doublons = lignes[0], lignes[1:]
+            if garde.statut_validation != "valide" and any(
+                d.statut_validation == "valide" for d in doublons
+            ):
+                garde.statut_validation = "valide"
+                valides_reportes += 1
+            for d in doublons:
+                db.delete(d)
+                supprimes += 1
+        db.commit()
+        print(
+            f"{supprimes} republication(s) supprimée(s) ; {valides_reportes} validation(s) "
+            "humaine(s) reportée(s) sur la première parution."
+        )
+        if supprimes:
+            print("Pensez à relancer : python -m app.attributaires consolider")
+    return 0
 
 
 def renettoyer_objets() -> int:
@@ -89,6 +185,8 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     if len(sys.argv) > 1 and sys.argv[1] == "renettoyer":
         return renettoyer_objets()
+    if len(sys.argv) > 1 and sys.argv[1] == "dedoublonner":
+        return dedoublonner()
     max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 20
     with SessionLocal() as db:
         deja = select(Marche.document_id).distinct().subquery()
@@ -105,12 +203,20 @@ def main() -> int:
         if not docs:
             print("Aucun Quotidien en attente d'extraction.")
             return 0
-        total = 0
+        connues = empreintes_connues(db)
+        total = republications = 0
         for doc in docs:
-            n = traiter_document(db, doc)
+            n, ignores = traiter_document(db, doc, connues)
             total += n
-            logging.info("%s : %d marché(s) attribué(s)", doc.titre, n)
-        print(f"{len(docs)} Quotidien(s) : {total} marché(s) à valider dans /admin.")
+            republications += ignores
+            logging.info(
+                "%s : %d marché(s) attribué(s), %d republication(s) ignorée(s)",
+                doc.titre, n, ignores,
+            )
+        print(
+            f"{len(docs)} Quotidien(s) : {total} marché(s) à valider dans /admin"
+            f" ({republications} republication(s) ignorée(s))."
+        )
     return 0
 
 

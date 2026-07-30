@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 
 from app.ingestion.base import Collector
 from app.ingestion.actualites_gouv import ActualitesGouvCollector
+from app.ingestion.asce_lc import AsceLcCollector
 from app.ingestion.assemblee import AssembleeCollector
+from app.ingestion.conseil_constitutionnel import ConseilConstitutionnelCollector
 from app.ingestion.conseil_ministres import ConseilMinistresCollector
 from app.ingestion.dgcmef import DgcmefCollector
 from app.ingestion.finances import BudgetCitoyenCollector
@@ -39,6 +41,14 @@ SEEDS: list[tuple[str, str, str, str, str]] = [
     ("finances", "Ministère de l'Économie et des Finances", "https://www.finances.gov.bf", "institutionnel", "quotidien"),
     ("dgcmef", "Marchés publics (DGCMEF)", "https://www.dgcmef.gov.bf", "institutionnel", "quotidien"),
     ("jobf", "Journal officiel du Burkina Faso", "https://www.jobf.gov.bf", "institutionnel", "hebdo"),
+    # Justice & contrôle — vérifié HTTP 200 le 2026-07-29. Publication peu
+    # fréquente (quelques pièces par mois) : une passe hebdomadaire suffit.
+    ("conseil_constitutionnel", "Conseil constitutionnel",
+     "https://www.conseil-constitutionnel.gov.bf", "institutionnel", "hebdo"),
+    ("asce_lc", "ASCE-LC (contrôle d'État et lutte anticorruption)",
+     "https://www.asce-lc.bf", "institutionnel", "hebdo"),
+    # NB : la Cour des comptes n'a pas de site accessible (aucun domaine ne
+    # répond au 2026-07-29) — ses rapports ne sont donc pas collectables.
 ]
 
 RSS_FEEDS: dict[str, str] = {
@@ -58,6 +68,8 @@ COLLECTORS: dict[str, type[Collector]] = {
     AssembleeCollector.slug: AssembleeCollector,
     BudgetCitoyenCollector.slug: BudgetCitoyenCollector,
     DgcmefCollector.slug: DgcmefCollector,
+    ConseilConstitutionnelCollector.slug: ConseilConstitutionnelCollector,
+    AsceLcCollector.slug: AsceLcCollector,
     # Présidence : wp-json fermé (401) mais flux RSS actif — communiqués officiels
     "presidence": make_rss_collector(
         "presidence", "https://www.presidencedufaso.bf/feed/", type_doc="communique"

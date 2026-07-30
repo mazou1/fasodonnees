@@ -74,12 +74,34 @@
     </table>
   </section>
 
+  <section v-if="stats && stats.top_entreprises.length" class="carte">
+    <h2>Top 15 des entreprises attributaires{{ secteur ? " — " + secteur : "" }}</h2>
+    <table class="tableau">
+      <thead>
+        <tr><th>Entreprise</th><th class="num">Marchés</th><th class="num">Montant</th><th class="num">Part</th></tr>
+      </thead>
+      <tbody>
+        <tr v-for="e in stats.top_entreprises" :key="e.cle">
+          <td>
+            <router-link v-if="e.id" :to="`/marches/entreprises/${e.id}`">{{ e.cle }}</router-link>
+            <template v-else>{{ e.cle }}</template>
+          </td>
+          <td class="num">{{ e.nombre }}</td>
+          <td class="num">{{ fmtFCFA(e.montant_fcfa) }}</td>
+          <td class="num">{{ part(e.montant_fcfa) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
   <p v-if="chargement" class="chargement">Chargement…</p>
   <p v-else-if="stats && !stats.total" class="vide">Aucun marché pour ce filtre.</p>
 
   <p class="note-methode">
     Secteur déduit automatiquement de l'objet du marché (heuristique par mots-clés) ;
-    en cas de doute, le journal officiel fait foi.
+    en cas de doute, le journal officiel fait foi. Les entreprises sont regroupées à partir
+    des graphies des Quotidiens (casse, accents, forme juridique) : une même société y est
+    souvent écrite de plusieurs façons.
   </p>
 </template>
 

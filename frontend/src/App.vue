@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const router = useRouter();
@@ -25,32 +25,116 @@ function basculerTheme() {
   localStorage.setItem("theme", theme.value);
 }
 
-// fermer la feuille de menu à chaque navigation
-watch(() => route.fullPath, () => (menuOuvert.value = false));
+// fermer la feuille de menu ET le déroulant à chaque navigation
+watch(() => route.fullPath, () => {
+  menuOuvert.value = false;
+  groupeOuvert.value = null;
+});
 
-const LIENS = [
-  ["/", "Tableau de bord"],
-  ["/actualites", "Actualités"],
-  ["/gouvernement", "Gouvernement"],
-  ["/assemblee", "Assemblée"],
-  ["/conseils", "Conseil des ministres"],
-  ["/textes", "Lois & décrets"],
-  ["/finances", "Finances"],
-  ["/marches", "Marchés publics"],
-  ["/infrastructures", "Infrastructures"],
-  ["/annuaire", "Annuaire de l'État"],
-  ["/services-numeriques", "Services en ligne"],
-  ["/documents", "Documents"],
-  ["/dossiers", "Dossiers"],
+// Navigation à deux niveaux : 14 rubriques à plat débordaient sur trois lignes
+// dans un en-tête collant, soit un tiers de l'écran occupé en permanence sur un
+// portable. Les groupes suivent des familles de sens, pas des commodités de
+// rangement — « Budget & exécution » raconte d'ailleurs la chaîne budget →
+// marché → ouvrage livré, celle-là même que suivent les dossiers.
+const NAVIGATION = [
+  { chemin: "/", libelle: "Tableau de bord" },
+  { chemin: "/actualites", libelle: "Actualités" },
+  {
+    libelle: "Institutions",
+    enfants: [
+      ["/gouvernement", "Gouvernement"],
+      ["/assemblee", "Assemblée"],
+      ["/annuaire", "Annuaire de l'État"],
+    ],
+  },
+  {
+    libelle: "Décisions & textes",
+    enfants: [
+      ["/conseils", "Conseil des ministres"],
+      ["/textes", "Lois & décrets"],
+      ["/controle", "Justice & contrôle"],
+    ],
+  },
+  {
+    // « exécution » au sens budgétaire : ce qui advient du budget une fois voté
+    // — marchés passés, ouvrages livrés, écart entre l'annonce et la livraison.
+    libelle: "Budget & exécution",
+    enfants: [
+      ["/finances", "Budget de l'État"],
+      ["/marches", "Marchés publics"],
+      ["/infrastructures", "Infrastructures"],
+      ["/suivi", "Suivi des annonces"],
+    ],
+  },
+  {
+    libelle: "Ressources",
+    enfants: [
+      ["/documents", "Documents"],
+      ["/dossiers", "Dossiers"],
+      ["/services-numeriques", "Services en ligne"],
+    ],
+  },
 ];
+
+// liste à plat : la feuille mobile et les tests s'appuient dessus
+const LIENS = NAVIGATION.flatMap((e) =>
+  e.enfants ? e.enfants : [[e.chemin, e.libelle]]
+);
+
+const groupeOuvert = ref(null);
+
+/** Un groupe s'affiche actif quand la page courante est l'un de ses enfants. */
+function groupeActif(entree) {
+  return !!entree.enfants?.some(([chemin]) => route.path.startsWith(chemin));
+}
+
+function basculerGroupe(libelle) {
+  groupeOuvert.value = groupeOuvert.value === libelle ? null : libelle;
+}
+
+// Fermeture au clic extérieur et à la touche Échap — un menu déroulant qui
+// reste ouvert quand on clique ailleurs donne l'impression d'une page figée.
+function fermerGroupe(evenement) {
+  if (!evenement || !evenement.target.closest?.(".nav-groupe")) {
+    groupeOuvert.value = null;
+  }
+}
+function surEchap(e) {
+  if (e.key === "Escape") fermerGroupe();
+}
+onMounted(() => {
+  document.addEventListener("click", fermerGroupe);
+  document.addEventListener("keydown", surEchap);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("click", fermerGroupe);
+  document.removeEventListener("keydown", surEchap);
+});
 </script>
 
 <template>
   <header v-if="!immersif" class="entete">
     <div class="entete-inner">
-      <router-link to="/" class="marque">Faso <span>Repères</span></router-link>
+      <router-link to="/" class="marque">Faso <span>Données Publiques</span></router-link>
       <nav class="nav">
-        <router-link v-for="[chemin, libelle] in LIENS" :key="chemin" :to="chemin">{{ libelle }}</router-link>
+        <template v-for="entree in NAVIGATION" :key="entree.libelle">
+          <router-link v-if="entree.chemin" :to="entree.chemin">{{ entree.libelle }}</router-link>
+          <div v-else class="nav-groupe">
+            <button
+              :class="{ actif: groupeActif(entree), ouvert: groupeOuvert === entree.libelle }"
+              :aria-expanded="groupeOuvert === entree.libelle"
+              aria-haspopup="true"
+              @click.stop="basculerGroupe(entree.libelle)"
+            >
+              {{ entree.libelle }}<span class="chevron" aria-hidden="true">▾</span>
+            </button>
+            <div v-if="groupeOuvert === entree.libelle" class="sous-menu">
+              <router-link v-for="[chemin, libelle] in entree.enfants" :key="chemin" :to="chemin">
+                {{ libelle }}
+              </router-link>
+            </div>
+          </div>
+        </template>
       </nav>
       <input
         v-model="q"
@@ -106,7 +190,16 @@ const LIENS = [
 
   <div v-if="menuOuvert" class="voile-menu" @click="menuOuvert = false">
     <nav class="feuille-menu" @click.stop>
-      <router-link v-for="[chemin, libelle] in LIENS" :key="chemin" :to="chemin">{{ libelle }}</router-link>
+      <template v-for="entree in NAVIGATION" :key="entree.libelle">
+        <router-link v-if="entree.chemin" :to="entree.chemin">{{ entree.libelle }}</router-link>
+        <template v-else>
+          <div class="titre-groupe">{{ entree.libelle }}</div>
+          <router-link v-for="[chemin, libelle] in entree.enfants" :key="chemin" :to="chemin">
+            {{ libelle }}
+          </router-link>
+        </template>
+      </template>
+      <div class="titre-groupe">Aller plus loin</div>
       <router-link to="/dossiers/plan-relance">Plan de relance</router-link>
       <router-link to="/glossaire">Glossaire</router-link>
     </nav>

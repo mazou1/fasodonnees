@@ -27,6 +27,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.extraction.pdf import extraire_texte
 from app.models import Document
+from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +67,10 @@ def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     digest = hashlib.sha256(resp.content).hexdigest()
     annee = str(doc.date_publication.year) if doc.date_publication else "inconnue"
     rel = f"legiburkina/pdf/{annee}/{digest[:16]}.pdf"
-    chemin = settings.data_dir / rel
-    chemin.parent.mkdir(parents=True, exist_ok=True)
-    if not chemin.exists():
-        chemin.write_bytes(resp.content)
+    stockage.ecrire(rel, resp.content)
 
-    texte, statut = extraire_texte(chemin, ocr=False)
+    with stockage.fichier_local(rel) as chemin:
+        texte, statut = extraire_texte(chemin, ocr=False)
     meta["pdf_statut"] = statut
     doc.meta = meta
     doc.fichier = rel

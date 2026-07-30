@@ -21,12 +21,39 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # Stockage objet de l'archive brute — OPTIONNEL, activé par
+  #   docker compose -f docker-compose.prod.yml --profile garage up -d
+  #
+  # ⚠ Sur CE VPS, Garage partage le disque et le domaine de panne de
+  # l'application : il n'apporte alors AUCUNE durabilité supplémentaire. Il ne
+  # protège que s'il tourne sur une autre machine (ou en réplication multi-nœud)
+  # — ou si l'on pointe FASO_S3_ENDPOINT vers un S3 externe et qu'on laisse ce
+  # profil désactivé. Détail du choix dans deploy/README.md.
+  garage:
+    image: dxflrs/garage:v1.0.1
+    profiles: ["garage"]
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?GARAGE_RPC_SECRET manquant (openssl rand -hex 32)}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:?GARAGE_ADMIN_TOKEN manquant (openssl rand -hex 32)}
+      GARAGE_METRICS_TOKEN: ${GARAGE_METRICS_TOKEN:-}
+    volumes:
+      - ./deploy/garage.toml:/etc/garage.toml:ro
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+    restart: unless-stopped
+
   api:
     build: ./backend
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       FASO_DATABASE_URL: postgresql+psycopg://faso:${POSTGRES_PASSWORD}@db:5432/faso
       FASO_DATA_DIR: /data
+      FASO_STOCKAGE: ${FASO_STOCKAGE:-local}
+      FASO_S3_ENDPOINT: ${FASO_S3_ENDPOINT:-}
+      FASO_S3_BUCKET: ${FASO_S3_BUCKET:-faso-archives}
+      FASO_S3_ACCESS_KEY: ${FASO_S3_ACCESS_KEY:-}
+      FASO_S3_SECRET_KEY: ${FASO_S3_SECRET_KEY:-}
+      FASO_S3_REGION: ${FASO_S3_REGION:-garage}
       FASO_ADMIN_USER: ${FASO_ADMIN_USER:?}
       FASO_ADMIN_PASSWORD: ${FASO_ADMIN_PASSWORD:?}
       FASO_SECRET_KEY: ${FASO_SECRET_KEY:?}
@@ -48,6 +75,12 @@ services:
     environment:
       FASO_DATABASE_URL: postgresql+psycopg://faso:${POSTGRES_PASSWORD}@db:5432/faso
       FASO_DATA_DIR: /data
+      FASO_STOCKAGE: ${FASO_STOCKAGE:-local}
+      FASO_S3_ENDPOINT: ${FASO_S3_ENDPOINT:-}
+      FASO_S3_BUCKET: ${FASO_S3_BUCKET:-faso-archives}
+      FASO_S3_ACCESS_KEY: ${FASO_S3_ACCESS_KEY:-}
+      FASO_S3_SECRET_KEY: ${FASO_S3_SECRET_KEY:-}
+      FASO_S3_REGION: ${FASO_S3_REGION:-garage}
       FASO_LLM_PROVIDER: ${FASO_LLM_PROVIDER:-mistral}
       FASO_MISTRAL_API_KEY: ${FASO_MISTRAL_API_KEY:-}
       FASO_ANTHROPIC_API_KEY: ${FASO_ANTHROPIC_API_KEY:-}
@@ -86,3 +119,6 @@ volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  # à sauvegarder au même titre que la base : c'est le corpus brut
+  garage_meta:
+  garage_data:

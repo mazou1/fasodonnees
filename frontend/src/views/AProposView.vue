@@ -7,7 +7,7 @@
       <h2>La mission</h2>
       <div class="detail">
         <p>
-          Faso Repères est une <strong>plateforme citoyenne indépendante</strong> qui rend l'information
+          Faso Données Publiques est une <strong>plateforme citoyenne indépendante</strong> qui rend l'information
           publique du Burkina Faso accessible et interrogeable : décisions du Conseil des ministres,
           nominations officielles, textes de loi, engagements financiers de l'État.
         </p>
@@ -112,7 +112,7 @@
           <li><a href="/api/export/textes.csv">Lois &amp; décrets</a> — références des textes juridiques</li>
         </ul>
         <p class="note-licence">
-          Réutilisation libre en citant « Faso Repères » et la source officielle d'origine.
+          Réutilisation libre en citant « Faso Données Publiques » et la source officielle d'origine.
           Chaque fichier inclut le lien vers le document source de chaque ligne.
         </p>
         <p><strong>Suivre par flux RSS</strong> (dans votre lecteur, sans compte) :</p>

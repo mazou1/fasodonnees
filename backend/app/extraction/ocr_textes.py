@@ -15,21 +15,31 @@ import sys
 
 from sqlalchemy import case, select
 
-from app.config import settings
 from app.db import SessionLocal
 from app.extraction.pdf import extraire_texte
 from app.models import Document
+from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
 PRIORITE = case(
     (Document.type_doc == "constitution", 0),
     (Document.type_doc == "charte", 1),
-    (Document.type_doc == "loi", 2),
-    (Document.type_doc == "ordonnance", 3),
-    else_=4,  # décrets, arrêtés… — le gros volume, en dernier
+    # jurisprudence constitutionnelle et rapports de contrôle : peu nombreux,
+    # entièrement scannés, et sans texte ils sont introuvables — donc tôt
+    (Document.type_doc == "decision_constitutionnelle", 2),
+    (Document.type_doc == "avis_constitutionnel", 2),
+    (Document.type_doc == "ordonnance_constitutionnelle", 2),
+    (Document.type_doc == "rapport_controle", 2),
+    (Document.type_doc == "loi", 3),
+    (Document.type_doc == "ordonnance", 4),
+    else_=5,  # décrets, arrêtés… — le gros volume, en dernier
 )
-TYPES_CIBLES = ("constitution", "charte", "loi", "ordonnance", "decret", "arrete", "texte_juridique")
+TYPES_CIBLES = (
+    "constitution", "charte", "loi", "ordonnance", "decret", "arrete", "texte_juridique",
+    "decision_constitutionnelle", "avis_constitutionnel", "ordonnance_constitutionnelle",
+    "rapport_controle", "affaire_anticorruption",
+)
 
 
 def main() -> int:
@@ -51,7 +61,10 @@ def main() -> int:
             return 0
         ok = echecs = 0
         for i, doc in enumerate(docs):
-            texte, statut = extraire_texte(settings.data_dir / doc.fichier, ocr=True)
+            # en stockage objet, chaque document est retiré du bucket dans un
+            # fichier temporaire puis effacé — d'où le context manager
+            with stockage.fichier_local(doc.fichier) as chemin:
+                texte, statut = extraire_texte(chemin, ocr=True)
             meta = dict(doc.meta or {})
             if statut == "ocr" and len(texte) >= 200:
                 doc.texte_extrait = texte

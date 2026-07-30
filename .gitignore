@@ -13,6 +13,14 @@ __pycache__/
 # Ancré sur le dossier d'archives ; le référentiel bundlé backend/app/data/ reste versionné.
 /backend/data/
 
+# Fichiers de travail des consolidations assistées (regénérables). Celui des
+# rapprochements attributaire ↔ annuaire porte des données nominatives non
+# vérifiées : il ne doit jamais partir dans un dépôt public.
+fusion_propositions.csv
+attributaires_propositions.csv
+attributaires_personnes.csv
+projets_propositions.csv
+
 # Divers
 *.log
 .DS_Store

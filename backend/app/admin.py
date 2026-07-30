@@ -15,6 +15,7 @@ from starlette.responses import RedirectResponse
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.models import (
+    Attributaire,
     BudgetExercice,
     Decision,
     Document,
@@ -26,6 +27,7 @@ from app.models import (
     MembreGouvernement,
     Nomination,
     Personne,
+    Projet,
     Realisation,
     RepartitionBudgetaire,
     Run,
@@ -299,12 +301,84 @@ class RealisationAdmin(ValidationActionsMixin, ModelView, model=Realisation):
         Realisation.source_url,
         Realisation.photo_url,
         Realisation.document,
+        Realisation.projet,  # rattachement au dossier de suivi
         Realisation.statut_validation,
     ]
     column_searchable_list = [Realisation.titre, Realisation.localisation_nom]
     column_sortable_list = [Realisation.date_evenement, Realisation.type, Realisation.statut_validation]
     column_default_sort = ("date_evenement", True)
     icon = "fa-solid fa-helmet-safety"
+
+
+class ProjetAdmin(ValidationActionsMixin, ModelView, model=Projet):
+    """Dossiers de suivi : annonce → attribution → livraison.
+
+    Créés par `python -m app.projets appliquer` (les propositions relues), ou à
+    la main ici. Le rattachement d'une pièce se fait depuis la pièce elle-même
+    (champ `projet` des vues Marchés, Engagements et Infrastructures) : c'est
+    là qu'on a le libellé sous les yeux pour juger.
+
+    `defaut_a_valider = False` : un dossier n'est pas une extraction
+    automatique, il naît d'une décision humaine — la liste les montre tous.
+    """
+
+    modele = Projet
+    defaut_a_valider = False
+    name = "Dossier de suivi"
+    name_plural = "Dossiers de suivi (annonce → livraison)"
+    page_size = 100
+    column_list = [
+        Projet.id,
+        Projet.titre,
+        Projet.secteur,
+        Projet.region,
+        Projet.statut_validation,
+    ]
+    form_columns = [
+        Projet.titre,
+        Projet.secteur,
+        Projet.region,
+        Projet.notes,
+        Projet.statut_validation,
+    ]
+    column_searchable_list = [Projet.titre]
+    column_sortable_list = [Projet.id, Projet.secteur, Projet.statut_validation]
+    column_default_sort = ("id", True)
+    icon = "fa-solid fa-diagram-project"
+
+
+class AttributaireAdmin(ModelView, model=Attributaire):
+    """Entités consolidées derrière les raisons sociales des marchés.
+
+    Vue de CORRECTION, pas de validation : ces lignes sont dérivées, pas
+    extraites (cf. app/attributaires.py). On y corrige une graphie retenue
+    — cocher alors `nom_fige` pour que la consolidation ne la réécrive pas —
+    et on rattache une variante à sa canonique via `canonique`.
+    """
+
+    name = "Attributaire"
+    name_plural = "Attributaires (entreprises consolidées)"
+    page_size = 100
+    column_list = [
+        Attributaire.id,
+        Attributaire.nom,
+        Attributaire.nom_normalise,
+        Attributaire.canonique,
+        Attributaire.nom_fige,
+        Attributaire.notes,
+    ]
+    form_columns = [
+        Attributaire.nom,
+        Attributaire.canonique,
+        Attributaire.nom_fige,
+        Attributaire.notes,
+    ]
+    column_searchable_list = [Attributaire.nom, Attributaire.nom_normalise]
+    column_sortable_list = [Attributaire.nom, Attributaire.id]
+    column_default_sort = ("nom", False)
+    can_create = False  # créées par la consolidation, jamais à la main
+    can_delete = False  # supprimer délierait des marchés : fusionner à la place
+    icon = "fa-solid fa-building"
 
 
 class LocaliteAdmin(ModelView, model=Localite):
@@ -475,7 +549,7 @@ def mount_admin(app: FastAPI) -> None:
     admin = Admin(
         app,
         engine,
-        title="Faso Repères — Admin",
+        title="Faso Données Publiques — Admin",
         authentication_backend=AdminAuth(secret_key=settings.secret_key),
     )
     admin.add_view(AValiderView)
@@ -487,7 +561,9 @@ def mount_admin(app: FastAPI) -> None:
         EngagementAdmin,
         BudgetAdmin,
         MarcheAdmin,
+        AttributaireAdmin,
         RealisationAdmin,
+        ProjetAdmin,
         DotationAdmin,
         RepartitionAdmin,
         MembreGouvernementAdmin,

@@ -1,4 +1,4 @@
-# Faso Repères — l'information publique du Burkina Faso
+# Faso Données Publiques — l'information publique du Burkina Faso
 
 [![Licence: GPL-3.0](https://img.shields.io/badge/licence-GPL--3.0-009e49)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-15a35b)
@@ -14,8 +14,8 @@ Inspirée de [vie-publique.sn](https://www.vie-publique.sn) (Code for Senegal).
 
 <table>
   <tr>
-    <td><img src="docs/captures/accueil.png" alt="Tableau de bord Faso Repères — thème clair"></td>
-    <td><img src="docs/captures/accueil-dark.png" alt="Tableau de bord Faso Repères — thème sombre"></td>
+    <td><img src="docs/captures/accueil.png" alt="Tableau de bord Faso Données Publiques — thème clair"></td>
+    <td><img src="docs/captures/accueil-dark.png" alt="Tableau de bord Faso Données Publiques — thème sombre"></td>
   </tr>
 </table>
 
@@ -43,10 +43,12 @@ Inspirée de [vie-publique.sn](https://www.vie-publique.sn) (Code for Senegal).
 | **Gouvernement** | Composition officielle avec portraits (Présidence du Faso), suivie à chaque remaniement |
 | **Assemblée** | 71 députés synchronisés depuis an.bf, président de l'ALT, lois votées |
 | **Lois & décrets** | ~4 900 textes juridiques (Légiburkina) avec PDF archivés et recherche plein texte (OCR) |
-| **Marchés publics** | Attributions extraites des Quotidiens de la DGCMEF (attributaire, montant, objet, secteur) |
+| **Marchés publics** | Attributions extraites des Quotidiens de la DGCMEF (attributaire, montant, objet, secteur), avec **fiche par entreprise** : ce qu'elle a remporté, auprès de quelles autorités contractantes, dans quels secteurs |
 | **Finances** | Budget de l'État par exercice, répartition recettes/dépenses, allocations sectorielles, 428 engagements chiffrés du Conseil des ministres |
 | **Documents** | Bibliothèque de ~5 000 documents officiels archivés, facettes par type et source |
 | **Recherche** | Plein texte français sur tout le corpus, extraits surlignés |
+| **Justice & contrôle** | Jurisprudence du Conseil constitutionnel (décisions, avis, ordonnances depuis 2011) et rapports d'audit de l'ASCE-LC (SONABHY, SONABEL, rapports annuels d'activités) |
+| **Suivi des annonces** | Dossiers reliant l'annonce en Conseil des ministres, le marché attribué et l'ouvrage livré — le stade atteint n'est affiché que si une pièce l'atteste |
 | **Dossiers** | Grands sujets (dont le [Plan de relance PND 2026-2030](apps/plan-relance/)) |
 
 <table>
@@ -155,6 +157,9 @@ backend/
     annuaire_taxonomie.py   # type d'institution, portefeuilles, régions (réforme 2025)
     desambiguisation.py     # homonymes : matricules extraits des CR
     fusion.py       # dédoublonnage des structures
+    attributaires.py # entreprises attributaires : regroupement des raisons sociales
+    projets.py      # dossiers de suivi : annonce → attribution → livraison
+    stockage.py     # archive brute : disque local ou bucket S3 (Garage/externe)
     geo.py          # géocodage (PostGIS, pg_trgm) ; geo_seed.py charge le gazetteer
     models.py       # schéma SQLAlchemy ; alembic/ = migrations
 frontend/           # SPA Vue 3 + Vite, servie par nginx (proxy /api)
@@ -178,7 +183,7 @@ Chaque brique a une voie de montée en charge sans réécriture :
 | Frontend | SPA Vue 3 + Vite, `dist` servie par nginx | statique, cacheable, pas de SSR à opérer | SSR/SSG (Nuxt) pour le SEO et le partage social |
 | Cartographie | MapLibre GL + tuiles CARTO | pas de clé API, thème clair/sombre | fonds de carte auto-hébergés (tuiles vectorielles) pour l'autonomie |
 | Déploiement | Docker Compose, VPS unique derrière Caddy | un serveur, HTTPS automatique | conteneurs séparés / orchestrateur si le trafic l'exige ; réplique de lecture DB |
-| Archivage `data/` | volume disque du VPS | simple, sauvegardé par script | stockage objet (S3/Garage) pour la durabilité et le partage des sources brutes |
+| Archivage `data/` | disque du VPS **ou** bucket S3 (`FASO_STOCKAGE`) | le disque ne demande aucune dépendance ; le bucket sert les PDF par URL présignée et prépare la sortie de machine | Garage sur un hôte séparé ou en multi-nœud, ou S3 externe — l'endpoint suffit à basculer |
 
 ## Sources collectées
 
@@ -189,6 +194,8 @@ Chaque brique a une voie de montée en charge sans réécriture :
 | assembleenationale.bf | Députés, président de l'ALT | quotidien |
 | presidencedufaso.bf | Communiqués (RSS), composition du gouvernement | quotidien |
 | dgcmef.gov.bf | Quotidiens des marchés publics (attributions) | quotidien |
+| conseil-constitutionnel.gov.bf | Décisions, avis et ordonnances (PDF, par année) | hebdomadaire |
+| asce-lc.bf | Rapports d'audit et de contrôle, affaires anticorruption, déclarations de patrimoine | hebdomadaire |
 | finances.gov.bf | Veille du Budget citoyen | quotidien |
 | lefaso.net, sidwaya.info, aib.media, burkina24.com, lepays.bf | Actualités (RSS) | 30 min |
 
@@ -245,6 +252,15 @@ python -m app.desambiguisation           # matricules + éclatement des homonyme
 python -m app.annuaire                    # reconsolide les mandats (+ successions)
 python -m app.fusion proposer 0.75        # doublons de structures → CSV à relire
 python -m app.extraction.ocr_textes 500   # OCR des textes scannés (worker, Tesseract)
+python -m app.attributaires consolider    # regroupe les raisons sociales des marchés
+python -m app.attributaires proposer 0.65 # variantes proches → CSV à relire, puis « appliquer »
+python -m app.extraction.marches dedoublonner  # purge les republications du Quotidien
+python -m app.projets proposer 0.30       # annonce ↔ marché ↔ réalisation → CSV à relire
+python -m app.projets appliquer projets_propositions.csv   # crée les dossiers acceptés
+python -m app.projets statuts             # récapitulatif des dossiers et de leur stade
+python -m app.ingestion.conseil_constitutionnel   # rattrapage : toutes les années
+#   (la collecte périodique du worker ne revisite que les millésimes récents ;
+#    ce rattrapage est à lancer au premier remplissage ou après interruption)
 ```
 
 L'extraction LLM ne publie jamais seule : elle produit des entités `a_valider`,
@@ -273,6 +289,41 @@ bascule possible vers l'API Claude.
   jamais l'inverse.
 - Légiburkina publie ~96 % de scans : la recherche couvre référence et
   description pour tout le corpus, le texte intégral progresse avec l'OCR.
+- **Entreprises attributaires** : le Quotidien de la DGCMEF ne tient aucun
+  registre d'entreprises et écrit la même société de plusieurs façons
+  (« ETS WEND-KUUNI », « Ets Wend Kuuni SARL »…). Les fiches entreprise
+  regroupent ces graphies, mais **uniquement** sur des différences
+  typographiques (casse, accents, ponctuation, forme juridique) ; deux raisons
+  sociales réellement distinctes ne sont jamais réunies sans relecture humaine
+  (`app.attributaires proposer`). Chaque fiche liste les graphies qu'elle
+  réunit. Le regroupement ne dit rien de la propriété réelle : deux sociétés
+  liées mais nommées différemment restent deux fiches.
+- **Justice & contrôle — une couverture incomplète, et volontairement dite
+  comme telle.** Le Conseil constitutionnel et l'ASCE-LC sont collectés ; la
+  **Cour des comptes**, juridiction financière qui juge les comptes publics et
+  contrôle l'exécution des lois de finances, **n'a aucun site accessible**
+  (aucun domaine connu ne répond, vérifié le 2026-07-29). Ses rapports ne sont
+  donc pas collectables et la section le signale explicitement plutôt que de
+  laisser croire à une couverture complète du contrôle de l'État. Par ailleurs
+  le Conseil constitutionnel publie presque exclusivement des **scans** : la
+  recherche plein texte sur ces décisions progresse au rythme de l'OCR, qui les
+  traite en priorité (peu nombreuses, et introuvables sans texte).
+- **Suivi des annonces** : les trois corpus (engagements du Conseil des
+  ministres, marchés attribués, inaugurations) ne partagent **aucun
+  identifiant de projet**. Un dossier de suivi est donc une *interprétation* :
+  le rapprochement est proposé automatiquement — sur les mots rares partagés,
+  corroborés par le montant, la chronologie et le secteur — puis **accepté par
+  un relecteur** avant publication. Un dossier ne prétend pas être exhaustif :
+  d'autres marchés peuvent concerner le même projet sans y figurer. Une étape
+  de la chaîne n'est affichée comme franchie que si une pièce l'atteste ; une
+  étape éteinte signifie « non documenté ici », pas « non réalisé ». Enfin,
+  l'écart entre montant annoncé et montant attribué ne se lit pas comme un
+  écart d'exécution — un marché ne couvre souvent qu'un lot de l'annonce.
+- **Republications du Quotidien** : la DGCMEF reprend la même synthèse de
+  résultats dans des numéros successifs (une attribution vue dans 18 numéros
+  d'affilée). Une attribution n'est comptée qu'à sa première parution, ce qui
+  évite de multiplier les totaux par entreprise ; les numéros restent tous
+  archivés.
 - Les traductions des CR en langues nationales (mooré, fulfuldé, dioula,
   gulimancema) sont archivées mais exclues de l'extraction.
 - Détail complet : page « À propos & méthodologie » du site, et
@@ -290,7 +341,7 @@ curl 'http://localhost:8090/api/finances/stats'
 
 ## Contribuer
 
-Faso Repères est **libre et collaboratif** : il vit des contributions de chacun.
+Faso Données Publiques est **libre et collaboratif** : il vit des contributions de chacun.
 On peut aider **sans écrire une ligne de code** :
 
 - 🔗 **Signaler une source cassée** — les sites officiels changent d'adresse ou

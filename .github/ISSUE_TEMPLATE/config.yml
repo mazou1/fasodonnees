@@ -6,5 +6,5 @@ blank_issues_enabled: false
 # (Nécessite que Discussions soit activé : Settings → Features → Discussions.)
 contact_links:
   - name: Question ou autre sujet
-    url: https://github.com/mazou1/faso-reperes/discussions
+    url: https://github.com/mazou1/fasodonnees/discussions
     about: Pour une question, une idée à débattre ou un sujet hors gabarit.

@@ -44,7 +44,10 @@
         <span v-if="m.autorite">{{ m.autorite }}</span>
       </div>
       <div class="titre">
-        {{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> — {{ m.attributaire }}</template>
+        {{ fmtFCFA(m.montant_fcfa) }}<template v-if="m.attributaire"> —
+          <router-link v-if="m.attributaire_id" :to="`/marches/entreprises/${m.attributaire_id}`">{{ m.attributaire }}</router-link>
+          <template v-else>{{ m.attributaire }}</template>
+        </template>
       </div>
       <div class="detail">{{ m.objet }}</div>
       <ContexteSource genre="marche" :id="m.id" libelle="le Quotidien officiel" />

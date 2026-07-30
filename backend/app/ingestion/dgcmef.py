@@ -21,9 +21,9 @@ from urllib.parse import unquote, urljoin
 
 from selectolax.parser import HTMLParser
 
-from app.config import settings
 from app.extraction.pdf import extraire_texte
 from app.ingestion.base import Collector
+from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,8 @@ class DgcmefCollector(Collector):
         if not resp.content.startswith(b"%PDF"):
             return
         fichier, digest = self.archive(resp.content, "pdf")
-        texte, statut = extraire_texte(settings.data_dir / fichier, ocr=False)
+        with stockage.fichier_local(fichier) as chemin:
+            texte, statut = extraire_texte(chemin, ocr=False)
         num, pub = self._date_et_numero(texte, pdf_url)
         titre = f"Quotidien des Marchés Publics n°{num}" if num else "Quotidien des Marchés Publics"
         doc = self.upsert_document(
@@ -125,8 +126,12 @@ class DgcmefCollector(Collector):
             try:
                 from app.extraction.marches import traiter_document
 
-                n = traiter_document(self.db, doc)
-                logger.info("%s : %d marché(s) attribué(s) extraits de %s", self.slug, n, titre)
+                n, republications = traiter_document(self.db, doc)
+                logger.info(
+                    "%s : %d marché(s) attribué(s) extraits de %s"
+                    " (%d republication(s) d'un numéro précédent ignorée(s))",
+                    self.slug, n, titre, republications,
+                )
             except Exception:
                 logger.exception("%s : extraction des marchés échouée pour %s", self.slug, titre)
                 self.db.rollback()  # le numéro reste archivé, seuls ses marchés sont annulés
