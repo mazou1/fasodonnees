@@ -50,6 +50,31 @@ _PAS_UN_OBJET = (
     "pour un montant",
     "non précisé",
     "non precise",
+    "francs cfa",
+    "fcfa",
+    "htva",
+    "publication de l'avis",
+    "revue des marchés publics",
+    "quotidien des marchés publics",
+)
+
+# Un objet de marché commence par ce qu'on achète ou ce qu'on fait faire. La
+# liste est volontairement FERMÉE : elle laisse passer moins de lignes, mais
+# elle ne laisse passer que des objets. Un premier filtre par simple exclusion
+# acceptait « Huit millions deux cent soixante-deux mille… francs CFA » et
+# « 13 : lot 2 : 12 Publication de l'avis » comme objets de marché - remplacer
+# une erreur par une autre ne vaut pas mieux que ne rien faire.
+_DEBUTS_ATTENDUS = (
+    "acquisition", "achat", "fourniture", "livraison", "approvisionnement",
+    "construction", "réalisation", "realisation", "travaux", "aménagement",
+    "amenagement", "réhabilitation", "rehabilitation", "rénovation", "renovation",
+    "extension", "installation", "équipement", "equipement", "entretien",
+    "maintenance", "réparation", "reparation", "prestation", "service",
+    "étude", "etude", "contrôle", "controle", "suivi", "supervision",
+    "assistance", "formation", "location", "transport", "confection",
+    "impression", "édition", "edition", "gardiennage", "nettoyage",
+    "restauration", "assurance", "audit", "élaboration", "elaboration",
+    "mise en", "recrutement", "sécurisation", "securisation",
 )
 
 
@@ -60,8 +85,17 @@ def numero_de_lot(objet: str | None) -> int | None:
 
 
 def _acceptable(candidat: str) -> bool:
-    reduit = candidat.lower()
-    return not any(marqueur in reduit for marqueur in _PAS_UN_OBJET)
+    """Ce fragment peut-il être l'objet d'un marché ?
+
+    Deux conditions, et les deux sont nécessaires : ne porter aucun marqueur de
+    la ligne des attributaires, et commencer comme un objet commence.
+    """
+    reduit = candidat.strip().lower()
+    if any(marqueur in reduit for marqueur in _PAS_UN_OBJET):
+        return False
+    if len(reduit) < 20 or len(reduit.split()) < 3:
+        return False
+    return reduit.startswith(_DEBUTS_ATTENDUS)
 
 
 def objet_du_lot(texte: str, numero: int) -> str | None:
@@ -85,8 +119,14 @@ def objet_du_lot(texte: str, numero: int) -> str | None:
 
 
 def objet_est_douteux(objet: str | None) -> bool:
-    """L'objet enregistré décrit-il autre chose que le marché lui-même ?"""
-    return bool(objet) and not _acceptable(objet)
+    """L'objet enregistré décrit-il autre chose que le marché lui-même ?
+
+    Test d'exclusion seulement : un objet parfaitement valide peut commencer par
+    un mot absent de `_DEBUTS_ATTENDUS`, et le déclarer douteux le renverrait
+    en revue sans raison.
+    """
+    reduit = (objet or "").lower()
+    return bool(objet) and any(marqueur in reduit for marqueur in _PAS_UN_OBJET)
 
 
 def reparer(appliquer: bool = False) -> dict[str, int]:

@@ -65,3 +65,26 @@ def test_lecture_du_numero_de_lot():
     assert numero_de_lot("Lot 06 : autre chose") == 6
     assert numero_de_lot("LOT n°12 - encore") == 12
     assert numero_de_lot("Acquisition de fournitures de bureau") is None
+
+
+def test_un_montant_en_toutes_lettres_nest_pas_un_objet():
+    """Premier filtre, par simple exclusion : il acceptait « Huit millions deux
+    cent soixante-deux mille sept cent onze (8 262 711) francs CFA HTVA » comme
+    objet de marché. Remplacer une erreur par une autre ne vaut pas mieux."""
+    texte = (
+        "Lot 2 : Huit millions deux cent soixante-deux mille sept cent onze "
+        "(8 262 711) francs CFA HTVA soit 9 749 999 TTC\n1. ENTREPRISE X\n\n"
+    )
+    assert objet_du_lot(texte, 2) is None
+
+
+def test_un_fragment_de_mise_en_page_nest_pas_un_objet():
+    texte = "Lot 1 : 13 : lot 2 : 12 Publication de l'avis : Revue des Marchés Publics N°4427\n\n"
+    assert objet_du_lot(texte, 1) is None
+
+
+def test_un_objet_legitime_qui_commence_autrement_nest_pas_declare_douteux():
+    """`objet_est_douteux` reste un test d'exclusion : sinon on renverrait en
+    revue des lignes parfaitement valides au seul motif de leur premier mot."""
+    assert not objet_est_douteux("Bitumage de la voirie du port sec de Bobo-Dioulasso")
+    assert not objet_est_douteux("Pose de canalisations sur 4 km")
