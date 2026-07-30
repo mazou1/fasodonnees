@@ -35,3 +35,7 @@ node_modules/
 # Documents de travail internes (cadrage, veille) — ne pas publier
 /docs/cadrage-plateforme-civique-v2.md
 /docs/rapport-sources-donnees-temps-reel.md
+
+# Documents de travail (démarchage) — hors dépôt public
+contacts-redactions.md
+message-redactions.md
