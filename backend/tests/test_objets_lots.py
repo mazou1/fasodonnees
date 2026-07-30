@@ -204,3 +204,18 @@ def test_laveu_coupe_ne_sauve_pas_un_objet_vide_de_sens():
     from app.extraction.objets_lots import sans_queue_de_montant
 
     assert sans_queue_de_montant("Lot 9 - Fourniture de matériel (non précisé)") is None
+
+
+def test_un_objet_trop_maigre_ne_reste_pas_publie():
+    """« LOT 1 : Fourniture de services (montant minimum TTC : 18 925 500) » :
+    couper le montant laisse « Fourniture de services », qui ne dit rien d'un
+    contrat de 58 millions FCFA. Le seuil vaut quelle que soit la coupe."""
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "LOT 1 : Fourniture de services (montant minimum TTC : 18 925 500 FCFA)"
+    ) is None
+    # quatre mots suffisent quand ils désignent quelque chose
+    assert sans_queue_de_montant(
+        "LOT 1 : Acquisition de produits d’entretien (montant minimum HTVA)"
+    ) == "LOT 1 : Acquisition de produits d’entretien"

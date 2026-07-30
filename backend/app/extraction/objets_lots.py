@@ -198,8 +198,10 @@ _AVEU_FINAL = re.compile(
     r"\s*\(\s*non\s+(?:pr[ée]cis|indiqu|sp[ée]cifi)[^)]*\)?\s*$", re.IGNORECASE
 )
 # En deçà, ce qui reste est trop vague pour valoir publication : « Fourniture de
-# matériel » ne dit pas davantage que le silence.
-MOTS_MINIMUM_APRES_COUPE = 5
+# services » ne dit rien d'un contrat de 58 millions FCFA. Le seuil vaut quelle
+# que soit la coupe - montant ou aveu : une ligne n'est pas plus informative
+# parce que c'est un montant qu'on lui a retiré.
+MOTS_MINIMUM_APRES_COUPE = 4
 
 
 def sans_queue_de_montant(objet: str | None) -> str | None:
@@ -213,14 +215,12 @@ def sans_queue_de_montant(objet: str | None) -> str | None:
     """
     if not objet:
         return None
-    coupe = _AVEU_FINAL.sub("", objet)
-    aveu_retire = coupe != objet
-    coupe = _QUEUE_MONTANT.sub("", coupe).strip(" .:-–—;,")
+    coupe = _QUEUE_MONTANT.sub("", _AVEU_FINAL.sub("", objet)).strip(" .:-–—;,")
     # le numéro de lot en tête ne compte pas dans l'appréciation
     corps = re.sub(r"^lot\s*(?:n\s*[°ºo]\s*)?\d{0,2}\s*[:\-–—]?\s*", "", coupe, flags=re.I)
     if not _acceptable(corps):
         return None
-    if aveu_retire and len(corps.split()) < MOTS_MINIMUM_APRES_COUPE:
+    if len(corps.split()) < MOTS_MINIMUM_APRES_COUPE:
         return None
     return coupe
 
