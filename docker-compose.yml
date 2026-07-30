@@ -38,7 +38,12 @@ services:
 
   api:
     build: ./backend
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # --forwarded-allow-ips : sans lui, uvicorn n'accepte X-Forwarded-Proto que
+    # depuis 127.0.0.1 et ignore donc celui de Caddy, qui vient du réseau
+    # Docker. FastAPI se croit alors en HTTP et fabrique les URL de /admin en
+    # http:// — le navigateur bloque tout en « mixed content » et la page
+    # s'affiche sans style. L'API n'étant joignable que par Caddy, « * » est sûr.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --forwarded-allow-ips='*'"
     environment:
       FASO_DATABASE_URL: postgresql+psycopg://faso:${POSTGRES_PASSWORD:-faso}@db:5432/faso
       FASO_DATA_DIR: /data
