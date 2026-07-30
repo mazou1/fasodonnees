@@ -6,6 +6,15 @@
 	email {$ACME_EMAIL}
 }
 
+# « www » redirige vers l'apex, qui est la forme canonique. Sans ce bloc, Caddy
+# n'a aucun certificat pour www.<domaine> et le navigateur affiche une erreur TLS
+# — pas une page d'erreur, une alerte de handshake, illisible pour un visiteur.
+# Or l'enregistrement DNS www existe presque toujours, et beaucoup de gens le
+# tapent encore.
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
 {$DOMAIN} {
 	encode zstd gzip
 
