@@ -88,9 +88,9 @@ docker compose -f docker-compose.prod.yml exec api python -m app.annuaire
 
 ## 4 bis. Cohabiter avec une autre pile sur le même serveur
 
-Le serveur héberge déjà une autre application (FasoPaie) avec son propre reverse
-proxy. Deux piles ne peuvent pas se partager les ports 80 et 443 : chacune tient
-**sa propre adresse IP**.
+Si le serveur héberge déjà une autre application avec son propre reverse proxy,
+les deux piles ne peuvent pas se partager les ports 80 et 443 : chacune doit
+tenir **sa propre adresse IP**.
 
 Ce montage garde les deux projets cloisonnés — réseaux Docker séparés, Caddy
 séparés, certificats séparés, stockage objet séparé. Ils ne partagent que le
