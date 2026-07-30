@@ -93,6 +93,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    # L'OCR (Tesseract) consomme 200-300 % de CPU. Sur une machine partagée avec
+    # une autre application, un plafond explicite évite qu'une passe
+    # d'océrisation ne fasse attendre le voisin. Vide = aucune limite.
+    deploy:
+      resources:
+        limits:
+          cpus: "${WORKER_CPUS:-0}"
     restart: unless-stopped
 
   web:
@@ -104,9 +111,14 @@ services:
 
   caddy:
     image: caddy:2-alpine
+    # Se lie à UNE adresse précise, pas à 0.0.0.0. Sur un serveur dédié, la
+    # valeur par défaut équivaut à l'ancien comportement. En cohabitation avec
+    # une autre pile, chacune tient sa propre IP (ici une Floating IP Hetzner) :
+    # sans cette restriction, le premier Caddy démarré occupe le port 80 sur
+    # TOUTES les adresses et le second échoue en « port is already allocated ».
     ports:
-      - "80:80"
-      - "443:443"
+      - "${IP_PUBLIQUE:-0.0.0.0}:80:80"
+      - "${IP_PUBLIQUE:-0.0.0.0}:443:443"
     environment:
       DOMAIN: ${DOMAIN:?DOMAIN manquant (ex. faso.example.org)}
       ACME_EMAIL: ${ACME_EMAIL:-}

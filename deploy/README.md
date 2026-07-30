@@ -86,6 +86,79 @@ docker compose -f docker-compose.prod.yml exec api python -m app.validation 0.9
 docker compose -f docker-compose.prod.yml exec api python -m app.annuaire
 ```
 
+## 4 bis. Cohabiter avec une autre pile sur le même serveur
+
+Le serveur héberge déjà une autre application (FasoPaie) avec son propre reverse
+proxy. Deux piles ne peuvent pas se partager les ports 80 et 443 : chacune tient
+**sa propre adresse IP**.
+
+Ce montage garde les deux projets cloisonnés — réseaux Docker séparés, Caddy
+séparés, certificats séparés, stockage objet séparé. Ils ne partagent que le
+noyau. L'alternative — confier notre domaine au Caddy du voisin — obligeait à un
+Caddyfile commun et à des réseaux partagés, où une collision d'alias DNS
+(`api`, `web`) pouvait router son trafic vers notre API.
+
+### 1. Une IP supplémentaire
+
+Chez Hetzner, un serveur n'a qu'**une seule Primary IP par protocole** : la
+seconde adresse doit être une **Floating IP** (ressource distincte dans la
+console, même localisation que le serveur).
+
+Une Floating IP n'est **pas configurée automatiquement**, contrairement à une
+Primary IP : Hetzner y route le trafic, mais le système l'ignore tant qu'elle
+n'est pas déclarée. En root :
+
+```bash
+tee /etc/netplan/60-floating-ip.yaml > /dev/null <<'EOF'
+network:
+  version: 2
+  ethernets:
+    eth0:
+      addresses:
+        - VOTRE_FLOATING_IP/32
+EOF
+chmod 600 /etc/netplan/60-floating-ip.yaml
+netplan apply
+ip -4 -br addr show eth0     # les deux adresses doivent apparaître
+```
+
+### 2. Restreindre le proxy voisin à SON adresse
+
+C'est l'étape sans laquelle rien ne démarre. Un `ports: ["80:80"]` écoute sur
+`0.0.0.0`, donc **aussi sur la nouvelle adresse** : notre Caddy échouerait en
+« port is already allocated ». Dans le compose de l'autre pile :
+
+```yaml
+  caddy:
+    ports:
+      - "SON_IP:80:80"
+      - "SON_IP:443:443"
+```
+
+Puis redémarrer son proxy. C'est la seule modification apportée à l'autre projet,
+et lier explicitement un service à une adresse est de toute façon plus sain que
+d'écouter partout.
+
+### 3. Déployer la nôtre
+
+Dans le `.env`, à la racine du dépôt :
+
+```bash
+IP_PUBLIQUE=VOTRE_FLOATING_IP
+WORKER_CPUS=3          # l'OCR prend 200-300 % : on borne pour ne pas étouffer le voisin
+DOMAIN=fasodonnees.org
+```
+
+Puis le déploiement normal (`docker compose -f docker-compose.prod.yml ...`).
+Aucun fichier spécifique : c'est la pile de production standard, liée à une
+adresse au lieu de toutes.
+
+### 4. DNS
+
+Deux enregistrements **A** — `@` et `www` — vers la Floating IP. Nul besoin de
+Cloudflare : Caddy obtient son certificat Let's Encrypt seul, dès lors que le
+port 80 répond sur cette adresse.
+
 ## 5 bis. Archive brute : disque ou stockage objet
 
 L'archive (`data/`) pèse plus de 5 Go et grandit à chaque collecte. Deux modes,

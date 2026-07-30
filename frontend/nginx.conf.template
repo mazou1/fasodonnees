@@ -1,3 +1,8 @@
+# Gabarit envsubst : l'image nginx officielle substitue les variables de
+# /etc/nginx/templates/*.template au démarrage. Seules celles préfixées FDP_
+# sont remplacées (NGINX_ENVSUBST_FILTER) — sans quoi $host, $uri et compagnie
+# seraient vidés. Paramétrable parce que la cohabitation avec une autre pile
+# change les noms d'hôtes : cf. docker-compose.coheberge.yml.
 server {
     listen 80;
     server_name _;
@@ -9,14 +14,14 @@ server {
 
     # API publique (et sa doc) servie par FastAPI
     location /api/ {
-        proxy_pass http://api:8000/;
+        proxy_pass http://${FDP_API_UPSTREAM}/;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     # la page Swagger (/api/docs) référence /openapi.json à la racine
     location = /openapi.json {
-        proxy_pass http://api:8000/openapi.json;
+        proxy_pass http://${FDP_API_UPSTREAM}/openapi.json;
     }
 
     # Corpus archivé, en lecture publique et à URL STABLES.
@@ -31,8 +36,8 @@ server {
     # sous-domaine et un certificat de plus. Les clés étant des empreintes de
     # contenu, un objet ne change jamais : cache long sans risque.
     location /archives/ {
-        proxy_pass http://garage:3902/;
-        proxy_set_header Host faso-archives.web.garage;
+        proxy_pass http://${FDP_GARAGE_UPSTREAM}/;
+        proxy_set_header Host ${FDP_GARAGE_BUCKET_HOST};
         proxy_hide_header x-amz-request-id;
         expires 365d;
         add_header Cache-Control "public, immutable";
