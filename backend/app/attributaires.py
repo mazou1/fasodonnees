@@ -20,10 +20,12 @@ Le rattachement automatique est **strict** (même forme normalisée). Les
 variantes plus éloignées passent par une relecture humaine, comme la fusion
 des structures (`app/fusion.py`) :
 
-- `consolider`          : (re)construit les entités et rattache les marchés.
-- `proposer [seuil]`    : écrit attributaires_propositions.csv (paires
-                          similaires, pg_trgm) — mettre « oui » en colonne
-                          `appliquer` pour fusionner.
+- `consolider`          : (re)construit les entités, rattache les marchés, et
+                          fusionne d'office les variantes dont la similarité
+                          dépasse `SEUIL_FUSION_AUTO` (bruit d'extraction).
+- `proposer [seuil]`    : écrit attributaires_propositions.csv pour la bande
+                          AMBIGUË, sous le seuil automatique — mettre « oui » en
+                          colonne `appliquer` pour fusionner.
 - `appliquer <csv>`     : applique les fusions relues.
 - `rapprocher [seuil]`  : signale les raisons sociales qui ressemblent au nom
                           d'une personne de l'annuaire. Rapport de relecture
@@ -53,6 +55,16 @@ logger = logging.getLogger(__name__)
 
 CSV_PROPOSITIONS = Path("attributaires_propositions.csv")
 CSV_RAPPROCHEMENTS = Path("attributaires_personnes.csv")
+
+# Seuil de fusion AUTOMATIQUE des variantes proches. Calibré sur le corpus : au
+# delà, les paires observées sont du bruit d'extraction sur une même raison
+# sociale (« u HABIB TRADING INTERNATIONAL » / « HABIB TRADING INTERNATIONAL »
+# à 0,93 ; « à GENERAL MICRO SYSTEM » à 0,91). En dessous apparaissent les vrais
+# faux amis : « REAL SERVICES INTERNATIONAL » et « RELLYA SERVICES
+# INTERNATIONAL » à 0,78 sont deux entreprises différentes, et les fusionner
+# attribuerait les marchés de l'une à l'autre. Cette bande-là reste en
+# proposition à relire (`proposer`).
+SEUIL_FUSION_AUTO = 0.90
 
 # Formes juridiques et préfixes de commerce : ils varient d'une publication à
 # l'autre pour une même entreprise, donc ils ne discriminent pas. Retirés
@@ -168,8 +180,57 @@ def consolider(db: Session) -> dict[str, int]:
         )
         rattaches += resultat.rowcount or 0
 
+    fusions = _fusionner_variantes_evidentes(db)
     db.commit()
-    return {"entites": len(variantes), "creees": crees, "marches_rattaches": rattaches}
+    return {
+        "entites": len(variantes),
+        "creees": crees,
+        "marches_rattaches": rattaches,
+        "fusions_auto": fusions,
+    }
+
+
+def _fusionner_variantes_evidentes(db: Session) -> int:
+    """Fusionne sans relecture les raisons sociales très proches.
+
+    Le rattachement strict ne voit que les variantes typographiques. Restait le
+    bruit d'extraction — un caractère parasite collé devant le nom — qui créait
+    une entité fantôme par occurrence. Au-dessus de `SEUIL_FUSION_AUTO`, ces
+    paires sont sans ambiguïté ; en dessous, la relecture reste requise.
+
+    Le nom conservé est le plus COURT des deux. Le bruit d'extraction ajoute des
+    caractères — un « u » ou un « à » happé devant la raison sociale — il n'en
+    retire jamais. Se fonder sur l'ancienneté serait trompeur : « u HABIB TRADING
+    INTERNATIONAL » porte un identifiant plus petit que la forme propre, et
+    l'avoir pris pour canonique affichait le bruit sur la fiche publique.
+    """
+    lignes = db.execute(
+        text(
+            """
+            SELECT a1.id AS id_a, a1.nom_normalise AS nom_a,
+                   a2.id AS id_b, a2.nom_normalise AS nom_b
+            FROM attributaire a1
+            JOIN attributaire a2 ON a2.id < a1.id
+            WHERE a1.canonique_id IS NULL AND a2.canonique_id IS NULL
+              AND similarity(a1.nom_normalise, a2.nom_normalise) >= :seuil
+            ORDER BY similarity(a1.nom_normalise, a2.nom_normalise) DESC
+            """
+        ),
+        {"seuil": SEUIL_FUSION_AUTO},
+    ).all()
+    fusions = 0
+    for ligne in lignes:
+        # à longueur égale, l'identifiant tranche pour rester déterministe
+        if (len(ligne.nom_a), ligne.id_a) <= (len(ligne.nom_b), ligne.id_b):
+            cible, source = ligne.id_a, ligne.id_b
+        else:
+            cible, source = ligne.id_b, ligne.id_a
+        # une entité déjà fusionnée entre-temps ne l'est pas deux fois
+        if db.scalar(select(Attributaire.canonique_id).where(Attributaire.id == source)):
+            continue
+        fusionner(db, source, cible)
+        fusions += 1
+    return fusions
 
 
 def fusionner(db: Session, source_id: int, canonique_id: int) -> None:
@@ -201,10 +262,13 @@ def proposer(db: Session, seuil: float) -> int:
             JOIN attributaire a2 ON a2.id < a1.id
             WHERE a1.canonique_id IS NULL AND a2.canonique_id IS NULL
               AND similarity(a1.nom_normalise, a2.nom_normalise) >= :seuil
+              -- au-dessus, `consolider` a déjà fusionné : ne pas redemander un
+              -- arbitrage sur ce qui est tranché
+              AND similarity(a1.nom_normalise, a2.nom_normalise) < :plafond
             ORDER BY sim DESC
             """
         ),
-        {"seuil": seuil},
+        {"seuil": seuil, "plafond": SEUIL_FUSION_AUTO},
     ).all()
     with CSV_PROPOSITIONS.open("w", newline="") as f:
         w = csv.writer(f)
@@ -284,7 +348,9 @@ def main() -> int:
             stats = consolider(db)
             print(
                 f"{stats['entites']} entité(s) ({stats['creees']} nouvelle(s)) — "
-                f"{stats['marches_rattaches']} marché(s) rattaché(s)."
+                f"{stats['marches_rattaches']} marché(s) rattaché(s), "
+                f"{stats['fusions_auto']} variante(s) fusionnée(s) automatiquement "
+                f"(similarité ≥ {SEUIL_FUSION_AUTO})."
             )
         elif commande == "proposer":
             seuil = float(sys.argv[2]) if len(sys.argv) > 2 else 0.65

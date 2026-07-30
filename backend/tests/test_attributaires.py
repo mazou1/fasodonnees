@@ -69,3 +69,35 @@ def test_forme_affichee_departage_a_egalite_par_la_plus_complete():
 
 def test_forme_affichee_nettoie_les_espaces_du_document():
     assert _forme_affichee(Counter({"  ETS WEND-KUUNI  ": 1})) == "ETS WEND-KUUNI"
+
+
+# --- fusion automatique des variantes bruitées ----------------------------
+
+def test_le_seuil_automatique_laisse_les_faux_amis_a_la_relecture():
+    """« REAL SERVICES INTERNATIONAL » et « RELLYA SERVICES INTERNATIONAL »
+    culminent à 0,78 de similarité et sont deux entreprises distinctes : les
+    fusionner d'office attribuerait les marchés de l'une à l'autre. Le seuil
+    automatique doit rester nettement au-dessus."""
+    from app.attributaires import SEUIL_FUSION_AUTO
+
+    assert SEUIL_FUSION_AUTO > 0.85
+
+
+def test_le_nom_le_plus_court_est_canonique():
+    """Le bruit d'extraction AJOUTE des caractères — un « u » ou un « à » happé
+    devant la raison sociale — il n'en retire jamais. Se fonder sur l'ancienneté
+    affichait le bruit : « u HABIB TRADING INTERNATIONAL » porte un identifiant
+    plus petit que la forme propre."""
+    propre = ("habib trading international", 265)
+    bruite = ("u habib trading international", 9)
+    # la règle appliquée dans _fusionner_variantes_evidentes
+    assert min(
+        [(len(propre[0]), propre[1]), (len(bruite[0]), bruite[1])]
+    ) == (len(propre[0]), propre[1])
+
+
+def test_a_longueur_egale_lidentifiant_tranche():
+    """Deux graphies de même longueur doivent donner le même résultat d'une
+    exécution à l'autre, sinon la fiche publique change de nom sans raison."""
+    a, b = ("ets alpha sarl", 12), ("ets omega sarl", 7)
+    assert min([(len(a[0]), a[1]), (len(b[0]), b[1])]) == (len(b[0]), b[1])

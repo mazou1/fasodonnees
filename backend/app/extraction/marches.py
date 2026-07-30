@@ -1,10 +1,16 @@
 """Extraction des marchés attribués depuis le Quotidien des Marchés Publics.
 
-Approche déterministe (pas de LLM) : les « Synthèses des résultats » du
-Quotidien (DGCMEF) sont des tableaux à colonnes préservées par pdfplumber ;
-`marches_tableau.extraire_marches` lit l'autorité contractante, l'objet, la
-référence, l'attributaire retenu et son montant. Les résultats arrivent en
-statut_validation='a_valider' — validation humaine avant publication.
+Extraction **LLM à schéma Pydantic** (`marches_llm.py`). Elle remplace la
+lecture déterministe des tableaux, qui dépendait de la géométrie des colonnes
+détectée par pdfplumber : celle-ci ratait les numéros dont la mise en page
+changeait, et surtout ne produisait aucun score de confiance — si bien qu'aucune
+validation automatique n'était défendable sur ces lignes, qui s'accumulaient
+dans la file de `/admin`.
+
+`marches_tableau.py` reste utilisé par `renettoyer` pour nettoyer l'existant.
+
+Les résultats arrivent en statut_validation='a_valider' — validation humaine
+avant publication, comme le reste.
 
 ⚠️ Le Quotidien REPUBLIE la même synthèse de résultats dans des numéros
 successifs (une attribution vue dans 18 numéros d'affilée, constatée en
@@ -27,9 +33,7 @@ from datetime import date
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.extraction.marches_tableau import extraire_marches
 from app.models import Document, Marche
-from app.stockage import stockage
 
 
 def _normaliser(valeur) -> str:
@@ -72,35 +76,39 @@ def traiter_document(db, doc: Document, connues: set[str] | None = None) -> tupl
     de porter l'ensemble des empreintes d'un document à l'autre plutôt que de
     le relire à chaque fois.
     """
-    if not doc.fichier:
-        return 0, 0
+    from app.extraction.marches_llm import extraire_marches_llm
     from app.extraction.secteurs import secteur_de
 
+    # Le LLM lit le TEXTE déjà extrait à la collecte, pas le PDF : plus besoin de
+    # rapatrier le fichier depuis le stockage objet ni de détecter des tableaux.
+    if not doc.texte_extrait:
+        return 0, 0
     if connues is None:
         connues = empreintes_connues(db)
 
     ajoutes = ignores = 0
-    with stockage.fichier_local(doc.fichier) as chemin:
-        marches = extraire_marches(chemin)
-    for m in marches:
-        cle = empreinte(m.get("reference"), m["attributaire"], m["montant_fcfa"], m["objet"])
-        if cle in connues:  # déjà parue dans un numéro précédent (ou plus haut
-            ignores += 1    # dans ce même numéro)
+    for m in extraire_marches_llm(doc.texte_extrait):
+        # une attribution sans entreprise retenue n'est pas une attribution
+        if not m.attributaire or not m.objet:
+            continue
+        cle = empreinte(m.reference, m.attributaire, m.montant_fcfa, m.objet)
+        if cle in connues:  # déjà parue dans un numéro précédent (ou dans une
+            ignores += 1    # autre fenêtre de ce même numéro)
             continue
         connues.add(cle)
         db.add(
             Marche(
                 document_id=doc.id,
-                autorite=m["autorite"],
-                objet=m["objet"],
-                reference=m.get("reference"),
-                mode=m.get("mode"),
-                attributaire=m["attributaire"],
-                montant_fcfa=m["montant_fcfa"],
-                secteur=secteur_de(m["objet"], m["autorite"]),
-                region=m.get("region"),
+                autorite=m.autorite,
+                objet=m.objet,
+                reference=m.reference,
+                mode=m.mode,
+                attributaire=m.attributaire,
+                montant_fcfa=m.montant_fcfa,
+                secteur=secteur_de(m.objet, m.autorite),
+                region=m.region,
                 date_attribution=doc.date_publication,
-                score_confiance=None,  # extraction déterministe, pas de score
+                score_confiance=m.confiance,
                 statut_validation="a_valider",
             )
         )

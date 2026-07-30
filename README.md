@@ -176,7 +176,7 @@ Chaque brique a une voie de montée en charge sans réécriture :
 
 | Brique | Choix actuel | Pourquoi | Évolution possible |
 |---|---|---|---|
-| Extraction LLM | Mistral `small` (tier gratuit) → repli Claude | coût nul, ~1 req/s suffit au volume | modèle plus grand pour les CR difficiles ; ou modèle local (Ollama) pour l'indépendance |
+| Extraction LLM | Mistral `small` (tier gratuit) → repli Claude | coût nul, ~1 req/s suffit au volume ; les Quotidiens DGCMEF sont découpés en fenêtres autour de « attributaire » (277 k caractères en médiane) | modèle plus grand pour les CR difficiles ; ou modèle local (Ollama) pour l'indépendance |
 | Ordonnancement | APScheduler `BlockingScheduler` dans un worker | un seul process, zéro infra | file de tâches (Celery/RQ + Redis) si la collecte se parallélise |
 | Base de données | PostgreSQL + PostGIS (pg_trgm, tsvector) | recherche plein-texte et géo sans service tiers | index dédié (OpenSearch/Meilisearch) si la recherche devient centrale |
 | Validation | back-office SQLAdmin | rapide à livrer, suffisant à un valideur | interface dédiée + rôles/traçabilité pour plusieurs relecteurs |
@@ -253,7 +253,7 @@ python -m app.annuaire                    # reconsolide les mandats (+ successio
 python -m app.fusion proposer 0.75        # doublons de structures → CSV à relire
 python -m app.extraction.ocr_textes 500   # OCR des textes scannés (worker, Tesseract)
 python -m app.attributaires consolider    # regroupe les raisons sociales des marchés
-python -m app.attributaires proposer 0.65 # variantes proches → CSV à relire, puis « appliquer »
+python -m app.attributaires proposer 0.65 # bande ambiguë → CSV à relire (au-delà de 0.90, fusion d'office)
 python -m app.extraction.marches dedoublonner  # purge les republications du Quotidien
 python -m app.projets proposer 0.30       # annonce ↔ marché ↔ réalisation → CSV à relire
 python -m app.projets appliquer projets_propositions.csv   # crée les dossiers acceptés
@@ -331,6 +331,13 @@ bascule possible vers l'API Claude.
   étape éteinte signifie « non documenté ici », pas « non réalisé ». Enfin,
   l'écart entre montant annoncé et montant attribué ne se lit pas comme un
   écart d'exécution — un marché ne couvre souvent qu'un lot de l'annonce.
+- **Marchés publics** : l'extraction est passée du repérage de colonnes
+  (pdfplumber) à un **LLM à schéma Pydantic**. Le repérage géométrique ratait les
+  numéros dont la mise en page changeait — un Quotidien testé n'avait aucune
+  section « SYNTHÈSE DES RÉSULTATS » mais 43 mentions d'« attributaire » — et
+  surtout ne produisait aucun score, si bien qu'aucune validation automatique
+  n'était défendable. Le score est désormais significatif : 0,95 sur une
+  attribution nette, 0,70 quand les colonnes du PDF sont manifestement mélangées.
 - **Republications du Quotidien** : la DGCMEF reprend la même synthèse de
   résultats dans des numéros successifs (une attribution vue dans 18 numéros
   d'affilée). Une attribution n'est comptée qu'à sa première parution, ce qui
