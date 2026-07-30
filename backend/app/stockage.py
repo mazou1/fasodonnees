@@ -118,8 +118,19 @@ class StockageS3:
             aws_access_key_id=cle_acces,
             aws_secret_access_key=cle_secrete,
             region_name=region,
-            # Garage n'accepte pas les URL de type virtual-host par défaut
-            config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+            config=Config(
+                signature_version="s3v4",
+                # Garage n'accepte pas les URL de type virtual-host par défaut
+                s3={"addressing_style": "path"},
+                # boto3 ≥ 1.36 valide systématiquement une somme de contrôle sur
+                # la réponse. Sur un GET simple Garage la fournit correctement,
+                # mais `download_file` découpe les gros objets en requêtes par
+                # plages et la validation échoue alors — vérifié sur un objet de
+                # 39 Mo, dont l'empreinte SHA-256 est pourtant identique par les
+                # trois chemins de lecture. Le défaut ne se manifestait donc que
+                # sur les pièces volumineuses : rapports d'audit, Quotidiens.
+                response_checksum_validation="when_required",
+            ),
         )
 
     def ecrire(self, cle: str, contenu: bytes) -> None:
