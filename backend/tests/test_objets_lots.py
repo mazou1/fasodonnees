@@ -88,3 +88,37 @@ def test_un_objet_legitime_qui_commence_autrement_nest_pas_declare_douteux():
     revue des lignes parfaitement valides au seul motif de leur premier mot."""
     assert not objet_est_douteux("Bitumage de la voirie du port sec de Bobo-Dioulasso")
     assert not objet_est_douteux("Pose de canalisations sur 4 km")
+
+
+def test_une_quantite_entre_parentheses_ne_coupe_pas_lentete():
+    """« quatre (04) postes » se lisait comme le début de la ligne 4 du tableau
+    des offres, et l'objet était tronqué à « ...à quatre ( »."""
+    objet = objet_du_lot(QUOTIDIEN, 6)
+    assert objet.endswith("Nabmayaoghin et Loundgo B")
+
+
+def test_la_colonne_daccote_nest_pas_collee_a_lobjet():
+    """Le texte extrait du PDF ne conserve pas les cellules : « Conforme :
+    -Offre anormalement basse » suivait l'objet et se serait publié avec lui."""
+    texte = (
+        "Lot 4 : Construction d'un hall d'attente au CSPS du secteur 6 "
+        "Conforme : -Offre anormalement basse\n\n"
+    )
+    assert objet_du_lot(texte, 4) == "Construction d'un hall d'attente au CSPS du secteur 6"
+
+
+def test_le_lot_dune_autre_procedure_nest_jamais_pris():
+    """Un Quotidien publie des dizaines de procédures, chacune avec son
+    « Lot 1 ». Sans la position du marché, on récupérait l'objet du lot 1 d'une
+    autre procédure - une erreur indétectable, puisque le résultat ressemble
+    parfaitement à un objet de marché."""
+    texte = (
+        "Lot 1 : Acquisition de véhicules pour le ministère de la Santé\n\n"
+        "AUTRE PROCÉDURE\n"
+        "Lot 1 : Construction de trois salles de classe à Koudougou\n\n"
+        "Attributaire : ENTREPRISE ZED\n"
+    )
+    position = texte.index("Attributaire")
+    assert objet_du_lot(texte, 1, position).startswith("Construction de trois salles")
+    # sans position, on ne sait pas laquelle choisir
+    assert objet_du_lot(texte, 1).startswith(("Acquisition", "Construction"))

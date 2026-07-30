@@ -34,6 +34,10 @@ from app.models import Document, Marche
 
 logger = logging.getLogger(__name__)
 
+# Un en-tête de lot gouverne le tableau qui le suit : quelques milliers de
+# caractères, jamais un Quotidien entier.
+PORTEE_AMONT = 25000
+
 # « Lot 6 : », « Lot6 - », « LOT 06 : », « Lot n°6 : »
 def _motif_entete(numero: int) -> re.Pattern[str]:
     return re.compile(
@@ -98,24 +102,64 @@ def _acceptable(candidat: str) -> bool:
     return reduit.startswith(_DEBUTS_ATTENDUS)
 
 
-def objet_du_lot(texte: str, numero: int) -> str | None:
+# Fin d'un en-tête : la première ligne du tableau des offres. Elle commence par
+# un rang (« 1. »), un montant, ou une mention de conformité - et le PDF, aplati
+# en texte, la colle à l'en-tête sans saut de ligne fiable.
+_FIN_ENTETE = re.compile(
+    r"\s*(?:"
+    # « 1. ENTREPRISE » — le garde-fou `(?<![(\d])` évite de couper sur les
+    # quantités que les avis écrivent entre parenthèses : « quatre (04) postes »
+    # se lisait comme le début de la ligne 4 du tableau.
+    r"(?<![(\d])\d{1,2}\s*[.\)]\s+\S|"
+    r"(?:non\s+)?conforme|"                # colonne « Conforme / Non conforme »
+    r"(?<![(\d])\d[\d\s]{5,}|"             # un montant : longue suite de chiffres
+    r"lot\s*(?:n\s*[°ºo]\s*)?\d|"          # le lot suivant
+    r"le\s+d[ée]lai\s+d|"                  # « Le délai d'exécution de… »
+    r"les\s+candidats\s+ont\s+la\s+possibilit"  # boilerplate de l'avis
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _couper_a_la_fin_de_lentete(brut: str) -> str:
+    """Coupe ce que le tableau a collé derrière l'en-tête.
+
+    Le texte extrait du PDF ne conserve pas les cellules : « Construction d'un
+    hall d'attente au CSPS du secteur 6 » se retrouve suivi de « Conforme :
+    -Offre anormalement basse… ». Publier cela mettrait la colonne d'à côté dans
+    l'objet du marché.
+    """
+    coupe = _FIN_ENTETE.search(brut)
+    return (brut[: coupe.start()] if coupe else brut).strip(" .:-–—;,")
+
+
+def objet_du_lot(texte: str, numero: int, position: int | None = None) -> str | None:
     """Objet écrit en en-tête pour ce lot, recopié tel quel.
 
-    Le même numéro apparaît plusieurs fois dans un Quotidien - une fois en
-    en-tête de tableau, une fois dans la liste des attributaires. On ne retient
-    que les occurrences qui décrivent un ouvrage ou une fourniture, jamais
-    celles qui nomment une entreprise.
+    `position` est l'endroit du texte où ce marché est imprimé. Elle est
+    déterminante : un Quotidien publie des dizaines de procédures, chacune avec
+    son « Lot 1 ». Chercher dans tout le document donnait l'objet du lot 1 d'une
+    AUTRE procédure - une erreur invisible, puisque le résultat ressemble
+    parfaitement à un objet de marché. On ne retient donc que le dernier
+    en-tête situé AVANT le marché, celui qui le gouverne.
     """
-    candidats = [
-        re.sub(r"\s+", " ", m.group(1)).strip(" .:-–—")
-        for m in _motif_entete(numero).finditer(texte or "")
-    ]
-    retenus = [c for c in candidats if _acceptable(c)]
-    if not retenus:
+    zone = texte or ""
+    decalage = 0
+    if position is not None:
+        debut = max(0, position - PORTEE_AMONT)
+        zone = zone[debut:position]
+        decalage = debut
+
+    candidats: list[tuple[int, str]] = []
+    for m in _motif_entete(numero).finditer(zone):
+        brut = _couper_a_la_fin_de_lentete(re.sub(r"\s+", " ", m.group(1)))
+        if _acceptable(brut):
+            candidats.append((m.start() + decalage, brut))
+    if not candidats:
         return None
-    # le plus long est le plus descriptif : les en-têtes tronqués par un saut de
-    # colonne du PDF donnent des fragments courts
-    return max(retenus, key=len)
+    # le dernier avant le marché : c'est la procédure en cours, pas une
+    # précédente qui portait le même numéro de lot
+    return candidats[-1][1] if position is not None else max(candidats, key=lambda c: len(c[1]))[1]
 
 
 def objet_est_douteux(objet: str | None) -> bool:
@@ -131,7 +175,12 @@ def objet_est_douteux(objet: str | None) -> bool:
 
 def reparer(appliquer: bool = False) -> dict[str, int]:
     """Remplace les objets douteux par l'en-tête de lot correspondant."""
-    compte = {"examines": 0, "corriges": 0, "sans_entete": 0, "sans_numero": 0}
+    from app.extraction.autorites import _position
+
+    compte = {
+        "examines": 0, "corriges": 0, "sans_entete": 0,
+        "sans_numero": 0, "introuvables": 0,
+    }
     with SessionLocal() as db:
         marches = db.scalars(select(Marche).order_by(Marche.document_id, Marche.id)).all()
         doc_id, texte = None, ""
@@ -148,7 +197,13 @@ def reparer(appliquer: bool = False) -> dict[str, int]:
                 d = db.get(Document, m.document_id)
                 texte = (d.texte_extrait or "") if d else ""
                 doc_id = m.document_id
-            trouve = objet_du_lot(texte, numero)
+            position = _position(texte, m) if texte else None
+            if position is None:
+                compte["introuvables"] += 1
+                print(f"  [{m.id}] introuvable dans le Quotidien : sans repère, "
+                      "on ne sait pas quelle procédure le gouverne")
+                continue
+            trouve = objet_du_lot(texte, numero, position)
             if not trouve:
                 compte["sans_entete"] += 1
                 print(f"  [{m.id}] lot {numero} : en-tête introuvable, laissé tel quel")
@@ -170,7 +225,8 @@ def main() -> int:
     c = reparer(appliquer="--appliquer" in sys.argv)
     print(
         f"\n{c['examines']} objet(s) douteux : {c['corriges']} corrigé(s), "
-        f"{c['sans_entete']} sans en-tête retrouvé, {c['sans_numero']} sans numéro de lot."
+        f"{c['sans_entete']} sans en-tête retrouvé, {c['sans_numero']} sans numéro de lot, "
+        f"{c['introuvables']} introuvable(s) dans le texte."
     )
     return 0
 
