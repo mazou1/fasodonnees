@@ -2,6 +2,10 @@
 
 Traite les comptes rendus du Conseil des ministres pas encore structurés
 (décisions + nominations), les plus récents d'abord.
+
+Seules les **versions de référence** sont extraites : le gouvernement réécrit
+ses pages après publication, et sans ce filtre le LLM repassait sur chaque
+version du même conseil (cf. app/versions.py).
 """
 
 import logging
@@ -13,6 +17,7 @@ from sqlalchemy import select
 from app.db import SessionLocal
 from app.extraction.conseil_ministres import traiter_document
 from app.models import Document
+from app.versions import ids_versions_de_reference
 
 
 def main() -> int:
@@ -24,6 +29,7 @@ def main() -> int:
             .where(
                 Document.type_doc == "cr_conseil",
                 Document.date_structuration.is_(None),
+                Document.id.in_(ids_versions_de_reference()),
             )
             .order_by(Document.date_publication.desc().nulls_last())
             .limit(max_docs)

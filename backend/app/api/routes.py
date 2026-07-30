@@ -21,6 +21,7 @@ from app.models import (
     Source,
     Structure,
 )
+from app.versions import ids_versions_de_reference
 
 router = APIRouter()
 
@@ -336,11 +337,43 @@ class ConseilOut(BaseModel):
     decisions: int
     nominations: int
     engagements: int
+    # La source réécrit ses comptes rendus après publication : on archive chaque
+    # version et on l'assume à l'affichage. `nb_versions` > 1 signale une
+    # réécriture ; `modification_constatee_le` est la date à laquelle NOUS
+    # l'avons constatée, pas celle de la retouche — le site ne la publie pas.
+    nb_versions: int
+    modification_constatee_le: date | None
 
 
 class ConseilsPage(BaseModel):
     total: int
     conseils: list[ConseilOut]
+
+
+# en dessous, la page collectée est une coquille sans compte rendu réel
+# (même seuil que app/extraction/pdf_cr.py)
+TEXTE_MINIMUM_CR = 500
+
+
+def _versions_par_document(db: Session, ids: list[int]) -> dict[int, tuple[int, date | None]]:
+    """Pour chaque document : nombre de versions archivées, et date à laquelle la
+    dernière réécriture a été constatée (None s'il n'y en a qu'une)."""
+    if not ids:
+        return {}
+    refs = db.execute(
+        select(Document.id, Document.source_id, Document.url).where(Document.id.in_(ids))
+    ).all()
+    resultat: dict[int, tuple[int, date | None]] = {}
+    for doc_id, source_id, url in refs:
+        lignes = db.execute(
+            select(func.count(), func.max(Document.date_collecte)).where(
+                Document.source_id == source_id, Document.url == url
+            )
+        ).one()
+        nb = int(lignes[0] or 1)
+        vue_le = lignes[1].date() if nb > 1 and lignes[1] else None
+        resultat[doc_id] = (nb, vue_le)
+    return resultat
 
 
 @router.get("/conseils", response_model=ConseilsPage)
@@ -376,8 +409,15 @@ def list_conseils(
         .outerjoin(n_eng, n_eng.c.document_id == Document.id)
         .where(
             Document.type_doc == "cr_conseil",
-            # une entrée par conseil : on écarte les coquilles sans contenu extrait
-            (n_dec.c.n.is_not(None)) | (n_nom.c.n.is_not(None)) | (n_eng.c.n.is_not(None)),
+            # Une seule entrée par conseil : la version de référence. Sans ce
+            # filtre, un conseil réécrit par la source apparaissait deux à
+            # quatre fois (cf. app/versions.py).
+            Document.id.in_(ids_versions_de_reference()),
+            # on écarte les coquilles : une page sans compte rendu réel. Le test
+            # porte sur le texte lui-même et non, comme avant, sur la présence
+            # d'entités validées — sinon un conseil collecté depuis six jours et
+            # dont l'extraction attend la relecture reste invisible.
+            func.length(func.coalesce(Document.texte_extrait, "")) >= TEXTE_MINIMUM_CR,
         )
     )
     if q:
@@ -388,6 +428,8 @@ def list_conseils(
         .offset((page - 1) * par_page)
         .limit(par_page)
     ).all()
+
+    versions = _versions_par_document(db, [d.id for d, *_ in lignes])
     return ConseilsPage(
         total=int(total or 0),
         conseils=[
@@ -399,6 +441,8 @@ def list_conseils(
                 decisions=int(nd or 0),
                 nominations=int(nn or 0),
                 engagements=int(ne or 0),
+                nb_versions=versions.get(d.id, (1, None))[0],
+                modification_constatee_le=versions.get(d.id, (1, None))[1],
             )
             for d, nd, nn, ne in lignes
         ],

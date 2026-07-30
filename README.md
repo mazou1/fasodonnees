@@ -258,6 +258,7 @@ python -m app.extraction.marches dedoublonner  # purge les republications du Quo
 python -m app.projets proposer 0.30       # annonce ↔ marché ↔ réalisation → CSV à relire
 python -m app.projets appliquer projets_propositions.csv   # crée les dossiers acceptés
 python -m app.projets statuts             # récapitulatif des dossiers et de leur stade
+python -m app.versions consolider         # ramène les entités sur la version de référence
 python -m app.ingestion.conseil_constitutionnel   # rattrapage : toutes les années
 #   (la collecte périodique du worker ne revisite que les millésimes récents ;
 #    ce rattrapage est à lancer au premier remplissage ou après interruption)
@@ -298,6 +299,17 @@ bascule possible vers l'API Claude.
   (`app.attributaires proposer`). Chaque fiche liste les graphies qu'elle
   réunit. Le regroupement ne dit rien de la propriété réelle : deux sociétés
   liées mais nommées différemment restent deux fiches.
+- **La source réécrit ses comptes rendus.** Le gouvernement retouche ses pages
+  après publication : le compte rendu du 23 juillet 2026 est passé de 66 571 à
+  71 390 octets entre le 24 et le 29 juillet. Chaque version est archivée — cela
+  **établit** le fait, et c'est précieux — mais une seule, la plus récente, porte
+  l'extraction et l'affichage (`app/versions.py`) ; sans quoi le LLM repassait
+  sur chaque version et le site listait le même conseil deux à quatre fois. Les
+  fiches signalent « réécrit par la source », avec la date du **constat** — nous
+  ne savons pas quand la retouche a eu lieu, seulement quand nous l'avons vue.
+  Limite assumée : le LLM ne reformule pas à l'identique d'une passe à l'autre,
+  donc les variantes issues des extractions déjà faites subsistent et se
+  tranchent à la relecture.
 - **Justice & contrôle — une couverture incomplète, et volontairement dite
   comme telle.** Le Conseil constitutionnel et l'ASCE-LC sont collectés ; la
   **Cour des comptes**, juridiction financière qui juge les comptes publics et

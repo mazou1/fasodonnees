@@ -102,6 +102,12 @@ modèle de `apps/plan-relance/` (build embarqué dans `frontend/public/`).
   `with stockage.fichier_local(cle) as chemin:` quand une bibliothèque exige un
   vrai fichier (pdfplumber, pypdf, Tesseract), `stockage.url_ou_chemin()` pour
   servir. `Document.fichier` contient une **clé**, pas un chemin.
+- **Un même document existe en plusieurs versions.** `upsert_document`
+  versionne au lieu d'écraser (même URL + hash différent = nouvelle ligne), car
+  les sources réécrivent leurs pages après publication. Toute requête qui
+  compte, extrait ou affiche des documents doit donc filtrer sur
+  `app.versions.ids_versions_de_reference()` — sinon le LLM retraite chaque
+  version et le site liste le même conseil plusieurs fois.
 - **Un PDF téléchargé n'est pas un texte cherchable.** Un collecteur qui
   archive un PDF doit poser `meta["pdf_statut"]` : c'est ce marqueur — et non
   `statut_extraction` — que suit la passe OCR (`app/extraction/ocr_textes.py`),

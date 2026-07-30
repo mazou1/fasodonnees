@@ -28,9 +28,18 @@
       <div class="corps">
         <div class="titre">{{ titreCourt(c) }}</div>
         <div class="detail">
-          {{ c.decisions }} décision{{ c.decisions > 1 ? "s" : "" }} ·
-          {{ c.nominations }} nomination{{ c.nominations > 1 ? "s" : "" }}
-          <template v-if="c.engagements"> · {{ c.engagements }} engagement{{ c.engagements > 1 ? "s" : "" }}</template>
+          <template v-if="c.decisions || c.nominations">
+            {{ c.decisions }} décision{{ c.decisions > 1 ? "s" : "" }} ·
+            {{ c.nominations }} nomination{{ c.nominations > 1 ? "s" : "" }}
+            <template v-if="c.engagements"> · {{ c.engagements }} engagement{{ c.engagements > 1 ? "s" : "" }}</template>
+          </template>
+          <span v-else class="en-attente">Extraction en cours de relecture</span>
+        </div>
+        <!-- La source réécrit ses comptes rendus après publication : on le dit
+             plutôt que de servir la dernière version comme si rien n'avait
+             bougé. La date est celle du CONSTAT, pas de la retouche. -->
+        <div v-if="c.nb_versions > 1" class="reecriture" :title="`${c.nb_versions} versions de ce compte rendu sont archivées`">
+          ✎ Réécrit par la source — constaté le {{ formatDate(c.modification_constatee_le) }}
         </div>
       </div>
     </router-link>
@@ -65,6 +74,11 @@ function jour(d) {
 }
 function moisAnnee(d) {
   return new Date(d).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+}
+function formatDate(d) {
+  return d
+    ? new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : "";
 }
 function numero(c) {
   const m = (c.titre || "").match(/N[°o]\s*0*(\d+)/i);
@@ -133,4 +147,9 @@ onMounted(recharger);
 .corps { padding: 12px 18px 14px; }
 .corps .titre { font-weight: 600; line-height: 1.3; }
 .corps .detail { color: var(--text-secondary); font-size: 0.88rem; margin-top: 4px; }
+.corps .en-attente { font-style: italic; }
+.corps .reecriture {
+  margin-top: 6px; font-size: 0.78rem; color: var(--text-muted);
+  display: flex; align-items: baseline; gap: 5px;
+}
 </style>
