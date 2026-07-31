@@ -142,6 +142,17 @@ def run_conseil_ministres() -> None:
 
     extraction_run.main()
 
+    # Le gouvernement RÉÉCRIT ses pages après publication : `upsert_document`
+    # crée alors une nouvelle version, et la structuration repasse dessus. Sans
+    # consolidation, le conseil du 23 juillet 2026 s'est retrouvé avec ses
+    # décisions extraites deux fois, sur deux versions du même document - donc
+    # comptées deux fois dans la file de validation et dans les statistiques.
+    from app.versions import consolider_entites
+
+    with SessionLocal() as db:
+        stats = consolider_entites(db)
+    logger.info("Versions consolidées : %s", stats)
+
 
 def construire_scheduler() -> BlockingScheduler:
     """Toutes les cadences, sans effet de bord.

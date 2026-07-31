@@ -66,3 +66,17 @@ def test_ocr_et_marches_sont_bornes():
     assert "max_docs=40" in source  # OCR
     assert "max_marches=120" in source  # autorités
     assert ".limit(15)" in source  # Quotidiens par passage
+
+
+def test_la_consolidation_des_versions_suit_la_structuration():
+    """Le gouvernement réécrit ses pages : chaque réécriture crée une version,
+    et la structuration repasse dessus. Sans consolidation dans la foulée, le
+    conseil du 23 juillet 2026 s'est retrouvé avec ses décisions extraites deux
+    fois - comptées deux fois dans la file de validation et les statistiques."""
+    import inspect
+
+    source = inspect.getsource(scheduler.run_conseil_ministres)
+    assert "consolider_entites" in source, (
+        "La structuration des CR doit être suivie d'une consolidation des "
+        "versions, sinon les doublons s'accumulent à chaque réécriture."
+    )
