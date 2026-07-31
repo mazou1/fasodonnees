@@ -92,3 +92,23 @@ def test_tous_les_statuts_connus_sont_ranges(statut):
     from app.versions import _RANG_STATUT
 
     assert statut in _RANG_STATUT
+
+
+def test_a_valider_face_a_un_verdict_nest_pas_une_divergence():
+    """Le gouvernement réécrit ses pages : l'extraction repasse et produit
+    toujours des `a_valider`. Les traiter comme des relectures divergentes
+    remettait dans la file 86 nominations déjà validées à la main - et
+    recommençait à chaque réécriture.
+
+    Une divergence réelle, c'est `valide` contre `rejete` : deux humains qui se
+    contredisent. Là, on ne tranche pas à leur place.
+    """
+    import inspect
+
+    from app.versions import consolider_entites
+
+    source = inspect.getsource(consolider_entites)
+    assert 'e.statut_validation == "a_valider"' in source, (
+        "Un doublon fraîchement extrait doit être supprimé face à une entité "
+        "déjà relue, sinon la file de validation se remplit de redites."
+    )

@@ -143,18 +143,28 @@ def consolider_entites(db) -> dict[str, int]:
                     if e.document_id != reference:
                         e.document_id = reference
                         stats["rattachees"] += 1
-                elif e.statut_validation == meilleures[k].statut_validation:
-                    # même contenu, même statut : c'est un doublon, y compris
-                    # entre deux « valide ». Supprimer n'efface aucun jugement
-                    # humain - le même verdict subsiste sur l'entité conservée.
+                elif (
+                    e.statut_validation == meilleures[k].statut_validation
+                    or e.statut_validation == "a_valider"
+                ):
+                    # Même contenu, même statut : doublon, y compris entre deux
+                    # « valide ». Supprimer n'efface aucun jugement humain - le
+                    # même verdict subsiste sur l'entité conservée.
+                    #
+                    # Et « a_valider » face à un verdict n'est PAS une
+                    # divergence : c'est l'absence d'avis. La réécriture d'une
+                    # page par le gouvernement fait repasser l'extraction, qui
+                    # produit toujours des `a_valider` - les garder comme des
+                    # conflits remettait dans la file 86 nominations déjà
+                    # validées à la main, à chaque réécriture.
                     if modele is Nomination:
                         reporter_mandats(e.id, meilleures[k].id)
                     db.delete(e)
                     stats["doublons_supprimes"] += 1
                 else:
-                    # statuts DIVERGENTS sur le même contenu (validé d'un côté,
-                    # rejeté de l'autre) : deux relectures se contredisent, on ne
-                    # tranche pas à leur place.
+                    # Divergence réelle : validé d'un côté, rejeté de l'autre.
+                    # Deux relectures humaines se contredisent, on ne tranche
+                    # pas à leur place.
                     if e.document_id != reference:
                         e.document_id = reference
                         stats["rattachees"] += 1
