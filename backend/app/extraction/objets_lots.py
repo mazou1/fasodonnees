@@ -65,6 +65,23 @@ _PAS_UN_OBJET = (
     "réalisation d'un marché public",
     "realisation d'un marche public",
     "réalisation d’un marché public",
+    # autres formules d'aveu relevées dans le corpus
+    "précision non disponible",
+    "lot non précisé",
+    "non précisés",
+)
+
+# Ces mentions ne disent pas que l'objet manque : elles disent que la ligne
+# n'est PAS une attribution. Le Quotidien liste les offres concurrentes d'un
+# même lot avec leur montant, et l'extraction en a fait autant d'attributaires.
+# Huit entreprises se sont ainsi retrouvées publiées comme titulaires du même
+# marché - sept de trop.
+_NON_ATTRIBUE = (
+    "attribution non retenue",
+    "offre non retenue",
+    "non conforme",
+    "non classé",
+    "infructueux",
 )
 
 # Un objet de marché commence par ce qu'on achète ou ce qu'on fait faire. La
@@ -195,7 +212,12 @@ _QUEUE_MONTANT = re.compile(
 # parfois complet. Le couper récupère la ligne - à condition que ce qui reste
 # dise quelque chose.
 _AVEU_FINAL = re.compile(
-    r"\s*\(\s*non\s+(?:pr[ée]cis|indiqu|sp[ée]cifi)[^)]*\)?\s*$", re.IGNORECASE
+    r"\s*\(\s*(?:"
+    r"non\s+(?:pr[ée]cis|indiqu|sp[ée]cifi)|"
+    r"lot\s+non\s+pr[ée]cis|"
+    r"pr[ée]cision\s+non\s+disponible"
+    r")[^)]*\)?\s*$",
+    re.IGNORECASE,
 )
 # En deçà, ce qui reste est trop vague pour valoir publication : « Fourniture de
 # services » ne dit rien d'un contrat de 58 millions FCFA. Le seuil vaut quelle
@@ -223,6 +245,36 @@ def sans_queue_de_montant(objet: str | None) -> str | None:
     if len(corps.split()) < MOTS_MINIMUM_APRES_COUPE:
         return None
     return coupe
+
+
+def nest_pas_une_attribution(objet: str | None) -> bool:
+    """L'objet signale-t-il une offre écartée plutôt qu'un marché attribué ?
+
+    Aucune troncature ne sauve ces lignes : ce n'est pas leur libellé qui est
+    incomplet, c'est leur existence même comme attribution qui est fausse.
+    """
+    reduit = (objet or "").lower()
+    return bool(objet) and any(marqueur in reduit for marqueur in _NON_ATTRIBUE)
+
+
+def _normaliser_nom(valeur: str | None) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (valeur or "").lower()).strip()
+
+
+def objet_repete_lattributaire(objet: str | None, attributaire: str | None) -> bool:
+    """L'objet n'est-il que le nom de l'entreprise ?
+
+    « 3 ETABLISSEMENT YAKNABA ET FRERES » pour attributaire « YAKNABA ET
+    FRERES » : la colonne de l'entreprise a glissé dans celle de l'objet. La
+    ligne passe tous les autres contrôles - elle a un montant, un attributaire,
+    quatre mots - et ne dit pourtant rien du marché.
+    """
+    nom = _normaliser_nom(attributaire)
+    if len(nom) < 6:
+        return False
+    reste = _normaliser_nom(objet).replace(nom, " ")
+    reste = re.sub(r"^\s*(?:lot\s*n?\s*\d{0,2}|\d{1,3})\s*", "", reste).strip()
+    return len(reste.split()) < 3
 
 
 def objet_est_douteux(objet: str | None) -> bool:
@@ -295,10 +347,15 @@ def assainir_les_publies(appliquer: bool = False) -> dict[str, int]:
     compte = {"examines": 0, "coupes": 0, "depublies": 0}
     with SessionLocal() as db:
         for m in db.scalars(select(Marche).where(Marche.statut_validation == "valide")):
-            if not objet_est_douteux(m.objet):
+            fausse = nest_pas_une_attribution(m.objet) or objet_repete_lattributaire(
+                m.objet, m.attributaire
+            )
+            if not fausse and not objet_est_douteux(m.objet):
                 continue
             compte["examines"] += 1
-            recupere = sans_queue_de_montant(m.objet)
+            # une offre écartée ou un nom d'entreprise ne se rattrape pas par
+            # troncature : la ligne est fausse, pas incomplète
+            recupere = None if fausse else sans_queue_de_montant(m.objet)
             if recupere:
                 print(f"  [{m.id}] coupé  → {recupere[:82]}")
                 if appliquer:

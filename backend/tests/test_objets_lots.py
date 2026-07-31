@@ -219,3 +219,39 @@ def test_un_objet_trop_maigre_ne_reste_pas_publie():
     assert sans_queue_de_montant(
         "LOT 1 : Acquisition de produits d’entretien (montant minimum HTVA)"
     ) == "LOT 1 : Acquisition de produits d’entretien"
+
+
+def test_une_offre_ecartee_nest_pas_une_attribution():
+    """Le Quotidien liste les offres concurrentes d'un même lot avec leur
+    montant. L'extraction en a fait autant d'attributaires : huit entreprises
+    publiées comme titulaires du même marché, sept de trop."""
+    from app.extraction.objets_lots import nest_pas_une_attribution
+
+    assert nest_pas_une_attribution(
+        "LOT N°2 : acquisition d’autres matériels de bureau (attribution non retenue)"
+    )
+    assert nest_pas_une_attribution("Travaux divers (non conforme : CV non signés)")
+    assert not nest_pas_une_attribution("Acquisition de matériels de bureau")
+
+
+def test_un_objet_qui_nest_que_le_nom_de_lentreprise():
+    """« 3 ETABLISSEMENT YAKNABA ET FRERES » pour attributaire « YAKNABA ET
+    FRERES » : la colonne de l'entreprise a glissé dans celle de l'objet. La
+    ligne a un montant, un attributaire, quatre mots - et ne dit rien."""
+    from app.extraction.objets_lots import objet_repete_lattributaire
+
+    assert objet_repete_lattributaire("3 ETABLISSEMENT YAKNABA ET FRERES", "YAKNABA ET FRERES")
+    assert not objet_repete_lattributaire(
+        "Lot 3 : Travaux de réalisation de 20 forages", "K. E. DISTRIBUTION"
+    )
+    # un attributaire trop court ne peut pas servir de test
+    assert not objet_repete_lattributaire("Acquisition de vivres", "EZ")
+
+
+def test_la_precision_non_disponible_est_un_aveu():
+    from app.extraction.objets_lots import sans_queue_de_montant
+
+    assert sans_queue_de_montant(
+        "Lot 1 : Travaux de construction ou réhabilitation "
+        "(précision non disponible dans l'extrait)"
+    ) == "Lot 1 : Travaux de construction ou réhabilitation"
