@@ -37,10 +37,32 @@ echo "UMAMI_APP_SECRET=$(openssl rand -hex 32)" >> .env
 docker compose -f docker-compose.prod.yml --profile audience up -d umami caddy
 ```
 
-Le tableau de bord est sur `https://<domaine>/stats`. Identifiants par défaut
-`admin` / `umami` — **à changer à la première connexion**. Créer ensuite le site
-dans l'interface pour obtenir son identifiant, puis l'inscrire dans
-`frontend/index.html`.
+Deux chemins, pour une raison technique. Le **traceur** (script et envoi des
+vues) passe par le domaine principal sous `/stats/…` : servi depuis ailleurs, il
+serait bloqué par la plupart des bloqueurs de publicité et les chiffres ne
+voudraient plus rien dire. Le **tableau de bord**, lui, a besoin de la racine
+d'un domaine : Umami est bâti sur Next.js, dont le préfixe de chemin est figé à
+la compilation — `BASE_PATH` n'a aucun effet sur l'image publiée.
+
+D'où un sous-domaine pour l'interface :
+
+```
+Enregistrement DNS   A   stats.<domaine>   →   même adresse que l'apex
+```
+
+puis dans `.env` :
+
+```
+DOMAIN_AUDIENCE=stats.<domaine>
+```
+
+Tant que la variable n'est pas renseignée, Caddy garde `stats.invalid` et ne
+tente aucun certificat — le reste du site fonctionne normalement.
+
+Identifiants par défaut `admin` / `umami` : **à changer à la première
+connexion**, l'interface étant publique. Créer ensuite le site dans Umami pour
+obtenir son identifiant, et l'inscrire dans `frontend/index.html` avec
+`data-host-url="https://<domaine>/stats"`.
 
 ## 1. Provisionner le VPS
 

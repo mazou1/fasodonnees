@@ -15,6 +15,18 @@ www.{$DOMAIN} {
 	redir https://{$DOMAIN}{uri} permanent
 }
 
+# Tableau de bord d'audience, sur un sous-domaine.
+#
+# Il lui faut la racine : Umami est bâti sur Next.js, dont le préfixe de chemin
+# est figé à la compilation - `BASE_PATH` n'a aucun effet sur l'image publiée,
+# et l'interface servie sous /stats appelle ses ressources à /_next, donc sur le
+# site. Un sous-domaine évite ce conflit sans reconstruire l'image.
+#
+# Nécessite un enregistrement DNS A : stats.<domaine> → même adresse que l'apex.
+{$DOMAIN_AUDIENCE:stats.invalid} {
+	reverse_proxy umami:3000
+}
+
 {$DOMAIN} {
 	encode zstd gzip
 
@@ -37,11 +49,17 @@ www.{$DOMAIN} {
 		reverse_proxy api:8000
 	}
 
-	# Mesure d'audience (Umami), si le profil « audience » est actif. Servi sous
-	# le même domaine que le site : un script tiers serait bloqué par la plupart
-	# des bloqueurs de publicité, et les chiffres ne voudraient plus rien dire.
-	@audience path /stats /stats/*
-	handle @audience {
+	# Mesure d'audience (Umami), si le profil « audience » est actif.
+	#
+	# Seuls les DEUX points d'entrée du traceur passent par le domaine
+	# principal : le script et l'envoi des vues. Un script d'analyse servi
+	# depuis un autre domaine est bloqué par la plupart des bloqueurs de
+	# publicité, et les chiffres ne veulent alors plus rien dire.
+	#
+	# `handle_path` retire le préfixe : Umami reçoit /script.js et /api/send.
+	# L'envoi ne peut pas passer par /api/send directement - ce chemin est déjà
+	# celui de l'API de la plateforme.
+	handle_path /stats/* {
 		reverse_proxy umami:3000
 	}
 
