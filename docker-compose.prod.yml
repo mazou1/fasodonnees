@@ -114,6 +114,30 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Mesure d'audience — OPTIONNEL, activé par
+  #   docker compose -f docker-compose.prod.yml --profile audience up -d
+  #
+  # Umami plutôt que Plausible : mêmes propriétés (sans cookie, sans donnée
+  # personnelle, script d'1 Ko), mais il réutilise le PostgreSQL déjà là au lieu
+  # d'exiger ClickHouse. Mesuré sur ce serveur : ~200 Mo contre ~2,5 Go, pour
+  # une pile applicative qui en occupe 710 au total.
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-v2.19.0
+    profiles: ["audience"]
+    environment:
+      DATABASE_URL: postgresql://faso:${POSTGRES_PASSWORD}@db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:?UMAMI_APP_SECRET manquant (openssl rand -hex 32)}
+      # servi sous /stats par Caddy : sans cette base, Umami génère des liens
+      # absolus vers la racine et son interface se retrouve cassée
+      BASE_PATH: /stats
+      # les visiteurs arrivent par Caddy, qui est le seul à voir leur IP réelle
+      TRACKER_SCRIPT_NAME: script.js
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   caddy:
     image: caddy:2-alpine
     # Se lie à UNE adresse précise, pas à 0.0.0.0. Sur un serveur dédié, la

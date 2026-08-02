@@ -37,6 +37,14 @@ www.{$DOMAIN} {
 		reverse_proxy api:8000
 	}
 
+	# Mesure d'audience (Umami), si le profil « audience » est actif. Servi sous
+	# le même domaine que le site : un script tiers serait bloqué par la plupart
+	# des bloqueurs de publicité, et les chiffres ne voudraient plus rien dire.
+	@audience path /stats /stats/*
+	handle @audience {
+		reverse_proxy umami:3000
+	}
+
 	# Tout le reste → front nginx : il sert la SPA et proxifie /api/ et
 	# /openapi.json vers l'API (avec le strip du préfixe /api).
 	handle {

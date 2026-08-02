@@ -14,6 +14,34 @@ la base déjà calculée en local est migrée telle quelle.
 | `migrate-data.sh` | Copie base + archives depuis le local vers la prod (sans recalcul). |
 | `backup.sh` | Sauvegarde quotidienne (pg_dump + archive de `data/`). |
 
+## Mesure d'audience (optionnelle)
+
+Umami, sous le même domaine que le site — un script d'analyse servi par un tiers
+est bloqué par la plupart des bloqueurs de publicité, et les chiffres ne veulent
+alors plus rien dire. Sans cookie ni donnée personnelle : aucune bannière de
+consentement à afficher.
+
+Umami plutôt que Plausible parce qu'il réutilise le PostgreSQL déjà présent,
+là où Plausible impose ClickHouse. Mesuré : ~200 Mo contre ~2,5 Go, pour une
+pile applicative qui en occupe 710 au total.
+
+```bash
+# 1. la base (l'utilisateur `faso` en est propriétaire, comme pour le reste)
+docker compose -f docker-compose.prod.yml exec -T db \
+  psql -U faso -d faso -c "CREATE DATABASE umami OWNER faso"
+
+# 2. le secret, dans .env
+echo "UMAMI_APP_SECRET=$(openssl rand -hex 32)" >> .env
+
+# 3. démarrage
+docker compose -f docker-compose.prod.yml --profile audience up -d umami caddy
+```
+
+Le tableau de bord est sur `https://<domaine>/stats`. Identifiants par défaut
+`admin` / `umami` — **à changer à la première connexion**. Créer ensuite le site
+dans l'interface pour obtenir son identifiant, puis l'inscrire dans
+`frontend/index.html`.
+
 ## 1. Provisionner le VPS
 
 - Hetzner Cloud, **CX22** (2 vCPU / 4 Go RAM / 40 Go) suffit largement ; prévoir
