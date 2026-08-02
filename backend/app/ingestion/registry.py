@@ -20,6 +20,7 @@ from app.ingestion.conseil_ministres import ConseilMinistresCollector
 from app.ingestion.dgcmef import DgcmefCollector
 from app.ingestion.finances import BudgetCitoyenCollector
 from app.ingestion.legiburkina import LegiburkinaCollector
+from app.ingestion.pleniere import PleniereCollector
 from app.ingestion.rss import make_rss_collector
 from app.models import Source
 
@@ -38,6 +39,9 @@ SEEDS: list[tuple[str, str, str, str, str]] = [
     ("presidence", "Présidence du Faso", "https://www.presidencedufaso.bf", "institutionnel", "quotidien"),
     ("legiburkina", "Légiburkina (SGG-CM)", "https://www.legiburkina.gov.bf", "institutionnel", "quotidien"),
     ("assemblee", "Assemblée législative du peuple", "https://www.assembleenationale.bf", "institutionnel", "quotidien"),
+    # Les comptes rendus de plénière annoncent les changements de composition le
+    # jour même, quand la liste des députés met parfois des semaines à suivre.
+    ("pleniere", "Séances plénières de l'Assemblée", "https://www.assembleenationale.bf/pleniere", "institutionnel", "quotidien"),
     ("finances", "Ministère de l'Économie et des Finances", "https://www.finances.gov.bf", "institutionnel", "quotidien"),
     ("dgcmef", "Marchés publics (DGCMEF)", "https://www.dgcmef.gov.bf", "institutionnel", "quotidien"),
     ("jobf", "Journal officiel du Burkina Faso", "https://www.jobf.gov.bf", "institutionnel", "hebdo"),
@@ -66,6 +70,7 @@ COLLECTORS: dict[str, type[Collector]] = {
     ActualitesGouvCollector.slug: ActualitesGouvCollector,
     LegiburkinaCollector.slug: LegiburkinaCollector,
     AssembleeCollector.slug: AssembleeCollector,
+    PleniereCollector.slug: PleniereCollector,
     BudgetCitoyenCollector.slug: BudgetCitoyenCollector,
     DgcmefCollector.slug: DgcmefCollector,
     ConseilConstitutionnelCollector.slug: ConseilConstitutionnelCollector,
