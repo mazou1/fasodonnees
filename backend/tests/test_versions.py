@@ -9,7 +9,7 @@ détruire.
 
 import pytest
 
-from app.versions import _cle_decision, _cle_nomination, _normaliser
+from app.versions import _cle_decision, _cle_nomination, _est_reformulation, _normaliser
 
 
 class _Faux:
@@ -112,3 +112,79 @@ def test_a_valider_face_a_un_verdict_nest_pas_une_divergence():
         "Un doublon fraîchement extrait doit être supprimé face à une entité "
         "déjà relue, sinon la file de validation se remplit de redites."
     )
+
+
+# --- reformulation d'un même poste ----------------------------------------
+
+# Le gouvernement ne réécrit pas que la typographie : le LLM repasse sur la page
+# réécrite et reformule les intitulés. Constaté après la re-collecte du 6 août
+# 2026 : 151 nominations validées en double, 146 personnes affichées deux fois
+# dans l'annuaire pour le même siège. La clé exacte ne voyait pas la différence
+# entre « un accent » et « une autre nomination ».
+
+def _nom(poste, personne_id=7, type_="nomination"):
+    return _cle_nomination(_Faux(personne_id=personne_id, poste=poste, type=type_))
+
+
+@pytest.mark.parametrize(
+    "court,long_",
+    [
+        # troncature : l'intitulé long ne fait que situer le même poste
+        ("Administrateur civil, Administrateur représentant l'État",
+         "Administrateur civil, Administrateur représentant l'État au Conseil "
+         "d'administration de l'École nationale"),
+        # un seul accent d'écart, au milieu du libellé
+        ("Directeur général de la Société industrielle burkinabé de matériels",
+         "Directeur général de la Société industrielle burkinabè de matériels"),
+        # casse et complément de structure
+        ("Administrateur représentant la Chambre des mines du Burkina",
+         "Administrateur représentant la Chambre des Mines du Burkina au Conseil "
+         "d'administration du BUMIGEB"),
+    ],
+)
+def test_une_reformulation_nest_pas_une_seconde_nomination(court, long_):
+    assert _est_reformulation(_nom(court), _nom(long_))
+    assert _est_reformulation(_nom(long_), _nom(court)), "la règle est symétrique"
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        # LE piège : un préfixe qui introduit un AUTRE poste. Les fondre
+        # fermerait le siège du directeur général au profit de son adjoint.
+        ("Directeur général", "Directeur général adjoint"),
+        ("Secrétaire général", "Secrétaire général adjoint du ministère"),
+        # deux sièges distincts au même conseil : ni l'un ni l'autre n'est un
+        # préfixe, mais le début est long et identique
+        ("Administrateur représentant l'État au Conseil d'administration de l'Université",
+         "Administrateur représentant l'État au Conseil d'administration de l'Agence"),
+        # deux rôles réellement distincts issus du même acte de nomination
+        ("Administrateur représentant l'État au Conseil d'administration du CHU",
+         "Président du Conseil d'administration du CHU"),
+    ],
+)
+def test_deux_postes_differents_ne_sont_jamais_fondus(a, b):
+    assert not _est_reformulation(_nom(a), _nom(b))
+
+
+def test_la_reformulation_ne_traverse_ni_la_personne_ni_le_type():
+    """Deux personnes au même poste, c'est un poste collégial ou une
+    succession - jamais un doublon. Et une fin de fonction n'est pas une
+    nomination."""
+    assert not _est_reformulation(_nom("Directeur général"), _nom("Directeur général", personne_id=8))
+    assert not _est_reformulation(
+        _nom("Directeur général"), _nom("Directeur général", type_="fin_fonction")
+    )
+
+
+def test_la_consolidation_garde_le_libelle_le_plus_complet():
+    """À statut égal, c'est le libellé complet qui doit survivre : « au Conseil
+    d'administration de l'École nationale » dit au lecteur de quel siège il
+    s'agit, « Administrateur représentant l'État » ne dit rien."""
+    import inspect
+
+    from app.versions import consolider_entites
+
+    source = inspect.getsource(consolider_entites)
+    assert '-len(getattr(x, "poste", "") or "")' in source
+    assert "_est_reformulation" in source
