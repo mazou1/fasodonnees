@@ -24,6 +24,7 @@ ETAPES_ATTENDUES = {
     "cm_rattrapage": "rattrapage du CR si publication tardive",
     "marches_quotidien": "extraction LLM des marchés + autorités + consolidation",
     "pdf_textes_quotidien": "PDF des textes juridiques et texte natif",
+    "annuaire_quotidien": "reconstruction des mandats depuis les nominations validées",
     "ocr_nocturne": "OCR des scans",
     "alerte_sources_muettes": "alerte quand une source se tait",
 }

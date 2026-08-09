@@ -3,6 +3,12 @@
 {# le bloc content est déjà dans un <div class="row row-deck row-cards"> :
    on émet donc directement des colonnes, sans row englobant #}
 {% block content %}
+{% if message %}
+<div class="col-12">
+  <div class="alert alert-{{ message.niveau }}" role="alert">{{ message.texte }}</div>
+</div>
+{% endif %}
+
 {% if total == 0 %}
 <div class="col-12">
   <div class="alert alert-success" role="alert">
@@ -20,6 +26,70 @@
   </p>
 </div>
 {% endif %}
+
+{# Validation en masse : relire des milliers de lignes une par une n'est pas
+   tenable. L'extraction note sa propre confiance ; au-dessus d'un seuil choisi
+   ici, on valide d'un bloc. « Prévisualiser » recharge la page pour montrer
+   l'effet du seuil AVANT de valider. #}
+<div class="col-12">
+  <form method="post" class="card">
+    <input type="hidden" name="applique" value="1">
+    <div class="card-header">
+      <h3 class="card-title">Validation en masse par seuil de confiance</h3>
+    </div>
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-auto">
+          <label class="form-label" for="seuil">Seuil de confiance</label>
+          <input type="number" class="form-control" id="seuil" name="seuil"
+                 value="{{ '%.2f'|format(seuil) }}" min="0" max="1" step="0.05" style="width: 7rem">
+        </div>
+        <div class="col-auto">
+          <label class="form-check">
+            <input class="form-check-input" type="checkbox" name="sans_score" value="1"
+                   {% if sans_score %}checked{% endif %}>
+            <span class="form-check-label">Inclure aussi les lignes <strong>sans score</strong></span>
+          </label>
+          <div class="form-hint m-0">
+            Extraction déterministe (marchés du Quotidien DGCMEF) : aucun signal
+            automatique ne les appuie.
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mt-2">
+        {% for l in lignes %}
+        <div class="col-sm-6 col-lg-4">
+          <label class="form-check">
+            <input class="form-check-input" type="checkbox" name="types" value="{{ l.cle }}"
+                   {% if l.coche %}checked{% endif %}>
+            <span class="form-check-label">
+              {{ l.libelle }}
+              <span class="text-secondary">
+                — {{ l.au_seuil }} au seuil{% if l.sans_score %}, {{ l.sans_score }} sans score{% endif %}
+              </span>
+            </span>
+          </label>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card-footer d-flex align-items-center">
+      <button type="submit" formmethod="get" class="btn">Prévisualiser</button>
+      <span class="ms-3 text-secondary">
+        {% if au_seuil %}
+        <strong>{{ au_seuil }}</strong> élément(s) seront validés au seuil {{ '%.2f'|format(seuil) }}.
+        {% else %}
+        Aucun élément n'atteint ce seuil parmi les types cochés.
+        {% endif %}
+      </span>
+      <button type="submit" class="btn btn-primary ms-auto" {% if not au_seuil %}disabled{% endif %}
+              onclick="return confirm('Valider {{ au_seuil }} élément(s) au seuil {{ '%.2f'|format(seuil) }} ? Ils deviendront publics via l\'API.');">
+        ✓ Valider tout ce qui atteint le seuil
+      </button>
+    </div>
+  </form>
+</div>
 
 {% for l in lignes %}
 <div class="col-sm-6 col-lg-4">
@@ -39,7 +109,8 @@
   <p class="text-secondary mt-2 mb-0"><small>
     Astuce : dans une file, ajoutez <code>?statut=valide</code>,
     <code>?statut=rejete</code> ou <code>?statut=tous</code> à l'URL pour revoir
-    les éléments déjà traités.
+    les éléments déjà traités. En ligne de commande, le même seuil s'applique
+    avec <code>python -m app.validation 0.9</code>.
   </small></p>
 </div>
 {% endblock %}

@@ -154,6 +154,22 @@ def run_conseil_ministres() -> None:
     logger.info("Versions consolidées : %s", stats)
 
 
+def run_annuaire() -> None:
+    """Reconstruit les mandats à partir des nominations validées.
+
+    Les validations faites dans `/admin` reconstruisent déjà l'annuaire dans la
+    foulée (cf. app/admin.py). Ce passage quotidien est le filet : une fusion de
+    personnes, une structure rendue canonique ou une validation faite en ligne
+    de commande modifient elles aussi les mandats, et l'annuaire ne doit jamais
+    dériver de ce que le site publie.
+    """
+    from app.annuaire import consolider
+
+    with SessionLocal() as db:
+        n = consolider(db)
+    logger.info("Annuaire consolidé : %d mandat(s)", n)
+
+
 def construire_scheduler() -> BlockingScheduler:
     """Toutes les cadences, sans effet de bord.
 
@@ -207,6 +223,14 @@ def construire_scheduler() -> BlockingScheduler:
         id="marches_quotidien",
         coalesce=True,
     )
+    # Annuaire : les mandats sont dérivés des nominations validées la veille.
+    # Après la collecte institutionnelle, avant que le public ne consulte.
+    scheduler.add_job(
+        run_annuaire,
+        CronTrigger(hour=7, minute=45),
+        id="annuaire_quotidien",
+        coalesce=True,
+    )
     # PDF des textes juridiques : le texte natif d'abord, l'OCR ne prend que ce
     # qui reste illisible.
     scheduler.add_job(
@@ -241,6 +265,9 @@ def main() -> None:
     # le prochain créneau : la passe est bornée (15 documents), donc un
     # redéploiement ne coûte que quelques minutes d'appels.
     run_marches_publics()
+    # après un redéploiement, l'annuaire reflète immédiatement les validations
+    # faites depuis le dernier passage quotidien (≈2 s)
+    run_annuaire()
     verifier_sources_muettes()
     scheduler.start()
 

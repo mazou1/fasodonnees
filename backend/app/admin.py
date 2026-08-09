@@ -8,7 +8,7 @@ import secrets
 from fastapi import FastAPI
 from sqladmin import Admin, BaseView, ModelView, action, expose
 from sqladmin.authentication import AuthenticationBackend
-from sqlalchemy import func, select, update
+from sqlalchemy import update
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
@@ -34,6 +34,7 @@ from app.models import (
     Source,
     Structure,
 )
+from app.validation import SEUIL_DEFAUT, compter_a_valider, valider_par_seuil
 
 
 def _pks(request: Request) -> list[int]:
@@ -43,6 +44,22 @@ def _pks(request: Request) -> list[int]:
 
 def _retour(request: Request, defaut: str) -> RedirectResponse:
     return RedirectResponse(request.headers.get("Referer", defaut), status_code=302)
+
+
+def _reconstruire_annuaire_si_besoin(db, modele: type, valides: int) -> None:
+    """Valider une nomination doit la faire apparaître dans l'annuaire.
+
+    Les mandats sont une vue dérivée des nominations validées, reconstruite
+    entièrement à chaque passage (≈2 s sur le corpus complet). Sans cet appel,
+    une nomination validée dans /admin restait invisible dans l'annuaire et sur
+    la fiche de la personne jusqu'à ce que quelqu'un lance `python -m
+    app.annuaire` à la main.
+    """
+    if not valides or modele is not Nomination:
+        return
+    from app.annuaire import consolider
+
+    consolider(db)
 
 
 class ValidationActionsMixin:
@@ -79,12 +96,13 @@ class ValidationActionsMixin:
     )
     async def valider(self, request: Request):
         with SessionLocal() as db:
-            db.execute(
+            n = db.execute(
                 update(self.modele)
                 .where(self.modele.id.in_(_pks(request)))
                 .values(statut_validation="valide")
-            )
+            ).rowcount
             db.commit()
+            _reconstruire_annuaire_si_besoin(db, self.modele, n)
         return _retour(request, request.url_for("admin:list", identity=self.identity))
 
     @action(
@@ -520,36 +538,108 @@ _FILES_VALIDATION = [
 ]
 
 
+_MODELES_PAR_CLE = {modele.__tablename__: modele for modele, _, _ in _FILES_VALIDATION}
+
+
+def _seuil_demande(valeur: str | None) -> float:
+    """Un seuil hors de [0, 1] n'a pas de sens : on le ramène plutôt que de
+    renvoyer une erreur au milieu d'une file de validation."""
+    try:
+        seuil = float(str(valeur).replace(",", "."))
+    except (TypeError, ValueError):
+        return SEUIL_DEFAUT
+    return min(max(seuil, 0.0), 1.0)
+
+
 class AValiderView(BaseView):
     """Tableau de bord : ce qui attend une validation, par type, avec le
-    nombre en attente et un accès direct à chaque file."""
+    nombre en attente, un accès direct à chaque file, et la validation en masse
+    au-dessus d'un seuil de confiance.
+
+    Le seuil existe parce que relire 8 000 nominations une par une n'est pas
+    tenable : l'extraction note sa propre confiance, et au-dessus d'un seuil que
+    l'administrateur choisit (et dont il voit l'effet AVANT de cliquer), le
+    verdict humain n'apporte plus rien. Ce qui reste sous le seuil est
+    exactement ce qui mérite un œil.
+    """
 
     name = "① À valider"
     icon = "fa-solid fa-clipboard-check"
 
-    @expose("/a-valider", methods=["GET"])
+    @expose("/a-valider", methods=["GET", "POST"])
     async def page(self, request: Request):
+        message = None
+        if request.method == "POST":
+            form = await request.form()
+            seuil = _seuil_demande(form.get("seuil"))
+            cles = [c for c in form.getlist("types") if c in _MODELES_PAR_CLE]
+            sans_score = bool(form.get("sans_score"))
+            if not cles:
+                message = {
+                    "niveau": "warning",
+                    "texte": "Aucun type coché : rien n'a été validé.",
+                }
+            else:
+                with SessionLocal() as db:
+                    rapport = valider_par_seuil(
+                        db,
+                        seuil,
+                        modeles=[_MODELES_PAR_CLE[c] for c in cles],
+                        inclure_sans_score=sans_score,
+                    )
+                detail = ", ".join(
+                    f"{ligne['valides']} {ligne['nom']}"
+                    for ligne in rapport["lignes"]
+                    if ligne["valides"]
+                )
+                texte = f"{rapport['total']} entité(s) validée(s) au seuil {seuil:g}"
+                texte += f" ({detail})." if detail else "."
+                if rapport["mandats"] is not None:
+                    texte += f" Annuaire reconstruit : {rapport['mandats']} mandat(s)."
+                message = {
+                    "niveau": "success" if rapport["total"] else "info",
+                    "texte": texte,
+                }
+        else:
+            seuil = _seuil_demande(request.query_params.get("seuil"))
+            sans_score = bool(request.query_params.get("sans_score"))
+            cles = [c for c in request.query_params.getlist("types") if c in _MODELES_PAR_CLE]
+            if not request.query_params.get("applique"):
+                cles = list(_MODELES_PAR_CLE)
+
         lignes = []
-        total = 0
+        total = au_seuil = 0
         with SessionLocal() as db:
             for modele, libelle, identity in _FILES_VALIDATION:
-                n = db.scalar(
-                    select(func.count())
-                    .select_from(modele)
-                    .where(modele.statut_validation == "a_valider")
-                )
-                total += n
+                compte = compter_a_valider(db, modele, seuil)
+                cle = modele.__tablename__
+                coche = cle in cles
+                total += compte["total"]
+                if coche:
+                    au_seuil += compte["au_seuil"] + (compte["sans_score"] if sans_score else 0)
                 lignes.append(
                     {
+                        "cle": cle,
                         "libelle": libelle,
-                        "compte": n,
+                        "compte": compte["total"],
+                        "au_seuil": compte["au_seuil"],
+                        "sans_score": compte["sans_score"],
+                        "coche": coche,
                         "url": request.url_for("admin:list", identity=identity),
                     }
                 )
         return await self.templates.TemplateResponse(
             request,
             "a_valider.html",
-            {"lignes": lignes, "total": total, "title": "À valider"},
+            {
+                "lignes": lignes,
+                "total": total,
+                "seuil": seuil,
+                "sans_score": sans_score,
+                "au_seuil": au_seuil,
+                "message": message,
+                "title": "À valider",
+            },
         )
 
 
