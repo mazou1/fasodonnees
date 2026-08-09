@@ -30,7 +30,9 @@
 {# Validation en masse : relire des milliers de lignes une par une n'est pas
    tenable. L'extraction note sa propre confiance ; au-dessus d'un seuil choisi
    ici, on valide d'un bloc. « Prévisualiser » recharge la page pour montrer
-   l'effet du seuil AVANT de valider. #}
+   l'effet du seuil AVANT de valider. File vide = pas de formulaire : un seuil
+   qui ne porte sur rien n'est qu'un bouton à ne pas cliquer. #}
+{% if total %}
 <div class="col-12">
   <form method="post" class="card">
     <input type="hidden" name="applique" value="1">
@@ -90,6 +92,7 @@
     </div>
   </form>
 </div>
+{% endif %}
 
 {% for l in lignes %}
 <div class="col-sm-6 col-lg-4">
