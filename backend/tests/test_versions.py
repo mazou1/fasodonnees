@@ -188,3 +188,48 @@ def test_la_consolidation_garde_le_libelle_le_plus_complet():
     source = inspect.getsource(consolider_entites)
     assert '-len(getattr(x, "poste", "") or "")' in source
     assert "_est_reformulation" in source
+
+
+# --- le sigle contre le nom développé -------------------------------------
+
+@pytest.mark.parametrize(
+    "sigle,developpe",
+    [
+        ("Administrateur représentant le Conseil régional du Kadiogo au Conseil "
+         "d’administration de l’UV-BF",
+         "Administrateur représentant le Conseil régional du Kadiogo au Conseil "
+         "d’administration de l’Université virtuelle du Burkina Faso (UV-BF)"),
+        ("Administrateur représentant l’État au Conseil d’administration de l’UV-BF",
+         "Administrateur représentant l’État au Conseil d’administration de "
+         "l’Université virtuelle du Burkina Faso (UV-BF)"),
+    ],
+)
+def test_le_sigle_et_le_nom_developpe_sont_le_meme_siege(sigle, developpe):
+    """Aucun n'est le préfixe de l'autre - c'est pourtant la même nomination,
+    et l'annuaire affichait la personne deux fois sur le même conseil."""
+    assert _est_reformulation(_nom(sigle), _nom(developpe))
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        # même long début, deux établissements différents : le reste du libellé
+        # court ne se retrouve pas dans le long
+        ("Administrateur représentant l’État au Conseil d’administration de l’Université "
+         "de Ouahigouya",
+         "Administrateur représentant l’État au Conseil d’administration de l’Agence "
+         "nationale de l’eau"),
+        # début commun trop court pour prouver quoi que ce soit
+        ("Conseiller technique", "Conseiller spécial du Premier ministre"),
+    ],
+)
+def test_un_long_debut_commun_ne_suffit_pas(a, b):
+    assert not _est_reformulation(_nom(a), _nom(b))
+
+
+def test_un_prefixe_commun_court_ne_fonde_aucune_fusion():
+    """« Administrateur représentant l'État » ouvre la moitié des nominations
+    d'un conseil : trois mots communs ne disent rien."""
+    from app.versions import _PREFIXE_MINIMUM
+
+    assert _PREFIXE_MINIMUM >= 4

@@ -127,9 +127,40 @@ def _est_reformulation(cle_a: tuple, cle_b: tuple) -> bool:
         return False
     if court == long_:
         return True  # ne différaient que par un accent ou une virgule
-    return long_.startswith(court + " ") and bool(
-        _SUITE_QUI_SITUE.match(long_[len(court) + 1 :])
-    )
+    if long_.startswith(court + " ") and _SUITE_QUI_SITUE.match(long_[len(court) + 1 :]):
+        return True
+    return _sigle_contre_nom_developpe(court, long_)
+
+
+# Un préfixe commun court ne prouve rien : « Administrateur représentant l'État »
+# ouvre la moitié des nominations d'un conseil. Il faut que les deux libellés
+# aient déjà dit la même chose longuement avant de diverger.
+_PREFIXE_MINIMUM = 4  # mots
+
+
+def _sigle_contre_nom_developpe(court: str, long_: str) -> bool:
+    """Le même siège, une fois par son sigle et une fois en toutes lettres.
+
+    « … au Conseil d'administration de l'UV-BF » et « … au Conseil
+    d'administration de l'Université virtuelle du Burkina Faso (UV-BF) » : aucun
+    n'est le préfixe de l'autre, et pourtant c'est la même nomination. Le sigle
+    du libellé court se retrouve dans le long, qui l'a simplement développé.
+
+    On l'exige littéralement : après un long début commun, tous les mots
+    restants du libellé court doivent figurer dans ceux du long. « Directeur
+    général » face à « Directeur général adjoint » ne passe pas ici - le reste
+    du libellé court y est vide, et c'est la règle du préfixe qui tranche.
+    """
+    mots_court, mots_long = court.split(), long_.split()
+    commun = 0
+    for a, b in zip(mots_court, mots_long):
+        if a != b:
+            break
+        commun += 1
+    if commun < _PREFIXE_MINIMUM:
+        return False
+    reste_court, reste_long = mots_court[commun:], mots_long[commun:]
+    return bool(reste_court) and set(reste_court) <= set(reste_long)
 
 
 # valide et rejete sont des DÉCISIONS HUMAINES : on ne les supprime jamais.
