@@ -133,7 +133,11 @@ flowchart TB
    **regex**, pas par le LLM.
 3. **Validation humaine** — toute entité extraite naît `a_valider`. Le tableau de
    bord « À valider » de `/admin` (SQLAdmin) la présente par type ; on valide à la
-   main, ou en masse au-dessus d'un seuil de confiance (`python -m app.validation 0.9`).
+   main, ou **en masse au-dessus d'un seuil de confiance** — depuis cette même page
+   (le seuil se prévisualise avant d'être appliqué) ou en ligne de commande
+   (`python -m app.validation 0.9`). Une entité sans score de confiance n'est jamais
+   emportée par un seuil sans demande explicite : les marchés du Quotidien DGCMEF
+   sont extraits sans LLM, rien ne permet de les départager automatiquement.
 4. **Consolidation** — des jobs *idempotents* recalculent l'annuaire (nominations →
    mandats, fins de poste par succession), éclatent les homonymes par matricule,
    géocodent les lieux (PostGIS + trigrammes) et proposent les doublons de structures.
@@ -250,6 +254,8 @@ python -m app.extraction.run 5            # structuration LLM des 5 prochains CR
 #   de confiance : python -m app.validation 0.9
 python -m app.desambiguisation           # matricules + éclatement des homonymes
 python -m app.annuaire                    # reconsolide les mandats (+ successions)
+                                          # (fait tout seul : après chaque validation
+                                          #  de nominations, et chaque jour à 7h45)
 python -m app.fusion proposer 0.75        # doublons de structures → CSV à relire
 python -m app.extraction.ocr_textes 500   # OCR des textes scannés (worker, Tesseract)
 python -m app.attributaires consolider    # regroupe les raisons sociales des marchés
