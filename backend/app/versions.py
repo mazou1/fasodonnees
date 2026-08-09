@@ -122,6 +122,8 @@ def _est_reformulation(cle_a: tuple, cle_b: tuple) -> bool:
         return False
     if cle_a[1] != cle_b[1] or cle_a[3] != cle_b[3]:
         return False
+    if _precision_ajoutee_en_fin(cle_a[2], cle_b[2]):
+        return True
     court, long_ = sorted((_plier(cle_a[2]), _plier(cle_b[2])), key=len)
     if not court:
         return False
@@ -130,6 +132,23 @@ def _est_reformulation(cle_a: tuple, cle_b: tuple) -> bool:
     if long_.startswith(court + " ") and _SUITE_QUI_SITUE.match(long_[len(court) + 1 :]):
         return True
     return _sigle_contre_nom_developpe(court, long_)
+
+
+def _precision_ajoutee_en_fin(poste_a, poste_b) -> bool:
+    """Le même libellé, suivi d'un sigle ou d'une précision entre virgule.
+
+    « Directeur général des études et des statistiques sectorielles » et le même
+    « (DGESS) » ; « Consul général du Burkina Faso à Cotonou » et le même
+    « , République du Benin ». La parenthèse et la virgule sont le signal : ce
+    qui suit décrit le poste déjà nommé, il ne le change pas - contrairement à
+    « Directeur général » suivi d'« adjoint », qui désigne un autre siège.
+
+    Se juge sur le libellé PONCTUÉ : `_plier` efface justement ce signal.
+    """
+    court, long_ = sorted((_normaliser(poste_a), _normaliser(poste_b)), key=len)
+    if not court or not long_.startswith(court):
+        return False
+    return long_[len(court):].lstrip()[:1] in ("(", ",")
 
 
 # Un préfixe commun court ne prouve rien : « Administrateur représentant l'État »

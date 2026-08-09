@@ -233,3 +233,32 @@ def test_un_prefixe_commun_court_ne_fonde_aucune_fusion():
     from app.versions import _PREFIXE_MINIMUM
 
     assert _PREFIXE_MINIMUM >= 4
+
+
+# --- une précision ajoutée en fin de libellé ------------------------------
+
+@pytest.mark.parametrize(
+    "court,long_",
+    [
+        # le sigle du poste, ajouté entre parenthèses
+        ("Directeur général des études et des statistiques sectorielles",
+         "Directeur général des études et des statistiques sectorielles (DGESS)"),
+        ("Directeur des moyennes entreprises du Centre 1",
+         "Directeur des moyennes entreprises du Centre 1 (DME C1)"),
+        # la précision introduite par une virgule
+        ("Consul général du Burkina Faso à Cotonou",
+         "Consul général du Burkina Faso à Cotonou, République du Benin"),
+    ],
+)
+def test_une_precision_entre_parentheses_ou_virgule_ne_change_pas_le_poste(court, long_):
+    assert _est_reformulation(_nom(court), _nom(long_))
+
+
+@pytest.mark.parametrize(
+    "adjoint",
+    ["Directeur général adjoint", "Directeur général adjoint de la SONABEL"],
+)
+def test_un_adjoint_reste_un_autre_siege(adjoint):
+    """Sans parenthèse ni virgule, le mot qui suit qualifie le RÔLE : fondre
+    le directeur général avec son adjoint fermerait un siège à tort."""
+    assert not _est_reformulation(_nom("Directeur général"), _nom(adjoint))
