@@ -12,6 +12,18 @@ l'Assemblée. Chaque donnée affichée est reliée à son document source offici
 
 Inspirée de [vie-publique.sn](https://www.vie-publique.sn) (Code for Senegal).
 
+## Objectifs de développement durable
+
+Faso Données Publiques contribue à l'**ODD 16** (paix, justice et institutions
+efficaces), en particulier aux cibles **16.6** — institutions transparentes et
+redevables — et **16.10** — accès public à l'information. En rendant
+consultables et vérifiables les décisions, nominations, marchés et budgets de
+l'État, la plateforme outille les citoyens, journalistes et chercheurs.
+
+Projet fondé et maintenu par **Mazou Ouédraogo** — contact :
+mohazouedraogo11@gmail.com.
+
+
 <table>
   <tr>
     <td><img src="docs/captures/accueil.png" alt="Tableau de bord Faso Données Publiques — thème clair"></td>
@@ -189,6 +201,13 @@ Chaque brique a une voie de montée en charge sans réécriture :
 | Déploiement | Docker Compose, VPS unique derrière Caddy | un serveur, HTTPS automatique | conteneurs séparés / orchestrateur si le trafic l'exige ; réplique de lecture DB |
 | Archivage `data/` | disque du VPS **ou** bucket S3 (`FASO_STOCKAGE`) | le disque ne demande aucune dépendance ; le bucket sert les PDF par URL présignée et prépare la sortie de machine | Garage sur un hôte séparé ou en multi-nœud, ou S3 externe — l'endpoint suffit à basculer |
 
+> **Indépendance des composants** : l'extraction fonctionne avec tout fournisseur
+> compatible ; un modèle local via [Ollama](https://ollama.com) permet un
+> déploiement 100 % libre de services propriétaires (variable
+> `FASO_LLM_PROVIDER`). Aucune brique de la plateforme ne dépend d'un service
+> fermé sans alternative ouverte.
+
+
 ## Sources collectées
 
 | Source | Type | Cadence |
@@ -354,6 +373,16 @@ bascule possible vers l'API Claude.
 - Détail complet : page « À propos & méthodologie » du site, et
   [`docs/cadrage-plateforme-civique-v2.md`](docs/cadrage-plateforme-civique-v2.md).
 
+## Données personnelles
+
+L'annuaire de l'État traite exclusivement des informations **issues de
+publications officielles** (comptes rendus du Conseil des ministres, actes de
+nomination) et **relatives à l'exercice de fonctions publiques** : nom,
+fonction, institution, matricule de la fonction publique tel que publié.
+Aucune donnée privée (coordonnées, adresse, vie personnelle) n'est collectée.
+Toute personne concernée peut demander une rectification ou signaler une
+erreur : mohazouedraogo11@gmail.com ou via une issue GitHub.
+
 ## API ouverte
 
 Toutes les données validées sont servies par une API documentée (OpenAPI) :
@@ -386,9 +415,14 @@ conventions du projet, ajout d'un collecteur, pièges connus.
 Principe non négociable : le projet est **citoyen, indépendant et non partisan**,
 et **aucune donnée n'est publiée sans être sourcée et validée**.
 
-## Licence et crédits
+## Licences et crédits
 
-Code sous licence [GPL-3.0](LICENSE). Les données restituées proviennent de
-documents publics officiels burkinabè, cités et liés partout où elles
-apparaissent. Merci à [Code for Senegal](https://github.com/Code-for-Senegal)
-dont [vie-publique.sn](https://www.vie-publique.sn) a inspiré ce projet.
+- **Code** : [GPL-3.0](LICENSE).
+- **Données** : les données structurées produites par la plateforme (base
+  consolidée, API, flux RSS) sont disponibles sous licence
+  [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Elles sont
+  élaborées à partir de documents publics officiels burkinabè, cités et liés
+  partout où elles apparaissent.
+
+Merci à [Code for Senegal](https://github.com/Code-for-Senegal) dont
+[vie-publique.sn](https://www.vie-publique.sn) a inspiré ce projet.
