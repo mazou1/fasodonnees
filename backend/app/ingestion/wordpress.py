@@ -11,8 +11,11 @@ from __future__ import annotations
 import logging
 from datetime import date
 
+from sqlalchemy import String, func, select
+
 from app.extraction.texte import html_vers_texte
 from app.ingestion.base import Collector
+from app.models import Document
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +52,37 @@ class WordPressCollector(Collector):
                 break
             page += 1
 
+    def url_deja_connue(self, wp_id) -> str | None:
+        """L'adresse sous laquelle cette publication est DÉJÀ archivée.
+
+        L'identité d'un document repose sur son URL (cf. base.upsert_document),
+        or WordPress en change : le 22 août 2026, gouvernement.gov.bf est passé
+        des permaliens lisibles à « /?p=19635 », et le site a été recollecté en
+        entier sous ces nouvelles adresses - 3 283 documents en quatre jours,
+        les 1 744 actualités du fonds en double, et l'extraction LLM repartie
+        sur des articles déjà traités.
+
+        L'identifiant du billet, lui, ne bouge pas. On s'y raccroche pour
+        continuer de VERSIONNER sous l'adresse d'origine plutôt que de repartir
+        de zéro. L'adresse d'origine reste par ailleurs valable : le site la
+        redirige.
+        """
+        if wp_id is None:
+            return None
+        # cast explicite : PostgreSQL rend du texte là où SQLite rend l'entier
+        # natif, et la comparaison ne rapprocherait alors jamais rien
+        cle = func.cast(Document.meta["wp_id"].as_string(), String)
+        return self.db.scalars(
+            select(Document.url)
+            .where(Document.source_id == self.source.id, cle == str(wp_id))
+            .order_by(Document.id)
+            .limit(1)
+        ).first()
+
     def _traiter_post(self, post: dict) -> bool:
         html = post.get("content", {}).get("rendered", "") or ""
         titre = html_vers_texte(post.get("title", {}).get("rendered", "") or "")
-        lien = post.get("link", "")
+        lien = self.url_deja_connue(post.get("id")) or post.get("link", "")
         if not lien:
             return False
         pub: date | None = None
