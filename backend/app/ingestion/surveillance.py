@@ -34,21 +34,37 @@ SEUILS = {
 }
 SEUIL_DEFAUT = timedelta(days=2)
 
-# Délai maximal sans contenu NOUVEAU. Calé sur les écarts réellement observés
-# dans le corpus, pas au jugé : entre deux comptes rendus du Conseil des
-# ministres, l'écart médian est de 8 jours, le 90e centile de 28, et les mois
-# d'août 2024 comme 2025 ont connu un creux de 29 jours. Un seuil hebdomadaire
-# à 30 jours crierait donc au loup chaque été - à 45, il ne se déclenche que
-# sur un silence sans précédent récent.
+# Le seuil de silence n'est PAS choisi à la main : chaque source est jugée sur
+# son propre rythme, mesuré sur ses publications de l'année écoulée.
 #
-# Une alerte qui se déclenche tous les ans pour rien est une alerte qu'on
-# n'ouvre plus : mieux vaut la rater d'une semaine que la rendre inutile.
-SEUILS_NOUVEAUTE = {
+# La cadence déclarée dit à quelle fréquence on INTERROGE la source, pas à
+# quelle fréquence elle PUBLIE. L'ASCE-LC est interrogée toutes les semaines et
+# publie quelques rapports par an ; les plénières de l'Assemblée suivent les
+# sessions parlementaires. Un seuil unique par cadence les déclarerait taries en
+# permanence - et une alerte toujours allumée est une alerte qu'on n'ouvre plus.
+FENETRE_RYTHME = timedelta(days=365)
+
+# En deçà, la source n'a pas de rythme mesurable : on ne la juge pas plutôt que
+# de la déclarer tarie sur deux points. Cela écarte aussi les collecteurs qui
+# n'écrivent pas de documents (Assemblée, Finances : ils alimentent les tables
+# de députés et de budget), qu'un test fondé sur les documents ne peut pas voir.
+MINIMUM_POINTS = 5
+
+# Marge au-dessus du plus long silence déjà observé. À 1,5, le creux estival du
+# Conseil des ministres (28 jours en 2025 comme en 2026) donne un seuil de
+# 45 jours : le silence de l'été 2026 ne déclenche rien, un silence d'un mois et
+# demi déclenche.
+MARGE = 1.5
+
+# Plancher par cadence : une source qui vient d'être branchée n'a pas encore
+# d'historique, et un média interrogé toutes les 30 minutes ne doit pas hériter
+# d'un seuil de quelques heures sur un rythme mal mesuré.
+PLANCHERS_NOUVEAUTE = {
     "30min": timedelta(days=2),
     "quotidien": timedelta(days=14),
     "hebdo": timedelta(days=45),
 }
-SEUIL_NOUVEAUTE_DEFAUT = timedelta(days=14)
+PLANCHER_NOUVEAUTE_DEFAUT = timedelta(days=14)
 
 
 def etat_sources(db: Session) -> list[dict]:
@@ -65,38 +81,35 @@ def etat_sources(db: Session) -> list[dict]:
         .group_by(Run.source_id)
         .subquery()
     )
-    # La fraîcheur du CONTENU se juge sur `date_publication`, pas sur
-    # `date_collecte` : quand le gouvernement réécrit une vieille page, la
-    # collecte crée un document daté d'aujourd'hui alors que rien de neuf n'a
-    # été publié. C'est exactement ce qui masquait le silence d'août 2026.
-    publication = (
-        select(
-            Document.source_id,
-            func.max(Document.date_publication).label("derniere"),
-        )
-        .group_by(Document.source_id)
-        .subquery()
-    )
     lignes = db.execute(
-        select(Source, dernier.c.dernier, publication.c.derniere)
+        select(Source, dernier.c.dernier)
         .outerjoin(dernier, dernier.c.source_id == Source.id)
-        .outerjoin(publication, publication.c.source_id == Source.id)
         .where(Source.actif.is_(True), Source.slug.in_(list(COLLECTORS)))
     ).all()
 
     maintenant = datetime.now(timezone.utc)
     aujourdhui = maintenant.date()
+    rythmes = _dates_de_publication(db, aujourdhui)
+
     etats = []
-    for source, dernier_ok, derniere_publication in lignes:
+    for source, dernier_ok in lignes:
         dernier_ok = _en_utc(dernier_ok)
         seuil = SEUILS.get(source.cadence, SEUIL_DEFAUT)
         muette = dernier_ok is None or (maintenant - dernier_ok) > seuil
-        seuil_neuf = SEUILS_NOUVEAUTE.get(source.cadence, SEUIL_NOUVEAUTE_DEFAUT)
+
+        dates = rythmes.get(source.id, [])
+        derniere_publication = dates[-1] if dates else None
+        silence = (aujourdhui - derniere_publication).days if derniere_publication else None
+        seuil_neuf = _seuil_de_silence(dates, source.cadence)
         # Une source muette n'est pas dite tarie en plus : le collecteur ne
         # passe pas, on ne sait donc RIEN de ce que la source publie. Deux
         # alertes pour une panne feraient chercher deux causes.
-        anciennete = _anciennete(derniere_publication, aujourdhui)
-        tarie = not muette and (anciennete is None or anciennete > seuil_neuf)
+        tarie = (
+            not muette
+            and seuil_neuf is not None
+            and silence is not None
+            and silence > seuil_neuf.days
+        )
         etats.append(
             {
                 "slug": source.slug,
@@ -107,6 +120,10 @@ def etat_sources(db: Session) -> list[dict]:
                 "derniere_publication": (
                     derniere_publication.isoformat() if derniere_publication else None
                 ),
+                "silence_jours": silence,
+                # renseigné seulement quand la source a un rythme mesurable ;
+                # exposé pour que l'alerte soit relisible sans lire le code
+                "seuil_jours": seuil_neuf.days if seuil_neuf else None,
                 "tarie": tarie,
             }
         )
@@ -116,26 +133,55 @@ def etat_sources(db: Session) -> list[dict]:
     return etats
 
 
+def _dates_de_publication(db: Session, aujourdhui: date) -> dict[int, list[date]]:
+    """Dates de publication distinctes de l'année écoulée, par source.
+
+    La fraîcheur du CONTENU se juge sur `date_publication`, pas sur
+    `date_collecte` : quand le gouvernement réécrit une vieille page, la
+    collecte crée un document daté d'aujourd'hui alors que rien de neuf n'a été
+    publié. C'est exactement ce qui masquait le silence d'août 2026.
+
+    La fenêtre d'un an écarte aussi les dates aberrantes des fonds anciens :
+    Légiburkina archive des textes du XIXe siècle, et l'écart maximal brut de
+    cette source dépasse 270 000 jours.
+    """
+    lignes = db.execute(
+        select(Document.source_id, Document.date_publication)
+        .where(
+            Document.date_publication.is_not(None),
+            Document.date_publication >= aujourdhui - FENETRE_RYTHME,
+            Document.date_publication <= aujourdhui,
+        )
+        .group_by(Document.source_id, Document.date_publication)
+    ).all()
+    par_source: dict[int, list[date]] = {}
+    for source_id, jour in lignes:
+        par_source.setdefault(source_id, []).append(jour)
+    for dates in par_source.values():
+        dates.sort()
+    return par_source
+
+
+def _seuil_de_silence(dates: list[date], cadence: str) -> timedelta | None:
+    """Combien de jours de silence sont anormaux POUR CETTE SOURCE.
+
+    Le plus long silence déjà observé sur l'année, majoré d'une marge. `None`
+    quand la source n'a pas assez publié pour qu'un rythme veuille dire quelque
+    chose : mieux vaut ne pas la juger que l'accuser sur deux points.
+    """
+    plancher = PLANCHERS_NOUVEAUTE.get(cadence, PLANCHER_NOUVEAUTE_DEFAUT)
+    if len(dates) < MINIMUM_POINTS:
+        return None
+    plus_long = max((b - a).days for a, b in zip(dates, dates[1:]))
+    return max(plancher, timedelta(days=int(plus_long * MARGE) + 1))
+
+
 def _en_utc(moment: datetime | None) -> datetime | None:
     """PostgreSQL rend un horodatage conscient du fuseau, SQLite (les tests) le
     rend naïf. Les comparer sans les ramener au même monde lève une TypeError."""
     if moment is not None and moment.tzinfo is None:
         return moment.replace(tzinfo=timezone.utc)
     return moment
-
-
-def _anciennete(derniere_publication, aujourdhui: date) -> timedelta | None:
-    """Âge du contenu le plus frais rapporté par une source.
-
-    `None` quand la source n'a jamais rien rapporté, ou ne date pas ce qu'elle
-    rapporte : dans les deux cas on ne peut pas juger de sa fraîcheur, et le
-    silence est le cas le plus probable.
-    """
-    if derniere_publication is None:
-        return None
-    if isinstance(derniere_publication, datetime):
-        derniere_publication = derniere_publication.date()
-    return aujourdhui - derniere_publication
 
 
 def verifier_sources_muettes(db: Session | None = None) -> list[dict]:
@@ -162,11 +208,13 @@ def verifier_sources_muettes(db: Session | None = None) -> list[dict]:
         )
     for e in taries:
         logger.warning(
-            "SOURCE TARIE : %s (%s) - collecte OK, mais rien de publié depuis %s. "
+            "SOURCE TARIE : %s - collecte OK, mais rien de publié depuis le %s "
+            "(%s jours de silence, seuil %s d'après son propre rythme). "
             "Vérifier que la source publie toujours, et au même endroit.",
             e["slug"],
-            e["cadence"],
-            e["derniere_publication"] or "toujours",
+            e["derniere_publication"],
+            e["silence_jours"],
+            e["seuil_jours"],
         )
     if not muettes and not taries:
         logger.info("Surveillance des sources : toutes à jour.")

@@ -228,8 +228,14 @@ Chaque brique a une voie de montée en charge sans réécriture :
 source **muette** (le collecteur ne passe plus) et une source **tarie** (il
 passe, réussit, et la source ne publie plus rien de neuf). La seconde échappe à
 un tableau de bord classique - tous les voyants sont verts et le contenu a
-pourtant des semaines. Les seuils sont calés sur les écarts réellement observés
-dans le corpus, pour qu'une alerte ne sonne pas à chaque creux estival.
+pourtant des semaines.
+
+Le seuil de silence n'est pas une constante : chaque source est jugée sur **son
+propre rythme**, mesuré sur ses publications de l'année écoulée. La cadence
+déclarée dit à quelle fréquence on interroge une source, pas à quelle fréquence
+elle publie - l'ASCE-LC est interrogée chaque semaine et publie quelques
+rapports par an. Sans cette distinction, l'alerte resterait allumée en
+permanence sur les sources rares, et on cesserait de l'ouvrir.
 
 ## Démarrage rapide (Docker)
 
