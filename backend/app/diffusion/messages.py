@@ -10,6 +10,8 @@ d'être un point de repère neutre.
 
 from __future__ import annotations
 
+import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date
 
@@ -71,6 +73,44 @@ def tronquer(texte: str, limite: int) -> str:
     return coupe.rstrip(" ,;:.’'-") + "…"
 
 
+# Passe-partout que les flux WordPress collent en fin de résumé : « The post X
+# appeared first on Y », sa variante française, et le « […] » de troncature de
+# l'AIB. Repris tel quel, il occupe la place du texte utile et donne des posts
+# qui se terminent tous pareil.
+_PASSE_PARTOUT = re.compile(
+    r"\s*(?:The post\b|L(?:’|')article\b|Cet article\b|Continue reading\b|\[…\]|\[\.\.\.\]).*",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _sans_accent_ni_ponctuation(texte: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", texte.lower())
+    sans = "".join(c for c in nfkd if not unicodedata.combining(c))
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", sans)).strip()
+
+
+def nettoyer_resume(resume: str | None, titre: str) -> str | None:
+    """Résumé débarrassé de ce qui ne dit rien de plus que le titre.
+
+    Les fils de l'AIB republient le titre en tête du chapô : affiché tel quel,
+    le post dit deux fois la même chose et le lecteur croit à un bogue. Le
+    passe-partout WordPress, lui, occupe la place du texte utile.
+    """
+    if not resume:
+        return None
+    texte = _PASSE_PARTOUT.sub("", resume).strip()
+    # le titre en tête se compare sans accent ni ponctuation : les flux le
+    # reprennent en le retouchant (tiret, espace insécable, capitales)
+    reference = _sans_accent_ni_ponctuation(titre)
+    if reference:
+        mots = texte.split()
+        for fin in range(len(mots), 0, -1):
+            if _sans_accent_ni_ponctuation(" ".join(mots[:fin])) == reference:
+                texte = " ".join(mots[fin:]).lstrip(" -–:;,.")
+                break
+    return texte.strip() or None
+
+
 def _corps(item: Item, reseau: str, budget: int) -> str:
     """Le corps du post, ajusté au budget disponible.
 
@@ -84,8 +124,9 @@ def _corps(item: Item, reseau: str, budget: int) -> str:
         blocs.append(f"{PREFIXE_CONTEXTE.get(item.genre, '')}{item.contexte}")
     # Le résumé est un confort de lecture, pas une information de plus : sur X
     # il mangerait la place du titre, qui lui est indispensable.
-    if reseau != "x" and item.resume:
-        blocs.append("\n" + tronquer(item.resume, LIMITE_RESUME))
+    resume = nettoyer_resume(item.resume, item.titre) if reseau != "x" else None
+    if resume:
+        blocs.append("\n" + tronquer(resume, LIMITE_RESUME))
     while len(blocs) > 1 and len("\n".join(blocs)) > budget:
         blocs.pop()
     return tronquer("\n".join(blocs), budget)

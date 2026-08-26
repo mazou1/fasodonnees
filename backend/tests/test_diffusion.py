@@ -14,7 +14,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.diffusion import messages, run
-from app.diffusion.messages import Item, composer, longueur_percue, tronquer
+from app.diffusion.messages import (
+    Item,
+    composer,
+    longueur_percue,
+    nettoyer_resume,
+    tronquer,
+)
 from app.diffusion.reseaux import (
     ErreurReseau,
     MasqueSecrets,
@@ -540,3 +546,51 @@ class _ReponseFactice:
 
     def json(self):
         return self._donnees
+
+
+# --- propreté du résumé repris aux flux ----------------------------------
+
+def test_le_titre_repete_en_tete_du_resume_est_retire():
+    """Les fils de l'AIB republient le titre en tête du chapô. Repris tel quel,
+    le post dit deux fois la même chose et se lit comme un bogue."""
+    titre = "Koulpélogo/Sangha : Route dégradée, les jeunes de Dagom-Koom passent à l'action"
+    resume = titre + " Sangha, 23 août 2026 (AIB) - La jeunesse du village s'est mobilisée."
+
+    assert nettoyer_resume(resume, titre) == "Sangha, 23 août 2026 (AIB) - La jeunesse du village s'est mobilisée."
+
+
+def test_le_titre_est_reconnu_meme_retouche():
+    """Les flux retouchent la typographie du titre entre le champ et le chapô."""
+    titre = "SONABEL : les candidats admis sous réserve"
+    resume = "SONABEL: Les candidats admis sous reserve — le communiqué suit."
+
+    assert nettoyer_resume(resume, titre) == "le communiqué suit."
+
+
+def test_le_passe_partout_wordpress_est_coupe():
+    """« The post X appeared first on Y » occupe la place du texte utile et
+    fait finir tous les posts de la même façon."""
+    resume = "Le communiqué de la SONABEL. The post SONABEL : les candidats appeared first on Burkina24."
+
+    assert nettoyer_resume(resume, "SONABEL") == "Le communiqué de la SONABEL."
+
+
+def test_la_troncature_de_source_est_coupee():
+    assert nettoyer_resume("Un chapô coupé par la source […]", "Titre") == "Un chapô coupé par la source"
+
+
+def test_un_resume_qui_ne_dit_que_le_titre_disparait():
+    """Mieux vaut un post à une ligne qu'un post qui se répète."""
+    assert nettoyer_resume("Un titre et rien d'autre", "Un titre et rien d'autre") is None
+
+
+def test_le_post_ne_repete_pas_le_titre():
+    titre = "Houet : AS Dafra remporte le tournoi"
+    message = composer(
+        item(genre="actualite", cle="actu-1", titre=titre, contexte="AIB",
+             resume=titre + " Bobo-Dioulasso, 24 août 2026 (AIB) - Victoire en finale."),
+        "telegram",
+    )
+
+    assert message.count("AS Dafra remporte le tournoi") == 1
+    assert "Victoire en finale." in message
