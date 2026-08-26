@@ -83,6 +83,18 @@ _PASSE_PARTOUT = re.compile(
 )
 
 
+def lisible(texte: str) -> str:
+    """Ramène les fantaisies typographiques à des lettres ordinaires.
+
+    Les annonces de gouvernement.gov.bf emploient les mathematical bold du
+    plan 1 : « 𝐒𝐨𝐮𝐯𝐞𝐫𝐚𝐢𝐧𝐞𝐭é 𝐚𝐥𝐢𝐦𝐞𝐧𝐭𝐚𝐢𝐫𝐞 ». Un lecteur d'écran les épelle
+    caractère par caractère, la recherche du réseau ne les trouve pas, et
+    certaines polices ne les ont pas. NFKC les rend au texte qu'elles imitent,
+    sans rien retirer au sens - c'est de la mise en forme, pas du contenu.
+    """
+    return unicodedata.normalize("NFKC", texte)
+
+
 def _sans_accent_ni_ponctuation(texte: str) -> str:
     nfkd = unicodedata.normalize("NFKD", texte.lower())
     sans = "".join(c for c in nfkd if not unicodedata.combining(c))
@@ -119,14 +131,14 @@ def _corps(item: Item, reseau: str, budget: int) -> str:
     un titre seul reste une information complète. Le résumé part le premier, le
     contexte ensuite ; le titre, jamais.
     """
-    blocs = [f"{EMOJI.get(item.genre, '')} {item.titre}".strip()]
+    blocs = [f"{EMOJI.get(item.genre, '')} {lisible(item.titre)}".strip()]
     if item.contexte:
         blocs.append(f"{PREFIXE_CONTEXTE.get(item.genre, '')}{item.contexte}")
     # Le résumé est un confort de lecture, pas une information de plus : sur X
     # il mangerait la place du titre, qui lui est indispensable.
     resume = nettoyer_resume(item.resume, item.titre) if reseau != "x" else None
     if resume:
-        blocs.append("\n" + tronquer(resume, LIMITE_RESUME))
+        blocs.append("\n" + tronquer(lisible(resume), LIMITE_RESUME))
     while len(blocs) > 1 and len("\n".join(blocs)) > budget:
         blocs.pop()
     return tronquer("\n".join(blocs), budget)

@@ -24,7 +24,7 @@ from __future__ import annotations
 import hashlib
 from datetime import date, timedelta
 
-from sqlalchemy import func, or_, select, tuple_
+from sqlalchemy import String, func, or_, select, tuple_
 from sqlalchemy.orm import Session
 
 from app.diffusion.messages import Item
@@ -51,6 +51,7 @@ PLAFOND_REQUETE = 300
 
 GENRES = ("conseil", "decision", "actualite")
 _PRIORITE = {genre: rang for rang, genre in enumerate(GENRES)}
+
 
 def types_actualite() -> tuple[str, ...]:
     """Types de documents repris dans le genre « actualite », configurables.
@@ -90,23 +91,50 @@ def cles_bloquees(db: Session, reseau: str) -> set[str]:
 
 
 def racines(db: Session, docs) -> dict[int, int]:
-    """Identifiant stable d'un document à travers ses versions successives.
+    """Identifiant stable d'un document à travers ses versions ET ses URL.
 
     Le `document.id` ne l'est pas : chaque réécriture d'une page officielle en
-    crée un nouveau. La plus ancienne version d'un couple (source, url), elle,
-    ne bouge plus - elle sert donc de racine aux clés du journal, sans quoi une
-    page retouchée le lendemain d'un post serait republiée comme une nouveauté.
+    crée un nouveau. L'URL non plus : le 22 août 2026, gouvernement.gov.bf est
+    passé des permaliens lisibles à la forme « /?p=19635 », et les 1 744
+    actualités du site ont été recollectées sous une seconde adresse. Groupées
+    par URL seule, chaque annonce serait sortie DEUX FOIS sur le canal.
+
+    L'identifiant que la source donne elle-même (`meta.wp_id` pour les
+    WordPress) prime donc sur l'URL ; le plus petit `document.id` du groupe,
+    qui ne bouge plus, sert de racine.
     """
-    couples = {(d.source_id, d.url) for d in docs}
-    if not couples:
+    if not docs:
         return {}
-    lignes = db.execute(
+    par_doc = {d.id: d.id for d in docs}
+
+    couples = {(d.source_id, d.url) for d in docs}
+    for source_id, url, racine in db.execute(
         select(Document.source_id, Document.url, func.min(Document.id))
         .where(tuple_(Document.source_id, Document.url).in_(couples))
         .group_by(Document.source_id, Document.url)
-    ).all()
-    index = {(source_id, url): racine for source_id, url, racine in lignes}
-    return {d.id: index.get((d.source_id, d.url), d.id) for d in docs}
+    ):
+        for d in docs:
+            if (d.source_id, d.url) == (source_id, url):
+                par_doc[d.id] = min(par_doc[d.id], racine)
+
+    identifiants = {
+        (d.source_id, str((d.meta or {}).get("wp_id")))
+        for d in docs
+        if (d.meta or {}).get("wp_id") is not None
+    }
+    if identifiants:
+        # cast explicite : SQLite rend l'entier natif là où PostgreSQL rend du
+        # texte, et le filtre par tuples ne rapprocherait alors jamais rien
+        wp_id = func.cast(Document.meta["wp_id"].as_string(), String)
+        for source_id, identifiant, racine in db.execute(
+            select(Document.source_id, wp_id, func.min(Document.id))
+            .where(tuple_(Document.source_id, wp_id).in_(identifiants))
+            .group_by(Document.source_id, wp_id)
+        ):
+            for d in docs:
+                if (d.source_id, str((d.meta or {}).get("wp_id"))) == (source_id, str(identifiant)):
+                    par_doc[d.id] = min(par_doc[d.id], racine)
+    return par_doc
 
 
 def _empreinte(*parties) -> str:
@@ -243,7 +271,13 @@ def ordonner(items: list[Item], limite: int) -> list[Item]:
         items,
         key=lambda it: (_PRIORITE.get(it.genre, 99), it.date or date.min, it.cle),
     )
-    return tries[: max(limite, 0)]
+    # Deux items de même clé sont la même publication vue par deux chemins (deux
+    # URL pour un même article, par exemple). Le journal l'empêcherait de sortir
+    # une seconde fois DEMAIN, mais pas deux fois dans la même passe : la garde
+    # doit donc aussi être ici.
+    vues: set[str] = set()
+    uniques = [it for it in tries if not (it.cle in vues or vues.add(it.cle))]
+    return uniques[: max(limite, 0)]
 
 
 def items_a_publier(

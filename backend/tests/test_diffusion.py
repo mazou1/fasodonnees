@@ -17,6 +17,7 @@ from app.diffusion import messages, run
 from app.diffusion.messages import (
     Item,
     composer,
+    lisible,
     longueur_percue,
     nettoyer_resume,
     tronquer,
@@ -36,6 +37,7 @@ from app.diffusion.selection import (
     items_a_publier,
     ordonner,
     plancher,
+    racines,
 )
 from app.models import Base, Decision, Document, Publication, Source
 
@@ -628,3 +630,52 @@ def test_lamorcage_ne_compte_pas_comme_une_tentative(db):
     publication = run.journaliser(db, "telegram", item(), "msg", statut="amorce")
 
     assert (publication.tentatives, publication.post_id) == (0, None)
+
+
+# --- une même annonce vue par deux chemins -------------------------------
+# Le 22 août 2026, gouvernement.gov.bf est passé aux permaliens « /?p=19635 » :
+# ses 1 744 actualités ont été recollectées sous une seconde URL. Sans garde,
+# chaque annonce sortirait deux fois sur le canal.
+
+def test_deux_url_pour_un_meme_article_donnent_une_seule_cle(db):
+    db.add(Source(id=1, slug="actualites_gouv", nom="Gouvernement",
+                  url_base="https://gouvernement.gov.bf", type="institutionnel"))
+    lisibles = Document(id=32900, source_id=1, url="https://gouvernement.gov.bf/actualites/meteo/",
+                        type_doc="actualite_gouv", date_publication=date(2026, 8, 24),
+                        meta={"wp_id": 19635})
+    court = Document(id=33270, source_id=1, url="https://gouvernement.gov.bf/?p=19635",
+                     type_doc="actualite_gouv", date_publication=date(2026, 8, 24),
+                     meta={"wp_id": 19635})
+    db.add_all([lisibles, court])
+    db.commit()
+
+    origines = racines(db, [lisibles, court])
+
+    assert origines[32900] == origines[33270] == 32900
+
+
+def test_deux_items_de_meme_cle_ne_sortent_quune_fois():
+    """Le journal l'empêcherait de sortir une seconde fois demain, mais pas
+    deux fois dans la même passe : la garde doit aussi être ici."""
+    doublon = [
+        item(cle="actu-32900", genre="actualite", date=date(2026, 8, 24), lien="https://a/1"),
+        item(cle="actu-32900", genre="actualite", date=date(2026, 8, 24), lien="https://a/2"),
+    ]
+
+    assert len(ordonner(doublon, limite=10)) == 1
+
+
+def test_les_titres_en_unicode_decoratif_sont_rendus_lisibles():
+    """Un lecteur d'écran épelle les « mathematical bold » caractère par
+    caractère, et la recherche du réseau ne les trouve pas."""
+    assert lisible("𝐒𝐨𝐮𝐯𝐞𝐫𝐚𝐢𝐧𝐞𝐭é 𝐚𝐥𝐢𝐦𝐞𝐧𝐭𝐚𝐢𝐫𝐞") == "Souveraineté alimentaire"
+
+
+def test_le_post_ne_garde_pas_lunicode_decoratif():
+    message = composer(
+        item(genre="actualite", cle="actu-1", titre="𝐒𝐨𝐮𝐯𝐞𝐫𝐚𝐢𝐧𝐞𝐭é 𝐚𝐥𝐢𝐦𝐞𝐧𝐭𝐚𝐢𝐫𝐞",
+             contexte="Gouvernement"),
+        "telegram",
+    )
+
+    assert "Souveraineté alimentaire" in message
