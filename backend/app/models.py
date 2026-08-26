@@ -18,6 +18,7 @@ from sqlalchemy import (
     Float,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -71,7 +72,11 @@ class Document(Base):
     statut_extraction: Mapped[str] = mapped_column(String(20), default="en_attente")
     # renseignée quand l'étage de structuration LLM (nominations/décisions) est passé
     date_structuration: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    meta: Mapped[dict | None] = mapped_column(JSONB)
+    # JSONB en production ; la variante JSON permet de monter cette table en
+    # SQLite dans les tests, sans quoi les garanties qui reposent sur des
+    # requêtes (versions de référence, dédoublonnage) ne seraient vérifiables
+    # que sur un PostgreSQL lancé à la main - donc jamais en intégration.
+    meta: Mapped[dict | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"))
     # NB : colonne `tsv` (tsvector générée, index GIN) créée en SQL brut dans la
     # migration initiale - volontairement non mappée dans l'ORM.
 
@@ -507,3 +512,39 @@ class Realisation(Base):
 
     def __str__(self) -> str:
         return f"{self.type} - {self.titre[:60]}"
+
+
+class Publication(Base):
+    """Journal des publications sur les réseaux sociaux : une ligne par couple
+    (réseau, item du site).
+
+    La contrainte d'unicité EST la garantie anti-doublon. Une page qui republie
+    trois fois le même compte rendu perd sa crédibilité plus vite qu'elle ne
+    gagne des abonnés, et le worker peut redémarrer, rejouer un cycle ou tourner
+    deux fois par mégarde : rien de tout cela ne doit se voir sur la page.
+
+    Une ligne en échec est conservée avec son compteur de tentatives - c'est ce
+    qui distingue « pas encore publié » de « refusé trois fois par l'API », et
+    évite de brûler le quota mensuel de X sur un jeton expiré.
+    """
+
+    __tablename__ = "publication"
+    __table_args__ = (UniqueConstraint("reseau", "cle", name="uq_publication_reseau_cle"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    reseau: Mapped[str] = mapped_column(String(20), index=True)  # telegram | facebook | x
+    # clé stable de l'item publié : « conseil-123 », « decision-456 », « actu-789 »
+    cle: Mapped[str] = mapped_column(String(80), index=True)
+    genre: Mapped[str | None] = mapped_column(String(20), index=True)
+    statut: Mapped[str] = mapped_column(String(20), default="publie", index=True)  # publie | echec
+    tentatives: Mapped[int] = mapped_column(Integer, default=0)
+    message: Mapped[str | None] = mapped_column(Text)  # le texte réellement envoyé
+    lien: Mapped[str | None] = mapped_column(String(1000))
+    post_id: Mapped[str | None] = mapped_column(String(200))  # identifiant rendu par le réseau
+    erreur: Mapped[str | None] = mapped_column(Text)
+    date_envoi: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+
+    def __str__(self) -> str:
+        return f"[{self.reseau}] {self.cle} ({self.statut})"

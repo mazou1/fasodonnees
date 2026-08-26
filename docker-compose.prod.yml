@@ -64,6 +64,8 @@ services:
       FASO_ADMIN_USER: ${FASO_ADMIN_USER:?}
       FASO_ADMIN_PASSWORD: ${FASO_ADMIN_PASSWORD:?}
       FASO_SECRET_KEY: ${FASO_SECRET_KEY:?}
+      # vignette des cartes de partage rendues aux robots sociaux
+      FASO_OG_IMAGE_URL: ${FASO_OG_IMAGE_URL:-}
     volumes:
       - ./backend/data:/data
     depends_on:
@@ -93,6 +95,24 @@ services:
       FASO_LLM_PROVIDER: ${FASO_LLM_PROVIDER:-mistral}
       FASO_MISTRAL_API_KEY: ${FASO_MISTRAL_API_KEY:-}
       FASO_ANTHROPIC_API_KEY: ${FASO_ANTHROPIC_API_KEY:-}
+      # Diffusion sur les réseaux sociaux. Le coupe-circuit est à false par
+      # défaut : une pile relancée ailleurs (recette, restauration de sauvegarde)
+      # ne doit pas se mettre à poster sur les pages publiques.
+      FASO_DIFFUSION_ACTIVE: ${FASO_DIFFUSION_ACTIVE:-false}
+      FASO_SITE_URL: ${FASO_SITE_URL:-https://fasodonnees.org}
+      FASO_DIFFUSION_GENRES: ${FASO_DIFFUSION_GENRES:-conseil,decision,actualite}
+      FASO_DIFFUSION_FRAICHEUR_JOURS: ${FASO_DIFFUSION_FRAICHEUR_JOURS:-2}
+      FASO_TELEGRAM_BOT_TOKEN: ${FASO_TELEGRAM_BOT_TOKEN:-}
+      FASO_TELEGRAM_CHAT_ID: ${FASO_TELEGRAM_CHAT_ID:-}
+      FASO_TELEGRAM_QUOTA_JOUR: ${FASO_TELEGRAM_QUOTA_JOUR:-40}
+      FASO_FACEBOOK_PAGE_ID: ${FASO_FACEBOOK_PAGE_ID:-}
+      FASO_FACEBOOK_PAGE_TOKEN: ${FASO_FACEBOOK_PAGE_TOKEN:-}
+      FASO_FACEBOOK_QUOTA_JOUR: ${FASO_FACEBOOK_QUOTA_JOUR:-15}
+      FASO_X_API_KEY: ${FASO_X_API_KEY:-}
+      FASO_X_API_SECRET: ${FASO_X_API_SECRET:-}
+      FASO_X_ACCESS_TOKEN: ${FASO_X_ACCESS_TOKEN:-}
+      FASO_X_ACCESS_SECRET: ${FASO_X_ACCESS_SECRET:-}
+      FASO_X_QUOTA_JOUR: ${FASO_X_QUOTA_JOUR:-12}
     volumes:
       - ./backend/data:/data
     depends_on:

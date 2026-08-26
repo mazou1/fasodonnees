@@ -39,5 +39,48 @@ class Settings(BaseSettings):
     mistral_api_key: str = ""
     anthropic_api_key: str = ""
 
+    # ── Diffusion sur les réseaux sociaux (cf. app/diffusion/) ─────────────
+    # Coupe-circuit unique : tant qu'il est à False, aucun appel réseau n'est
+    # fait, même avec des jetons valides. Un déploiement, une restauration de
+    # base ou un test ne doivent jamais poster par surprise sur une page
+    # publique.
+    diffusion_active: bool = False
+    # Base des liens partagés. Un lien vers localhost publié sur Facebook n'est
+    # pas rattrapable : la valeur par défaut est le site public.
+    site_url: str = "https://fasodonnees.org"
+    # genres publiés : conseil (compte rendu du CM), decision (mesure validée),
+    # actualite (article de presse ou communiqué archivé)
+    diffusion_genres: str = "conseil,decision,actualite"
+    # Un item plus vieux que cette fenêtre n'est jamais publié. C'est ce qui
+    # évite qu'une activation, une panne réparée ou un arriéré ne déverse des
+    # mois d'archives d'un coup sur les pages, et ce qui empêche un flux
+    # d'actualités plus rapide que le quota de créer un retard permanent.
+    diffusion_fraicheur_jours: int = 2
+    # pause entre deux posts d'un même réseau (politesse et lissage)
+    diffusion_pause_s: float = 2.0
+    # Vignette des cartes de partage (Open Graph). Vide : les réseaux affichent
+    # une carte texte, correcte mais discrète. Renseignée avec une URL absolue
+    # vers une image 1200x630, ils affichent une grande carte illustrée.
+    og_image_url: str = ""
+
+    # Telegram : un bot (@BotFather), administrateur du canal.
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""  # « @faso_donnees » ou l'identifiant numérique
+    telegram_quota_jour: int = 40
+
+    # Facebook : page + jeton de page longue durée (Graph API).
+    facebook_page_id: str = ""
+    facebook_page_token: str = ""
+    facebook_quota_jour: int = 15
+
+    # X : authentification OAuth 1.0a en contexte utilisateur (4 secrets).
+    # Le palier gratuit plafonne à 500 posts/mois en écriture : 12/jour laisse
+    # ~370/mois, sous le plafond même un mois chargé.
+    x_api_key: str = ""
+    x_api_secret: str = ""
+    x_access_token: str = ""
+    x_access_secret: str = ""
+    x_quota_jour: int = 12
+
 
 settings = Settings()

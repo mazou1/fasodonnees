@@ -164,6 +164,8 @@ flowchart TB
 backend/
   app/
     api/            # routes publiques (conseils, annuaire, finances, recherche…) + rss
+                    #   + partage.py : métadonnées Open Graph servies aux robots sociaux
+    diffusion/      # publication automatique sur Telegram, Facebook et X
     ingestion/      # collecteurs httpx + registre + scheduler (le worker)
     extraction/     # LLM (Mistral/Claude), PDF → texte, OCR Tesseract, réalisations
     admin.py        # back-office SQLAdmin (validation + tableau « À valider »)
@@ -221,6 +223,13 @@ Chaque brique a une voie de montée en charge sans réécriture :
 | asce-lc.bf | Rapports d'audit et de contrôle, affaires anticorruption, déclarations de patrimoine | hebdomadaire |
 | finances.gov.bf | Veille du Budget citoyen | quotidien |
 | lefaso.net, sidwaya.info, aib.media, burkina24.com, lepays.bf | Actualités (RSS) | 30 min |
+
+**Surveillance des sources.** `GET /sources/etat` distingue deux pannes : une
+source **muette** (le collecteur ne passe plus) et une source **tarie** (il
+passe, réussit, et la source ne publie plus rien de neuf). La seconde échappe à
+un tableau de bord classique - tous les voyants sont verts et le contenu a
+pourtant des semaines. Les seuils sont calés sur les écarts réellement observés
+dans le corpus, pour qu'une alerte ne sonne pas à chaque creux estival.
 
 ## Démarrage rapide (Docker)
 
@@ -391,6 +400,32 @@ Toutes les données validées sont servies par une API documentée (OpenAPI) :
 curl 'http://localhost:8090/api/conseils?par_page=5'
 curl 'http://localhost:8090/api/recherche?q=barrage'
 curl 'http://localhost:8090/api/finances/stats'
+```
+
+## Réseaux sociaux
+
+Les publications de la plateforme remontent automatiquement sur ses pages
+**Telegram, Facebook et X** : comptes rendus du Conseil des ministres,
+décisions validées et fil d'actualités. Le worker poste lui-même, à chaque
+heure ; aucun service tiers n'a la main sur les pages.
+
+Les actualités renvoient à l'article du média, source créditée dans le post
+(« via Sidwaya ») - comme le fait déjà la page `/actualites`. Les comptes rendus
+et les décisions renvoient au site.
+
+Trois garde-fous, parce qu'un post n'est plus rattrapable une fois parti : un
+**coupe-circuit** (`FASO_DIFFUSION_ACTIVE`, à `false` par défaut), une
+contrainte d'unicité qui **interdit le doublon** même après réécriture d'une
+page officielle, et une **fenêtre de fraîcheur** qui empêche l'activation de
+déverser des années d'archives. Tout ce qui part est journalisé, avec son texte,
+dans **/admin → Publications**.
+
+Mise en route (création des comptes, jetons, activation) :
+**[docs/reseaux-sociaux.md](docs/reseaux-sociaux.md)**.
+
+```bash
+python -m app.diffusion.run --verifier     # les jetons sont-ils bons ?
+python -m app.diffusion.run --simulation   # que serait-il publié ?
 ```
 
 ## Contribuer

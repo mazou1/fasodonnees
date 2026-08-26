@@ -28,6 +28,7 @@ from app.models import (
     Nomination,
     Personne,
     Projet,
+    Publication,
     Realisation,
     RepartitionBudgetaire,
     Run,
@@ -527,6 +528,29 @@ class RunAdmin(ModelView, model=Run):
     icon = "fa-solid fa-clock-rotate-left"
 
 
+class PublicationAdmin(ModelView, model=Publication):
+    name_plural = "Publications (réseaux sociaux)"
+    column_list = [
+        Publication.id,
+        Publication.date_envoi,
+        Publication.reseau,
+        Publication.genre,
+        Publication.cle,
+        Publication.statut,
+        Publication.tentatives,
+        Publication.post_id,
+    ]
+    column_searchable_list = [Publication.cle, Publication.post_id]
+    column_default_sort = ("date_envoi", True)
+    can_create = False
+    can_edit = False
+    # Supprimer une ligne autorise la republication de cet item : c'est la
+    # seule façon de rejouer un post effacé par erreur sur la page, ou
+    # abandonné après trois échecs.
+    can_delete = True
+    icon = "fa-solid fa-bullhorn"
+
+
 # file de validation → (modèle, libellé, identity de la vue liste)
 _FILES_VALIDATION = [
     (Nomination, "Nominations", "nomination"),
@@ -670,5 +694,6 @@ def mount_admin(app: FastAPI) -> None:
         MandatAdmin,
         LocaliteAdmin,
         RunAdmin,
+        PublicationAdmin,
     ):
         admin.add_view(view)

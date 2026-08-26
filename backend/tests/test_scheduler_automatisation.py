@@ -27,6 +27,7 @@ ETAPES_ATTENDUES = {
     "annuaire_quotidien": "reconstruction des mandats depuis les nominations validées",
     "ocr_nocturne": "OCR des scans",
     "alerte_sources_muettes": "alerte quand une source se tait",
+    "diffusion_horaire": "publication sur les réseaux sociaux",
 }
 
 

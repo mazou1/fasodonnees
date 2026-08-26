@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.orm import Session, aliased
 
+from app.config import settings
 from app.db import SessionLocal
 from app.models import (
     Attributaire,
@@ -1151,12 +1152,22 @@ def list_sources(db: Session = Depends(get_db)):
 
 @router.get("/sources/etat")
 def sources_etat(db: Session = Depends(get_db)) -> dict:
-    """Fraîcheur des collectes : sources muettes (rien collecté depuis trop
-    longtemps au regard de leur cadence) et date du dernier run réussi."""
+    """Fraîcheur des collectes, sur deux axes distincts :
+
+    - `muettes` : le collecteur ne passe plus (dernier run réussi trop ancien) ;
+    - `taries` : il passe et réussit, mais la source ne publie plus rien de neuf.
+
+    La seconde est celle qui échappe à un tableau de bord classique : tous les
+    voyants sont verts et le contenu a pourtant des semaines.
+    """
     from app.ingestion.surveillance import etat_sources
 
     etats = etat_sources(db)
-    return {"muettes": sum(1 for e in etats if e["muette"]), "sources": etats}
+    return {
+        "muettes": sum(1 for e in etats if e["muette"]),
+        "taries": sum(1 for e in etats if e["tarie"]),
+        "sources": etats,
+    }
 
 
 class DocumentOut(BaseModel):
@@ -1763,6 +1774,86 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
         items=items,
     )
     return Response(xml, media_type="application/rss+xml; charset=utf-8")
+
+
+# ── Pages de partage (Open Graph) ─────────────────────────────────────────
+# Ce que voient les robots de Facebook, X et Telegram quand un lien du site est
+# posté. Sans elles, tous les posts porteraient la même vignette générique -
+# cf. app/api/partage.py.
+
+def _site_public(request: Request) -> str:
+    return str(request.base_url).rstrip("/").removesuffix("/api")
+
+
+@router.get("/partage/conseils/{doc_id}", include_in_schema=False)
+def partage_conseil(doc_id: int, request: Request, db: Session = Depends(get_db)):
+    from fastapi.responses import HTMLResponse
+
+    from app.api.partage import html_partage
+
+    doc = db.get(Document, doc_id)
+    if doc is None or doc.type_doc != "cr_conseil":
+        raise HTTPException(status_code=404, detail="Compte rendu introuvable")
+    base = _site_public(request)
+    nb_decisions = db.scalar(
+        select(func.count()).select_from(Decision).where(
+            Decision.document_id == doc.id, Decision.statut_validation == "valide"
+        )
+    ) or 0
+    nb_nominations = db.scalar(
+        select(func.count()).select_from(Nomination).where(
+            Nomination.document_id == doc.id, Nomination.statut_validation == "valide"
+        )
+    ) or 0
+    # Le décompte tient lieu de résumé : il dit ce que la page apporte de plus
+    # que le PDF officiel, sans rien interpréter du contenu des décisions.
+    morceaux = []
+    if nb_decisions:
+        morceaux.append(f"{nb_decisions} décision{'s' if nb_decisions > 1 else ''}")
+    if nb_nominations:
+        morceaux.append(f"{nb_nominations} nomination{'s' if nb_nominations > 1 else ''}")
+    description = (
+        (" et ".join(morceaux) + ", reliées au compte rendu officiel.")
+        if morceaux
+        else "Compte rendu du Conseil des ministres, relié à sa source officielle."
+    )
+    return HTMLResponse(
+        html_partage(
+            titre=doc.titre or "Compte rendu du Conseil des ministres",
+            description=description,
+            url=f"{base}/conseils/{doc.id}",
+            image=settings.og_image_url,
+        )
+    )
+
+
+@router.get("/partage/documents/{doc_id}", include_in_schema=False)
+def partage_document(doc_id: int, request: Request, db: Session = Depends(get_db)):
+    from fastapi.responses import HTMLResponse
+
+    from app.api.partage import html_partage
+    from app.extraction.texte import html_vers_texte
+
+    doc = db.get(Document, doc_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document introuvable")
+    base = _site_public(request)
+    resume = (doc.meta or {}).get("resume")
+    description = html_vers_texte(resume)[:280] if resume else ""
+    if not description:
+        elements = [doc.source.nom if doc.source else None]
+        if doc.date_publication:
+            elements.append(f"publié le {doc.date_publication:%d/%m/%Y}")
+        description = "Document archivé - " + ", ".join(e for e in elements if e)
+    return HTMLResponse(
+        html_partage(
+            titre=doc.titre or doc.url,
+            description=description,
+            url=f"{base}/documents/{doc.id}",
+            image=settings.og_image_url,
+        )
+    )
+
 
 
 # ── Marchés publics (attributions) ────────────────────────────────────────

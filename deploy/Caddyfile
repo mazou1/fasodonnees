@@ -49,6 +49,26 @@ www.{$DOMAIN} {
 		reverse_proxy api:8000
 	}
 
+	# Robots sociaux → pages Open Graph de l'API.
+	#
+	# Le site est une SPA Vue : son index.html porte le même titre et la même
+	# description pour toutes les pages, et ces robots n'exécutent pas de
+	# JavaScript. Sans cette règle, chaque lien partagé sur Facebook, X,
+	# Telegram ou WhatsApp s'affiche avec une vignette générique identique -
+	# tous les posts de la page se ressemblent. L'API rend le titre et le
+	# résumé réels de l'entité (cf. backend/app/api/partage.py).
+	#
+	# La règle ne s'applique QU'aux robots : un visiteur reçoit la SPA comme
+	# avant, et il n'y a donc pas deux contenus servis à un même lecteur.
+	@robots_sociaux {
+		header_regexp User-Agent (?i)(facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|linkedinbot|slackbot|discordbot|bluesky|mastodon|pinterest|skypeuripreview|redditbot)
+		path_regexp ^/(conseils|documents)/[0-9]+/?$
+	}
+	handle @robots_sociaux {
+		rewrite * /partage{uri}
+		reverse_proxy api:8000
+	}
+
 	# Mesure d'audience (Umami), si le profil « audience » est actif.
 	#
 	# Seuls les DEUX points d'entrée du traceur passent par le domaine

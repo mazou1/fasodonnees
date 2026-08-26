@@ -170,6 +170,23 @@ def run_annuaire() -> None:
     logger.info("Annuaire consolidé : %d mandat(s)", n)
 
 
+def run_diffusion() -> None:
+    """Publie sur les réseaux sociaux ce qui ne l'a pas encore été.
+
+    Séparé de la collecte : une API sociale indisponible ne doit jamais faire
+    échouer une collecte, et une collecte lente ne doit pas retarder un post.
+    """
+    from app.diffusion.run import diffuser
+
+    with SessionLocal() as db:
+        bilans = diffuser(db)
+    for nom, bilan in bilans.items():
+        logger.info(
+            "Diffusion %s : %d publié(s), %d échec(s), quota restant %d",
+            nom, bilan["publies"], bilan["echecs"], bilan["quota"],
+        )
+
+
 def construire_scheduler() -> BlockingScheduler:
     """Toutes les cadences, sans effet de bord.
 
@@ -245,6 +262,16 @@ def construire_scheduler() -> BlockingScheduler:
         run_ocr,
         CronTrigger(hour=2, minute=0),
         id="ocr_nocturne",
+        coalesce=True,
+    )
+
+    # Diffusion sociale : à l'heure pile, entre les deux passages du collecteur
+    # « medias » (:00 et :30), pour poster sur des articles déjà collectés sans
+    # entrer en concurrence avec la collecte.
+    scheduler.add_job(
+        run_diffusion,
+        CronTrigger(minute=20),
+        id="diffusion_horaire",
         coalesce=True,
     )
 
