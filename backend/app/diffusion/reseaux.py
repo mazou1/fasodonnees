@@ -103,9 +103,17 @@ def entete_oauth1(
 class Reseau:
     nom: str
     quota_jour: int = 0
+    # (variable d'environnement, attribut) : sert à la fois à décider si le
+    # réseau est utilisable et à DIRE ce qui manque. Un réseau à moitié
+    # configuré est le cas normal pendant la mise en route ; se contenter de
+    # l'ignorer en silence laisse chercher la panne du mauvais côté.
+    VARIABLES: tuple[tuple[str, str], ...] = ()
+
+    def manquants(self) -> list[str]:
+        return [env for env, attribut in self.VARIABLES if not getattr(self, attribut, "")]
 
     def est_configure(self) -> bool:
-        raise NotImplementedError
+        return bool(self.VARIABLES) and not self.manquants()
 
     def publier(self, message: str, lien: str) -> str:
         """Rend l'identifiant du post, ou lève `ErreurReseau`."""
@@ -119,15 +127,16 @@ class Reseau:
 class Telegram(Reseau):
     nom = "telegram"
     API = "https://api.telegram.org"
+    VARIABLES = (
+        ("FASO_TELEGRAM_BOT_TOKEN", "token"),
+        ("FASO_TELEGRAM_CHAT_ID", "chat_id"),
+    )
 
     def __init__(self, token: str | None = None, chat_id: str | None = None, client=None):
         self.token = settings.telegram_bot_token if token is None else token
         self.chat_id = settings.telegram_chat_id if chat_id is None else chat_id
         self.quota_jour = settings.telegram_quota_jour
         self._client = _client(client)
-
-    def est_configure(self) -> bool:
-        return bool(self.token and self.chat_id)
 
     def _appel(self, methode: str, **corps) -> dict:
         reponse = self._client.post(f"{self.API}/bot{self.token}/{methode}", json=corps)
@@ -149,15 +158,16 @@ class Telegram(Reseau):
 class Facebook(Reseau):
     nom = "facebook"
     API = "https://graph.facebook.com/v21.0"
+    VARIABLES = (
+        ("FASO_FACEBOOK_PAGE_ID", "page_id"),
+        ("FASO_FACEBOOK_PAGE_TOKEN", "token"),
+    )
 
     def __init__(self, page_id: str | None = None, token: str | None = None, client=None):
         self.page_id = settings.facebook_page_id if page_id is None else page_id
         self.token = settings.facebook_page_token if token is None else token
         self.quota_jour = settings.facebook_quota_jour
         self._client = _client(client)
-
-    def est_configure(self) -> bool:
-        return bool(self.page_id and self.token)
 
     def publier(self, message: str, lien: str) -> str:
         # Facebook construit l'aperçu (titre, image, domaine) à partir du champ
@@ -188,6 +198,12 @@ class X(Reseau):
     nom = "x"
     API_POST = "https://api.x.com/2/tweets"
     API_MOI = "https://api.x.com/2/users/me"
+    VARIABLES = (
+        ("FASO_X_API_KEY", "cle_api"),
+        ("FASO_X_API_SECRET", "secret_api"),
+        ("FASO_X_ACCESS_TOKEN", "jeton"),
+        ("FASO_X_ACCESS_SECRET", "secret_jeton"),
+    )
 
     def __init__(
         self,
@@ -203,9 +219,6 @@ class X(Reseau):
         self.secret_jeton = settings.x_access_secret if secret_jeton is None else secret_jeton
         self.quota_jour = settings.x_quota_jour
         self._client = _client(client)
-
-    def est_configure(self) -> bool:
-        return all((self.cle_api, self.secret_api, self.jeton, self.secret_jeton))
 
     def _entete(self, methode: str, url: str) -> str:
         return entete_oauth1(
@@ -241,6 +254,23 @@ class X(Reseau):
 
 
 CLASSES = {"telegram": Telegram, "facebook": Facebook, "x": X}
+
+
+def reseaux_incomplets(noms: tuple[str, ...] | None = None) -> list[Reseau]:
+    """Réseaux dont il manque au moins un secret - mais pas tous.
+
+    Un réseau dont RIEN n'est renseigné n'est pas en panne : il n'est
+    simplement pas encore ouvert, et l'annoncer noierait le vrai manque.
+    """
+    partiels = []
+    for nom, classe in CLASSES.items():
+        if noms and nom not in noms:
+            continue
+        reseau = classe()
+        manque = reseau.manquants()
+        if manque and len(manque) < len(reseau.VARIABLES):
+            partiels.append(reseau)
+    return partiels
 
 
 def reseaux_configures(noms: tuple[str, ...] | None = None) -> list[Reseau]:

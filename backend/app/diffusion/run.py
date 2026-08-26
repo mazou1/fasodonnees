@@ -21,7 +21,13 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import SessionLocal
 from app.diffusion.messages import Item, composer
-from app.diffusion.reseaux import CLASSES, ErreurReseau, Reseau, reseaux_configures
+from app.diffusion.reseaux import (
+    CLASSES,
+    ErreurReseau,
+    Reseau,
+    reseaux_configures,
+    reseaux_incomplets,
+)
 from app.diffusion.selection import items_a_publier
 from app.models import Publication
 
@@ -171,8 +177,15 @@ def main() -> None:
     noms = tuple(options.reseau) if options.reseau else None
 
     if options.verifier:
-        for nom, etat in verifier(noms).items():
+        resultats = verifier(noms)
+        for nom, etat in resultats.items():
             print(f"{nom:10s} {etat}")
+        # Pendant la mise en route, l'information utile est justement celle qui
+        # manque. Ne rien afficher laisserait croire à une panne du contrôle.
+        for reseau in reseaux_incomplets(noms):
+            print(f"{reseau.nom:10s} incomplet - il manque : {', '.join(reseau.manquants())}")
+        if not resultats and not reseaux_incomplets(noms):
+            print("Aucun réseau configuré - cf. docs/reseaux-sociaux.md")
         return
 
     with SessionLocal() as db:

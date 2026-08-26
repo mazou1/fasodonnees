@@ -14,7 +14,14 @@ from sqlalchemy.orm import Session
 
 from app.diffusion import messages, run
 from app.diffusion.messages import Item, composer, longueur_percue, tronquer
-from app.diffusion.reseaux import ErreurReseau, chaine_de_signature, entete_oauth1
+from app.diffusion.reseaux import (
+    ErreurReseau,
+    Telegram,
+    X,
+    chaine_de_signature,
+    entete_oauth1,
+    reseaux_incomplets,
+)
 from app.diffusion.selection import (
     MAX_TENTATIVES,
     cles_bloquees,
@@ -436,3 +443,38 @@ def test_les_archives_ne_sont_pas_deversees_a_lactivation(db_versions):
     """Activer la diffusion sur une base de 160 comptes rendus ne doit poster
     que ce qui vient de sortir."""
     assert _conseils(db_versions, aujourdhui=date(2026, 8, 26)) == []
+
+
+# --- mise en route --------------------------------------------------------
+
+def test_un_reseau_a_moitie_configure_dit_ce_qui_manque(monkeypatch):
+    """Le cas normal pendant la mise en route : le jeton du bot est posé, le
+    canal pas encore. L'ignorer en silence ferait chercher la panne ailleurs."""
+    monkeypatch.setattr(run.settings, "telegram_bot_token", "123:AA")
+    monkeypatch.setattr(run.settings, "telegram_chat_id", "")
+
+    telegram = Telegram()
+    assert telegram.est_configure() is False
+    assert telegram.manquants() == ["FASO_TELEGRAM_CHAT_ID"]
+    assert [r.nom for r in reseaux_incomplets()] == ["telegram"]
+
+
+def test_un_reseau_dont_rien_nest_renseigne_nest_pas_dit_incomplet(monkeypatch):
+    """Il n'est pas en panne, il n'est simplement pas encore ouvert : le
+    signaler noierait le vrai manque."""
+    for champ in ("x_api_key", "x_api_secret", "x_access_token", "x_access_secret"):
+        monkeypatch.setattr(run.settings, champ, "")
+
+    assert X().manquants() == [
+        "FASO_X_API_KEY", "FASO_X_API_SECRET",
+        "FASO_X_ACCESS_TOKEN", "FASO_X_ACCESS_SECRET",
+    ]
+    assert reseaux_incomplets(("x",)) == []
+
+
+def test_un_reseau_complet_est_utilisable(monkeypatch):
+    monkeypatch.setattr(run.settings, "telegram_bot_token", "123:AA")
+    monkeypatch.setattr(run.settings, "telegram_chat_id", "@faso_donnees")
+
+    assert Telegram().est_configure() is True
+    assert reseaux_incomplets(("telegram",)) == []
