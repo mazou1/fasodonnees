@@ -6,6 +6,7 @@ automatisation acceptable - pas de doublon, pas de déversement d'archives, pas
 de post tronqué en plein titre, pas d'acharnement sur une API qui refuse.
 """
 
+import logging
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -16,6 +17,7 @@ from app.diffusion import messages, run
 from app.diffusion.messages import Item, composer, longueur_percue, tronquer
 from app.diffusion.reseaux import (
     ErreurReseau,
+    MasqueSecrets,
     Telegram,
     X,
     chaine_de_signature,
@@ -478,3 +480,63 @@ def test_un_reseau_complet_est_utilisable(monkeypatch):
 
     assert Telegram().est_configure() is True
     assert reseaux_incomplets(("telegram",)) == []
+
+
+# --- le jeton ne doit pas fuir dans les journaux -------------------------
+
+def test_le_jeton_telegram_est_masque_dans_les_journaux():
+    """Telegram fait voyager le jeton dans le CHEMIN de l'URL, et httpx
+    journalise chaque requête. Sans masque, il part en clair dans les logs du
+    worker à chaque publication - et quiconque l'a contrôle le bot."""
+    import logging
+
+    filtre = MasqueSecrets("123456:AA-secret")
+    trace = logging.LogRecord(
+        "httpx", logging.INFO, "", 0,
+        'HTTP Request: POST https://api.telegram.org/bot%s/sendMessage "200 OK"',
+        ("123456:AA-secret",), None,
+    )
+
+    filtre.filter(trace)
+
+    assert "123456:AA-secret" not in trace.getMessage()
+    assert "***" in trace.getMessage()
+
+
+def test_le_masque_laisse_passer_le_reste_du_journal():
+    """Les requêtes des collecteurs doivent rester lisibles telles quelles."""
+    trace = logging.LogRecord(
+        "httpx", logging.INFO, "", 0, "HTTP Request: GET https://lefaso.net/feed/", (), None,
+    )
+
+    assert MasqueSecrets("123456:AA-secret").filter(trace) is True
+    assert trace.getMessage() == "HTTP Request: GET https://lefaso.net/feed/"
+
+
+def test_verifier_controle_le_canal_pas_seulement_le_bot():
+    """Un bot authentifié mais pas administrateur du canal passerait pour prêt,
+    et l'échec n'apparaîtrait qu'au premier post."""
+    appels = []
+
+    class ClientFactice:
+        def post(self, url, json=None, **kw):
+            appels.append(url.rsplit("/", 1)[-1])
+            return _ReponseFactice({"ok": True, "result": {"username": "faso_donnees_bot",
+                                                           "title": "Faso Données Publiques"}})
+
+    resultat = Telegram(token="123:AA", chat_id="@faso_donnees",
+                        client=ClientFactice()).verifier()
+
+    assert appels == ["getMe", "getChat"]
+    assert "Faso Données Publiques" in resultat
+
+
+class _ReponseFactice:
+    status_code = 200
+
+    def __init__(self, donnees):
+        self._donnees = donnees
+        self.text = str(donnees)
+
+    def json(self):
+        return self._donnees

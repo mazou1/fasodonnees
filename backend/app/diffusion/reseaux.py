@@ -38,6 +38,37 @@ def _client(client: httpx.Client | None) -> httpx.Client:
     return client or httpx.Client(timeout=DELAI, headers={"User-Agent": settings.user_agent})
 
 
+class MasqueSecrets(logging.Filter):
+    """Remplace un secret par « *** » dans les journaux.
+
+    Telegram fait voyager le jeton du bot dans le CHEMIN de l'URL, et httpx
+    journalise chaque requête : sans ce filtre, le jeton se retrouve en clair
+    dans les logs du worker, à chaque publication. Or ces logs se lisent à
+    plusieurs, se copient dans un ticket, et quiconque a le jeton contrôle le
+    bot. Les journaux des collecteurs, eux, restent intacts.
+    """
+
+    def __init__(self, secret: str):
+        super().__init__()
+        self.secret = secret
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if self.secret:
+            message = record.getMessage()
+            if self.secret in message:
+                record.msg = message.replace(self.secret, "***")
+                record.args = ()
+        return True
+
+
+def _masquer(secret: str, logger_cible: str = "httpx") -> None:
+    if not secret:
+        return
+    cible = logging.getLogger(logger_cible)
+    if not any(getattr(f, "secret", None) == secret for f in cible.filters):
+        cible.addFilter(MasqueSecrets(secret))
+
+
 def _json(reponse: httpx.Response) -> dict:
     try:
         donnees = reponse.json()
@@ -137,6 +168,7 @@ class Telegram(Reseau):
         self.chat_id = settings.telegram_chat_id if chat_id is None else chat_id
         self.quota_jour = settings.telegram_quota_jour
         self._client = _client(client)
+        _masquer(self.token)
 
     def _appel(self, methode: str, **corps) -> dict:
         reponse = self._client.post(f"{self.API}/bot{self.token}/{methode}", json=corps)
@@ -151,8 +183,16 @@ class Telegram(Reseau):
         return str(self._appel("sendMessage", chat_id=self.chat_id, text=message)["message_id"])
 
     def verifier(self) -> str:
+        """Contrôle le bot ET le canal.
+
+        Se contenter de `getMe` valide le jeton et rien d'autre : un bot
+        parfaitement authentifié qui n'a pas été ajouté comme administrateur du
+        canal passerait pour prêt, et l'échec n'apparaîtrait qu'au premier post.
+        """
         bot = self._appel("getMe")
-        return f"bot @{bot.get('username')} vers {self.chat_id}"
+        canal = self._appel("getChat", chat_id=self.chat_id)
+        titre = canal.get("title") or canal.get("username") or self.chat_id
+        return f"bot @{bot.get('username')} vers « {titre} »"
 
 
 class Facebook(Reseau):
