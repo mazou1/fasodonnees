@@ -594,3 +594,37 @@ def test_le_post_ne_repete_pas_le_titre():
 
     assert message.count("AS Dafra remporte le tournoi") == 1
     assert "Victoire en finale." in message
+
+
+# --- amorçage d'un canal neuf --------------------------------------------
+
+def test_lamorcage_marque_sans_envoyer(db, monkeypatch):
+    """Ouvrir un canal ne doit pas y déverser d'un coup tout ce que la fenêtre
+    de fraîcheur laisse passer : l'historique en garderait la trace pour
+    toujours, devant des abonnés qui n'étaient pas encore là."""
+    reseau = ReseauFactice()
+    items = [item(cle=f"actu-{n}", genre="actualite") for n in (1, 2, 3)]
+    monkeypatch.setattr(run, "items_a_publier", lambda *a, **k: items)
+    monkeypatch.setattr(run, "reseaux_configures", lambda noms=None: [reseau])
+
+    bilan = run.amorcer(db)
+
+    assert bilan == {"telegram": 3}
+    assert reseau.envoyes == [], "aucun appel réseau pendant l'amorçage"
+    assert {p.statut for p in db.query(Publication).all()} == {"amorce"}
+
+
+def test_un_item_amorce_ne_sera_jamais_publie(db):
+    """C'est tout l'intérêt : ce qui existait avant l'ouverture reste dehors."""
+    db.add(Publication(reseau="telegram", cle="actu-1", statut="amorce", tentatives=0))
+    db.commit()
+
+    assert cles_bloquees(db, "telegram") == {"actu-1"}
+
+
+def test_lamorcage_ne_compte_pas_comme_une_tentative(db):
+    """« tentatives » sert à repérer ce qui coince dans l'admin : y compter un
+    marquage qui n'a jamais rien tenté fausserait la lecture."""
+    publication = run.journaliser(db, "telegram", item(), "msg", statut="amorce")
+
+    assert (publication.tentatives, publication.post_id) == (0, None)

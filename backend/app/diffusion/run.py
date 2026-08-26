@@ -5,6 +5,7 @@ main pour la mise en route :
 
     python -m app.diffusion.run --verifier     # les jetons sont-ils bons ?
     python -m app.diffusion.run --simulation   # que serait-il publié ?
+    python -m app.diffusion.run --amorcer      # repartir de zéro sans rien envoyer
     python -m app.diffusion.run                # publier pour de bon
 """
 
@@ -67,6 +68,7 @@ def journaliser(
     *,
     post_id: str | None = None,
     erreur: str | None = None,
+    statut: str | None = None,
 ) -> Publication:
     """Une ligne par (réseau, item), créée ou mise à jour.
 
@@ -83,10 +85,13 @@ def journaliser(
     publication.genre = item.genre
     publication.message = message
     publication.lien = item.lien
-    publication.tentatives = (publication.tentatives or 0) + 1
+    # l'amorçage n'est pas un essai d'envoi : le compter fausserait la lecture
+    # du journal dans l'admin, où « tentatives » sert à repérer ce qui coince
+    if statut != "amorce":
+        publication.tentatives = (publication.tentatives or 0) + 1
     publication.post_id = post_id
     publication.erreur = erreur[:2000] if erreur else None
-    publication.statut = "echec" if erreur else "publie"
+    publication.statut = statut or ("echec" if erreur else "publie")
     publication.date_envoi = datetime.now(timezone.utc)
     db.commit()
     return publication
@@ -149,6 +154,34 @@ def diffuser(db: Session, *, noms=None, simulation: bool = False) -> dict[str, d
     return bilans
 
 
+def amorcer(db: Session, *, noms=None) -> dict[str, int]:
+    """Marque comme VUS, sans rien envoyer, les items déjà publiables.
+
+    À lancer une fois avant d'ouvrir un canal. Sans cela, la première passe
+    déverse d'un coup tout ce que la fenêtre de fraîcheur laisse passer : des
+    dizaines de messages en quelques secondes sur un canal qui n'a pas encore
+    d'abonnés, et qui ressemblera pour toujours à une décharge dans son
+    historique. Ce qui sortira ensuite, ce sera ce qui paraît après.
+    """
+    bilans = {}
+    for reseau in reseaux_configures(noms):
+        items = items_a_publier(
+            db,
+            reseau.nom,
+            # large : on marque tout ce qui pourrait sortir, pas seulement ce
+            # qui sortirait à la prochaine passe
+            limite=10_000,
+            fraicheur_jours=settings.diffusion_fraicheur_jours,
+            site_url=settings.site_url,
+            genres=genres_actifs(),
+        )
+        for item in items:
+            journaliser(db, reseau.nom, item, composer(item, reseau.nom), statut="amorce")
+        bilans[reseau.nom] = len(items)
+        logger.info("%s : %d item(s) marqué(s) comme vus, aucun envoi", reseau.nom, len(items))
+    return bilans
+
+
 def verifier(noms=None) -> dict[str, str]:
     resultats = {}
     for reseau in reseaux_configures(noms):
@@ -170,6 +203,12 @@ def main() -> None:
         "--verifier", action="store_true", help="contrôler les jetons, sans rien publier"
     )
     analyseur.add_argument(
+        "--amorcer",
+        action="store_true",
+        help="marquer comme vus les items déjà publiables, sans rien envoyer "
+        "(à lancer une fois avant d'ouvrir un canal)",
+    )
+    analyseur.add_argument(
         "--reseau", action="append", help="limiter à un réseau (telegram, facebook, x)"
     )
     options = analyseur.parse_args()
@@ -186,6 +225,12 @@ def main() -> None:
             print(f"{reseau.nom:10s} incomplet - il manque : {', '.join(reseau.manquants())}")
         if not resultats and not reseaux_incomplets(noms):
             print("Aucun réseau configuré - cf. docs/reseaux-sociaux.md")
+        return
+
+    if options.amorcer:
+        with SessionLocal() as db:
+            for nom, nombre in amorcer(db, noms=noms).items():
+                print(f"{nom:10s} {nombre} item(s) marqué(s) comme vus, aucun envoi")
         return
 
     with SessionLocal() as db:

@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # genres publiés : conseil (compte rendu du CM), decision (mesure validée),
     # actualite (article de presse ou communiqué archivé)
     diffusion_genres: str = "conseil,decision,actualite"
+    # Types de documents repris dans le genre « actualite ». Par défaut les
+    # SOURCES OFFICIELLES seules : actualités du gouvernement et communiqués.
+    # Ajouter « article_presse » y verse le fil des cinq médias collectés, soit
+    # une centaine de dépêches par jour - un fil de presse généraliste, pas le
+    # relais d'information publique que la plateforme annonce.
+    diffusion_types_actualite: str = "actualite_gouv,communique"
     # Un item plus vieux que cette fenêtre n'est jamais publié. C'est ce qui
     # évite qu'une activation, une panne réparée ou un arriéré ne déverse des
     # mois d'archives d'un coup sur les pages, et ce qui empêche un flux

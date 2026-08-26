@@ -15,12 +15,21 @@ faire **hors du dépôt** : créer les comptes, obtenir les jetons, activer.
 |---|---|---|
 | `conseil` | Compte rendu du Conseil des ministres | page du site `/conseils/{id}` |
 | `decision` | Décision **validée** dans `/admin` | page du conseil dont elle est issue |
-| `actualite` | Article de presse ou communiqué collecté | **l'article du média**, source créditée dans le post |
+| `actualite` | Annonces officielles (`actualite_gouv`) et communiqués | l'article de la source, créditée dans le post |
 
-Les actualités renvoient au média, comme le fait déjà la page `/actualites` du
-site : la plateforme collecte les métadonnées de presse, pas le texte des
-articles, et capter le trafic d'un travail journalistique qui n'est pas le sien
-desservirait le lecteur autant que le média. Le post porte donc « via Sidwaya ».
+Les actualités renvoient à leur source, comme le fait déjà la page
+`/actualites` du site : la plateforme collecte les métadonnées, pas le texte
+des articles, et capter le trafic d'un travail qui n'est pas le sien
+desservirait le lecteur autant que la source. Le post porte donc « via … ».
+
+**Par défaut, seules les sources officielles sont diffusées**
+(`FASO_DIFFUSION_TYPES_ACTUALITE=actualite_gouv,communique`). Mesuré en
+production : les cinq médias collectés publient une centaine de dépêches par
+jour, contre une dizaine d'annonces gouvernementales. Les verser sans
+distinction noie l'information publique sous les dépêches - jusqu'aux tournois
+de quartier et aux avis de recrutement. Ajouter `article_presse` à la liste
+verse le fil de presse ; le canal devient alors un fil d'actualité généraliste,
+ce qui est un autre métier.
 
 Les comptes rendus et les décisions, eux, sont du contenu propre : ils renvoient
 au site.
@@ -123,10 +132,16 @@ docker compose -f docker-compose.prod.yml exec worker \
 docker compose -f docker-compose.prod.yml exec worker \
   python -m app.diffusion.run --simulation
 
-# 3. activer : FASO_DIFFUSION_ACTIVE=true dans .env, puis
+# 3. amorcer : marque comme vu ce qui existe déjà, SANS rien envoyer.
+#    Sans cette étape, la première passe déverse d'un coup tout ce que la
+#    fenêtre de fraîcheur laisse passer, devant des abonnés pas encore arrivés.
+docker compose -f docker-compose.prod.yml exec worker \
+  python -m app.diffusion.run --amorcer
+
+# 4. activer : FASO_DIFFUSION_ACTIVE=true dans .env, puis
 docker compose -f docker-compose.prod.yml up -d worker
 
-# 4. un premier envoi à la main, sur un seul réseau
+# 5. un premier envoi à la main, sur un seul réseau
 docker compose -f docker-compose.prod.yml exec worker \
   python -m app.diffusion.run --reseau telegram
 ```
@@ -167,6 +182,7 @@ quotidien :
 |---|---|---|
 | `FASO_DIFFUSION_ACTIVE` | `false` | coupe-circuit général |
 | `FASO_DIFFUSION_GENRES` | `conseil,decision,actualite` | ce qui est publié |
+| `FASO_DIFFUSION_TYPES_ACTUALITE` | `actualite_gouv,communique` | sources du genre `actualite` ; ajouter `article_presse` y verse le fil de presse |
 | `FASO_DIFFUSION_FRAICHEUR_JOURS` | `2` | au-delà, un item n'est jamais publié |
 | `FASO_TELEGRAM_QUOTA_JOUR` | `40` | plafond glissant sur 24 h |
 | `FASO_FACEBOOK_QUOTA_JOUR` | `15` | idem |

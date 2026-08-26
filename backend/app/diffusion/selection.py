@@ -39,6 +39,12 @@ from app.versions import _cle_decision, ids_versions_de_reference
 # consommerait le quota mensuel de X sans rien publier.
 MAX_TENTATIVES = 3
 
+# « amorce » : l'item existait déjà à l'ouverture du canal et a été marqué vu
+# sans être envoyé. Sans ce statut, activer la diffusion déverserait d'un coup
+# tout ce que la fenêtre de fraîcheur laisse passer - ce qu'un canal neuf ne
+# doit pas faire à ses premiers abonnés.
+STATUTS_VUS = ("publie", "amorce")
+
 # Garde-fou de volume par requête : la fenêtre de fraîcheur borne déjà le
 # nombre d'items, cette limite protège d'un import massif de documents antidatés.
 PLAFOND_REQUETE = 300
@@ -46,7 +52,17 @@ PLAFOND_REQUETE = 300
 GENRES = ("conseil", "decision", "actualite")
 _PRIORITE = {genre: rang for rang, genre in enumerate(GENRES)}
 
-TYPES_ACTUALITE = ("article_presse", "communique")
+def types_actualite() -> tuple[str, ...]:
+    """Types de documents repris dans le genre « actualite », configurables.
+
+    Le réglage par défaut ne retient que les sources officielles : le fil des
+    médias représente une centaine de dépêches par jour, contre une dizaine
+    d'annonces gouvernementales, et publier les deux sans distinction noierait
+    l'information publique sous les dépêches - jusqu'aux tournois de quartier.
+    """
+    from app.config import settings
+
+    return tuple(t.strip() for t in settings.diffusion_types_actualite.split(",") if t.strip())
 
 
 def plancher(fraicheur_jours: int, aujourdhui: date | None = None) -> date:
@@ -54,7 +70,8 @@ def plancher(fraicheur_jours: int, aujourdhui: date | None = None) -> date:
 
 
 def cles_bloquees(db: Session, reseau: str) -> set[str]:
-    """Les clés déjà publiées sur ce réseau, ou abandonnées après trop d'échecs.
+    """Les clés déjà traitées sur ce réseau : publiées, marquées vues à
+    l'amorçage, ou abandonnées après trop d'échecs.
 
     Un échec récent n'est PAS bloquant : le prochain passage réessaiera, ce qui
     couvre la coupure réseau et l'API momentanément indisponible.
@@ -63,7 +80,10 @@ def cles_bloquees(db: Session, reseau: str) -> set[str]:
         db.scalars(
             select(Publication.cle).where(
                 Publication.reseau == reseau,
-                or_(Publication.statut == "publie", Publication.tentatives >= MAX_TENTATIVES),
+                or_(
+                    Publication.statut.in_(STATUTS_VUS),
+                    Publication.tentatives >= MAX_TENTATIVES,
+                ),
             )
         )
     )
@@ -184,7 +204,7 @@ def _actualites(db: Session, depuis: date, site: str) -> list[Item]:
     docs = db.scalars(
         select(Document)
         .where(
-            Document.type_doc.in_(TYPES_ACTUALITE),
+            Document.type_doc.in_(types_actualite()),
             Document.date_publication.is_not(None),
             Document.date_publication >= depuis,
             Document.id.in_(ids_versions_de_reference()),
