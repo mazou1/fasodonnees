@@ -210,9 +210,36 @@ quotidien :
 | `FASO_FACEBOOK_QUOTA_JOUR` | `15` | idem |
 | `FASO_X_QUOTA_JOUR` | `12` | idem (palier gratuit : 500/mois) |
 
-Publier les actualités uniquement sur Telegram, et garder Facebook pour le
-contenu propre, se fait aujourd'hui en réglant `FASO_DIFFUSION_GENRES`
-globalement : le filtrage par genre **et** par réseau n'est pas implémenté.
+### Une ligne éditoriale par réseau
+
+Chaque réseau peut surcharger les réglages généraux ; laissé vide, il en hérite.
+
+| Variable | Effet |
+|---|---|
+| `FASO_<RESEAU>_GENRES` | ce que ce réseau publie |
+| `FASO_<RESEAU>_TYPES_ACTUALITE` | ses sources du genre `actualite` |
+| `FASO_<RESEAU>_QUOTA_JOUR` | son plafond glissant sur 24 h |
+| `FASO_<RESEAU>_MAX_PAR_PASSE` | son plafond par passage horaire |
+
+Réglage en production : le **canal Telegram** s'en tient aux annonces
+officielles, la **Page Facebook** reprend tout le fil du site, médias compris.
+
+Deux points comptent quand un fil produit plus que le quota - le fil de presse
+sort une centaine de dépêches par jour :
+
+- **le plafond par passage.** Le worker passe une fois par heure ; sans lui, la
+  première passe consomme tout le quota d'un coup, et la page enchaîne une
+  rafale puis vingt-trois heures de silence ;
+- **ce sont les plus RÉCENTS qui sortent.** Publier les plus anciens ferait
+  paraître éternellement l'actualité de l'avant-veille : le retard ne se
+  résorbe jamais, il s'installe. Les retenus sortent tout de même dans l'ordre
+  chronologique, pour qu'une page se lise comme un fil.
+
+Meta ne publie aucun plafond quotidien, mais applique des régulations
+anti-spam qui se déclenchent sur le comportement, et le seuil couramment
+constaté tourne autour de 25 publications par jour. Une Page neuve, sans
+historique d'engagement, est le profil le plus exposé : le quota Facebook est
+donc à 25/jour, à monter progressivement plutôt que d'emblée.
 
 ## 7. Ce qui n'est pas couvert
 

@@ -35,8 +35,37 @@ from app.models import Publication
 logger = logging.getLogger(__name__)
 
 
-def genres_actifs() -> tuple[str, ...]:
-    return tuple(g.strip() for g in settings.diffusion_genres.split(",") if g.strip())
+def _liste(valeur: str) -> tuple[str, ...]:
+    return tuple(v.strip() for v in valeur.split(",") if v.strip())
+
+
+def genres_actifs(reseau: str | None = None) -> tuple[str, ...]:
+    """Genres publiés, surchargeables par réseau (`FASO_FACEBOOK_GENRES`…)."""
+    propre = getattr(settings, f"{reseau}_genres", "") if reseau else ""
+    return _liste(propre) or _liste(settings.diffusion_genres)
+
+
+def types_actifs(reseau: str | None = None) -> tuple[str, ...]:
+    """Sources du genre « actualite », surchargeables par réseau.
+
+    C'est ce qui permet à chaque compte d'avoir sa ligne : le canal Telegram
+    s'en tient aux annonces officielles, la Page Facebook reprend tout le fil
+    du site.
+    """
+    propre = getattr(settings, f"{reseau}_types_actualite", "") if reseau else ""
+    return _liste(propre) or _liste(settings.diffusion_types_actualite)
+
+
+def limite_de_passe(reseau: str, quota: int) -> int:
+    """Ce qu'on s'autorise à publier en UNE fois.
+
+    Le worker passe une fois par heure. Sur un fil qui produit plus que le
+    quota, sans ce plafond la première passe le consomme d'un coup : une rafale
+    de dizaines de posts, puis vingt-trois heures de silence. Une page se lit
+    comme un fil, pas comme une salve.
+    """
+    plafond = getattr(settings, f"{reseau}_max_par_passe", 0) or 0
+    return min(quota, plafond) if plafond > 0 else quota
 
 
 def quota_restant(db: Session, reseau: str, quota_jour: int, maintenant=None) -> int:
@@ -102,10 +131,11 @@ def diffuser_reseau(db: Session, reseau: Reseau, *, simulation: bool = False) ->
     items = items_a_publier(
         db,
         reseau.nom,
-        limite=quota,
+        limite=limite_de_passe(reseau.nom, quota),
         fraicheur_jours=settings.diffusion_fraicheur_jours,
         site_url=settings.site_url,
-        genres=genres_actifs(),
+        genres=genres_actifs(reseau.nom),
+        types=types_actifs(reseau.nom),
     )
     bilan = {"quota": quota, "candidats": len(items), "publies": 0, "echecs": 0}
     for rang, item in enumerate(items):
@@ -173,7 +203,8 @@ def amorcer(db: Session, *, noms=None) -> dict[str, int]:
             limite=10_000,
             fraicheur_jours=settings.diffusion_fraicheur_jours,
             site_url=settings.site_url,
-            genres=genres_actifs(),
+            genres=genres_actifs(reseau.nom),
+            types=types_actifs(reseau.nom),
         )
         for item in items:
             journaliser(db, reseau.nom, item, composer(item, reseau.nom), statut="amorce")

@@ -54,12 +54,12 @@ _PRIORITE = {genre: rang for rang, genre in enumerate(GENRES)}
 
 
 def types_actualite() -> tuple[str, ...]:
-    """Types de documents repris dans le genre « actualite », configurables.
+    """Types de documents repris dans le genre « actualite », par défaut.
 
-    Le réglage par défaut ne retient que les sources officielles : le fil des
+    Le réglage général ne retient que les sources officielles : le fil des
     médias représente une centaine de dépêches par jour, contre une dizaine
-    d'annonces gouvernementales, et publier les deux sans distinction noierait
-    l'information publique sous les dépêches - jusqu'aux tournois de quartier.
+    d'annonces gouvernementales. Chaque réseau peut le surcharger - la Page
+    Facebook reprend tout le fil, le canal Telegram s'en tient à l'officiel.
     """
     from app.config import settings
 
@@ -155,7 +155,7 @@ def _nettoyer_ministere(libelle: str | None) -> str | None:
     return net or None
 
 
-def _conseils(db: Session, depuis: date, site: str) -> list[Item]:
+def _conseils(db: Session, depuis: date, site: str, types: tuple[str, ...]) -> list[Item]:
     docs = db.scalars(
         select(Document)
         .where(
@@ -183,7 +183,7 @@ def _conseils(db: Session, depuis: date, site: str) -> list[Item]:
     ]
 
 
-def _decisions(db: Session, depuis: date, site: str) -> list[Item]:
+def _decisions(db: Session, depuis: date, site: str, types: tuple[str, ...]) -> list[Item]:
     """Seules les décisions VALIDÉES sortent : c'est la règle de la plateforme,
     et une extraction LLM non relue publiée sur une page publique serait bien
     plus difficile à rattraper qu'une ligne fausse dans le back-office."""
@@ -217,7 +217,7 @@ def _decisions(db: Session, depuis: date, site: str) -> list[Item]:
     ]
 
 
-def _actualites(db: Session, depuis: date, site: str) -> list[Item]:
+def _actualites(db: Session, depuis: date, site: str, types: tuple[str, ...]) -> list[Item]:
     """Le lien pointe vers l'article du média, pas vers une page du site.
 
     C'est déjà le choix de la page /actualites, et c'est le bon : la
@@ -232,7 +232,7 @@ def _actualites(db: Session, depuis: date, site: str) -> list[Item]:
     docs = db.scalars(
         select(Document)
         .where(
-            Document.type_doc.in_(types_actualite()),
+            Document.type_doc.in_(types),
             Document.date_publication.is_not(None),
             Document.date_publication >= depuis,
             Document.id.in_(ids_versions_de_reference()),
@@ -267,17 +267,28 @@ def ordonner(items: list[Item], limite: int) -> list[Item]:
     Chronologie CROISSANTE : la page doit se lire comme un fil, pas rejouer les
     évènements à l'envers quand plusieurs items attendent.
     """
-    tries = sorted(
-        items,
-        key=lambda it: (_PRIORITE.get(it.genre, 99), it.date or date.min, it.cle),
-    )
     # Deux items de même clé sont la même publication vue par deux chemins (deux
     # URL pour un même article, par exemple). Le journal l'empêcherait de sortir
     # une seconde fois DEMAIN, mais pas deux fois dans la même passe : la garde
-    # doit donc aussi être ici.
+    # doit donc aussi être ici, et AVANT la troncature.
     vues: set[str] = set()
-    uniques = [it for it in tries if not (it.cle in vues or vues.add(it.cle))]
-    return uniques[: max(limite, 0)]
+    uniques = [it for it in items if not (it.cle in vues or vues.add(it.cle))]
+
+    # Quand la file dépasse le quota, on retient les items les PLUS RÉCENTS.
+    # Prendre les plus anciens ferait publier éternellement l'actualité de
+    # l'avant-veille : sur un fil qui produit plus que le quota, le retard ne se
+    # résorbe jamais, il s'installe.
+    retenus = sorted(
+        uniques,
+        key=lambda it: (_PRIORITE.get(it.genre, 99), -(it.date or date.min).toordinal(), it.cle),
+    )[: max(limite, 0)]
+
+    # …mais ils sortent dans l'ordre chronologique : une page doit se lire comme
+    # un fil, pas rejouer les évènements à l'envers.
+    return sorted(
+        retenus,
+        key=lambda it: (_PRIORITE.get(it.genre, 99), it.date or date.min, it.cle),
+    )
 
 
 def items_a_publier(
@@ -288,17 +299,19 @@ def items_a_publier(
     fraicheur_jours: int,
     site_url: str,
     genres: tuple[str, ...] = GENRES,
+    types: tuple[str, ...] | None = None,
     aujourdhui: date | None = None,
 ) -> list[Item]:
     if limite <= 0:
         return []
     depuis = plancher(fraicheur_jours, aujourdhui)
     site = site_url.rstrip("/")
+    types = types if types is not None else types_actualite()
     bloquees = cles_bloquees(db, reseau)
     candidats: list[Item] = []
     for genre in genres:
         collecte = _COLLECTES.get(genre)
         if collecte is None:
             continue
-        candidats.extend(it for it in collecte(db, depuis, site) if it.cle not in bloquees)
+        candidats.extend(it for it in collecte(db, depuis, site, types) if it.cle not in bloquees)
     return ordonner(candidats, limite)

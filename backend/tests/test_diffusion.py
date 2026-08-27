@@ -679,3 +679,77 @@ def test_le_post_ne_garde_pas_lunicode_decoratif():
     )
 
     assert "Souveraineté alimentaire" in message
+
+
+# --- une ligne éditoriale par réseau -------------------------------------
+
+def test_chaque_reseau_peut_avoir_ses_propres_sources(monkeypatch):
+    """Le canal Telegram s'en tient aux annonces officielles, la Page Facebook
+    reprend tout le fil du site. Un réglage unique interdirait l'un des deux."""
+    monkeypatch.setattr(run.settings, "diffusion_types_actualite", "actualite_gouv,communique")
+    monkeypatch.setattr(run.settings, "facebook_types_actualite", "actualite_gouv,article_presse")
+    monkeypatch.setattr(run.settings, "telegram_types_actualite", "")
+
+    assert run.types_actifs("facebook") == ("actualite_gouv", "article_presse")
+    assert run.types_actifs("telegram") == ("actualite_gouv", "communique"), "hérite du général"
+
+
+def test_un_reglage_par_reseau_vide_herite_du_general(monkeypatch):
+    monkeypatch.setattr(run.settings, "diffusion_genres", "conseil,decision,actualite")
+    monkeypatch.setattr(run.settings, "facebook_genres", "")
+
+    assert run.genres_actifs("facebook") == ("conseil", "decision", "actualite")
+
+
+# --- lissage d'un fil plus rapide que le quota ---------------------------
+
+def test_une_passe_ne_vide_pas_le_quota_du_jour(monkeypatch):
+    """Le worker passe une fois par heure. Sans plafond par passage, la
+    première consomme tout : une rafale, puis vingt-trois heures de silence."""
+    monkeypatch.setattr(run.settings, "facebook_max_par_passe", 3)
+
+    assert run.limite_de_passe("facebook", quota=25) == 3
+    assert run.limite_de_passe("facebook", quota=2) == 2, "le quota reste la borne dure"
+
+
+def test_sans_plafond_la_passe_va_jusquau_quota(monkeypatch):
+    monkeypatch.setattr(run.settings, "telegram_max_par_passe", 0)
+
+    assert run.limite_de_passe("telegram", quota=40) == 40
+
+
+def test_quand_la_file_deborde_ce_sont_les_plus_recents_qui_sortent():
+    """Prendre les plus anciens ferait publier éternellement l'actualité de
+    l'avant-veille : sur un fil plus rapide que le quota, le retard ne se
+    résorbe jamais, il s'installe."""
+    file = [
+        item(cle=f"actu-{n}", genre="actualite", date=date(2026, 8, 20 + n))
+        for n in range(1, 6)
+    ]
+
+    retenus = ordonner(file, limite=2)
+
+    assert [i.cle for i in retenus] == ["actu-4", "actu-5"], "les deux plus récents"
+
+
+def test_les_plus_recents_sortent_quand_meme_dans_lordre():
+    """Une page se lit comme un fil, pas à l'envers."""
+    file = [
+        item(cle=f"actu-{n}", genre="actualite", date=date(2026, 8, 20 + n))
+        for n in range(1, 6)
+    ]
+
+    dates = [i.date for i in ordonner(file, limite=3)]
+
+    assert dates == sorted(dates)
+
+
+def test_le_contenu_propre_passe_toujours_avant_meme_plus_ancien():
+    """La priorité par genre ne doit pas céder à la fraîcheur : un compte rendu
+    de la semaine passe avant la dépêche du jour."""
+    conseil = item(cle="conseil-1", date=date(2026, 8, 20))
+    depeches = [
+        item(cle=f"actu-{n}", genre="actualite", date=date(2026, 8, 25)) for n in range(1, 4)
+    ]
+
+    assert ordonner([*depeches, conseil], limite=1)[0].cle == "conseil-1"

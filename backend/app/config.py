@@ -64,6 +64,26 @@ class Settings(BaseSettings):
     diffusion_fraicheur_jours: int = 2
     # pause entre deux posts d'un même réseau (politesse et lissage)
     diffusion_pause_s: float = 2.0
+
+    # ── Réglages PAR RÉSEAU ────────────────────────────────────────────────
+    # Vides, ils héritent des réglages généraux ci-dessus. Renseignés, ils
+    # permettent à chaque compte d'avoir sa ligne éditoriale : le canal
+    # Telegram s'en tient aux annonces officielles, la Page Facebook reprend
+    # tout le fil du site.
+    telegram_genres: str = ""
+    telegram_types_actualite: str = ""
+    facebook_genres: str = ""
+    facebook_types_actualite: str = ""
+    x_genres: str = ""
+    x_types_actualite: str = ""
+
+    # Nombre maximal de posts par PASSAGE (le worker en fait un par heure).
+    # 0 = pas d'autre limite que le quota du jour. Sur un fil qui produit plus
+    # que le quota, sans ce plafond la première passe le consomme d'un coup :
+    # une rafale de dizaines de posts, puis vingt-trois heures de silence.
+    telegram_max_par_passe: int = 0
+    facebook_max_par_passe: int = 0
+    x_max_par_passe: int = 0
     # Vignette des cartes de partage (Open Graph). Vide : les réseaux affichent
     # une carte texte, correcte mais discrète. Renseignée avec une URL absolue
     # vers une image 1200x630, ils affichent une grande carte illustrée.
