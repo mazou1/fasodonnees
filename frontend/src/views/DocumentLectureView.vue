@@ -65,6 +65,7 @@ import { apiGet } from "../api";
 const LIBELLES = {
   cr_conseil: "Conseil des ministres",
   marche_public: "Marché public",
+  journal_officiel: "Journal officiel",
   loi: "Loi",
   decret: "Décret",
   arrete: "Arrêté",

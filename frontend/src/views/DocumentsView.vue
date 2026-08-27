@@ -78,6 +78,7 @@ const LIBELLES = {
   rapport: "Rapport",
   page_officielle: "Page officielle",
   marche_public: "Marchés publics (Quotidien)",
+  journal_officiel: "Journal officiel (JOBF)",
   decision_constitutionnelle: "Décision du Conseil constitutionnel",
   avis_constitutionnel: "Avis du Conseil constitutionnel",
   ordonnance_constitutionnelle: "Ordonnance du Conseil constitutionnel",

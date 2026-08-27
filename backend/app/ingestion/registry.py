@@ -19,6 +19,7 @@ from app.ingestion.conseil_constitutionnel import ConseilConstitutionnelCollecto
 from app.ingestion.conseil_ministres import ConseilMinistresCollector
 from app.ingestion.dgcmef import DgcmefCollector
 from app.ingestion.finances import BudgetCitoyenCollector
+from app.ingestion.jobf import JobfCollector
 from app.ingestion.legiburkina import LegiburkinaCollector
 from app.ingestion.pleniere import PleniereCollector
 from app.ingestion.rss import make_rss_collector
@@ -69,6 +70,11 @@ COLLECTORS: dict[str, type[Collector]] = {
     ConseilMinistresCollector.slug: ConseilMinistresCollector,
     ActualitesGouvCollector.slug: ActualitesGouvCollector,
     LegiburkinaCollector.slug: LegiburkinaCollector,
+    # Le JO fait foi et paraît chaque jeudi ; Légiburkina l'indexe ensuite, avec
+    # un décalage qui s'est transformé en arrêt à l'été 2026 (n°30 du 23 juillet
+    # alors que le JO en était au n°34). Collecter les deux affranchit la
+    # plateforme de ce décalage.
+    JobfCollector.slug: JobfCollector,
     AssembleeCollector.slug: AssembleeCollector,
     PleniereCollector.slug: PleniereCollector,
     BudgetCitoyenCollector.slug: BudgetCitoyenCollector,

@@ -216,6 +216,7 @@ Chaque brique a une voie de montée en charge sans réécriture :
 |---|---|---|
 | gouvernement.gov.bf | Comptes rendus du Conseil des ministres | jeudi + rattrapages |
 | legiburkina.gov.bf | Lois, décrets, arrêtés (+ PDF) | quotidien |
+| jobf.gov.bf | Journal officiel : numéros intégraux (PDF + sommaire) | hebdomadaire |
 | assembleenationale.bf | Députés, président de l'ALT | quotidien |
 | presidencedufaso.bf | Communiqués (RSS), composition du gouvernement | quotidien |
 | dgcmef.gov.bf | Quotidiens des marchés publics (attributions) | quotidien |
@@ -223,6 +224,13 @@ Chaque brique a une voie de montée en charge sans réécriture :
 | asce-lc.bf | Rapports d'audit et de contrôle, affaires anticorruption, déclarations de patrimoine | hebdomadaire |
 | finances.gov.bf | Veille du Budget citoyen | quotidien |
 | lefaso.net, sidwaya.info, aib.media, burkina24.com, lepays.bf | Actualités (RSS) | 30 min |
+
+Le **Journal officiel** est collecté en propre, en plus de Légiburkina qui
+l'indexe texte par texte : le JO fait foi et paraît chaque jeudi, quand son
+indexation peut prendre du retard - à l'été 2026, Légiburkina s'était arrêtée
+au n°30 du 23 juillet alors que le JO en était au n°34 du 20 août. Les deux
+sources sont complémentaires : le JO pour la fraîcheur et le numéro intégral,
+Légiburkina pour l'index structuré (référence, type, secteur).
 
 **Surveillance des sources.** `GET /sources/etat` distingue deux pannes : une
 source **muette** (le collecteur ne passe plus) et une source **tarie** (il
