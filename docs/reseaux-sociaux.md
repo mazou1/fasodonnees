@@ -76,28 +76,50 @@ FASO_TELEGRAM_BOT_TOKEN=123456:AA...
 FASO_TELEGRAM_CHAT_ID=@faso_donnees
 ```
 
-### Facebook (le plus utile au Burkina, le plus long à ouvrir)
+### Facebook
 
-1. Créer la **page** Facebook.
-2. Sur [developers.facebook.com](https://developers.facebook.com) : créer une
-   application de type « Entreprise ».
-3. Ajouter le produit **Facebook Login**, puis dans l'explorateur d'API
-   (Graph API Explorer) demander les permissions
-   `pages_manage_posts` et `pages_read_engagement`.
-4. Récupérer un jeton d'utilisateur, l'échanger contre un **jeton longue durée**,
-   puis obtenir le **jeton de page** via `GET /me/accounts`. Un jeton de page
-   issu d'un jeton utilisateur longue durée n'expire pas.
-5. Publier l'application (mode « Live ») : en mode développement, seuls les
-   comptes de test peuvent publier.
+**Aucune revue Meta n'est nécessaire** pour publier sur sa PROPRE Page : une app
+en mode Développement suffit dès lors qu'on est administrateur de l'app ET de la
+Page, et les publications sont visibles de tous, normalement. Le mode
+Développement limite qui peut UTILISER l'app, pas ce qu'elle publie. L'icône
+1024x1024, la politique de confidentialité et la catégorie ne servent qu'au
+passage en mode Live, c'est-à-dire à l'usage sur des Pages appartenant à
+d'autres. Vérifié le 2026-08-27 en ouvrant la Page de la plateforme.
+
+1. Créer la **Page** Facebook.
+2. Sur [developers.facebook.com](https://developers.facebook.com), créer une app
+   avec le cas d'utilisation **« Gérer des Pages »**. Le type ne se change pas
+   après coup : une app **Consommateur** n'ouvrira jamais l'accès aux Pages, et
+   le symptôme est net - l'explorateur d'API ne propose que `public_profile`.
+3. Dans **Cas d'utilisation → Personnaliser**, ajouter en **accès standard**
+   `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`. L'accès
+   avancé déclencherait la revue, dont on n'a pas besoin.
+4. Dans l'[explorateur d'API](https://developers.facebook.com/tools/explorer/),
+   générer un jeton **utilisateur** avec ces autorisations. À l'écran de
+   consentement, **cocher la Page** : c'est là que se fait le rattachement, il
+   n'y a rien à « associer » ailleurs.
+5. Prolonger le jeton (ⓘ → outil de jeton d'accès → **Prolonger**). Cette étape
+   est celle qui compte : le jeton de Page tiré d'un jeton utilisateur PROLONGÉ
+   n'expire jamais, alors que celui tiré du jeton brut meurt en une heure - et
+   la page s'arrêterait sans prévenir.
+6. Avec le jeton prolongé : `GET /me/accounts?fields=id,name,access_token`.
+   C'est une **arête**, pas un champ : `/me` n'a pas de champ `access_token`.
 
 ```
 FASO_FACEBOOK_PAGE_ID=1234567890
 FASO_FACEBOOK_PAGE_TOKEN=EAAG...
 ```
 
-> La revue Meta est la seule étape qui peut prendre plusieurs jours. Les deux
-> autres réseaux fonctionnent sans attendre : rien n'oblige à tout activer le
-> même jour.
+Contrôle du jeton avant de s'en remettre à lui :
+
+```bash
+curl -s -G https://graph.facebook.com/v21.0/debug_token \
+  --data-urlencode "input_token=$JETON_DE_PAGE" \
+  --data-urlencode "access_token=$JETON_UTILISATEUR"
+```
+
+`"expires_at": 0` signifie « n'expire jamais ». Toute autre valeur veut dire que
+l'étape 5 a été sautée.
 
 ### X
 
