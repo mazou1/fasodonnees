@@ -276,6 +276,12 @@ def recherche(
     textes = _docs(TYPES_TEXTES)
     actualites = _docs(("article_presse", "communique"))
     marches = _docs(("marche_public",), n=6)
+    # Le Journal officiel forme sa propre catégorie : un numéro est un recueil
+    # de plusieurs dizaines d'actes, pas un texte. Le ranger avec les lois et
+    # décrets de Légiburkina mêlerait deux objets de nature différente dans une
+    # même liste - mais l'en exclure rendrait 200 000 caractères de droit par
+    # numéro introuvables, ce qui serait pire.
+    journaux = _docs(("journal_officiel",), n=6)
 
     decisions = db.execute(
         select(Decision.id, Decision.objet, Decision.ministere, Decision.document_id, Document.date_publication)
@@ -326,6 +332,10 @@ def recherche(
         "marches": [
             {"id": d.id, "titre": d.titre, "date": d.date_publication, "url": d.url, "extrait": d.extrait}
             for d in marches
+        ],
+        "journaux": [
+            {"id": d.id, "titre": d.titre, "date": d.date_publication, "url": d.url, "extrait": d.extrait}
+            for d in journaux
         ],
     }
 

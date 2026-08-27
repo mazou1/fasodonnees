@@ -1,6 +1,6 @@
 <template>
   <h1>Recherche</h1>
-  <p class="sous-titre">Personnalités, conseils des ministres, décisions, textes juridiques et actualités.</p>
+  <p class="sous-titre">Personnalités, conseils des ministres, décisions, textes juridiques, Journal officiel et actualités.</p>
 
   <div class="filtres">
     <input
@@ -91,6 +91,22 @@
       </div>
     </section>
 
+    <section v-if="resultats.journaux && resultats.journaux.length">
+      <h2 class="titre-section">Journal officiel</h2>
+      <div class="liste">
+        <article v-for="j in resultats.journaux" :key="j.id" class="item">
+          <div class="meta">
+            <span class="badge">Journal officiel</span>
+            <span v-if="j.date">{{ formatDate(j.date) }}</span>
+          </div>
+          <div class="titre">
+            <router-link :to="`/documents/${j.id}`">{{ j.titre }}</router-link>
+          </div>
+          <div class="detail extrait" v-html="j.extrait"></div>
+        </article>
+      </div>
+    </section>
+
     <section v-if="resultats.actualites.length">
       <h2 class="titre-section">Actualités</h2>
       <div class="liste">
@@ -138,6 +154,7 @@ const vide = computed(() => {
     !r.decisions.length &&
     !r.textes.length &&
     !(r.marches && r.marches.length) &&
+    !(r.journaux && r.journaux.length) &&
     !r.actualites.length
   );
 });
