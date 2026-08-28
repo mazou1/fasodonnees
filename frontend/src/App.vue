@@ -45,7 +45,11 @@ watch(() => route.fullPath, () => {
 const RESEAUX = [
   {
     nom: "Telegram",
-    url: "https://t.me/faso_donnees",
+    // « fasodonnees » est le NOM D'UTILISATEUR du canal, seul à faire une URL
+    // valide. Son titre affiché est « @faso_donnees », avec un tiret bas : une
+    // chaîne saisie à la main qui ressemble à une adresse sans en être une, et
+    // qui mène à un canal inexistant si on la recopie.
+    url: "https://t.me/fasodonnees",
     titre: "Canal Telegram : les annonces officielles, dès leur publication",
     icone: "M9.8 15.6 9.6 19.4c.4 0 .6-.2.8-.4l1.9-1.8 3.9 2.9c.7.4 1.2.2 1.4-.7l2.6-12.1c.2-1-.4-1.4-1.1-1.2L2.6 10.4c-1 .4-1 .9-.2 1.2l4.4 1.4 10.2-6.4c.5-.3.9-.1.6.2z",
   },

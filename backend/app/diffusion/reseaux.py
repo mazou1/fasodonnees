@@ -191,8 +191,14 @@ class Telegram(Reseau):
         """
         bot = self._appel("getMe")
         canal = self._appel("getChat", chat_id=self.chat_id)
-        titre = canal.get("title") or canal.get("username") or self.chat_id
-        return f"bot @{bot.get('username')} vers « {titre} »"
+        # Le nom d'utilisateur d'abord, car c'est le SEUL qui fasse une adresse
+        # valide. Ce canal-ci s'intitule « @faso_donnees » alors qu'il répond à
+        # `t.me/fasodonnees` : afficher le titre en premier a fait conclure, à
+        # tort, que le lien du site et l'abonnement de l'administrateur
+        # pointaient au bon endroit.
+        nom = canal.get("username")
+        ou = f"@{nom} (t.me/{nom})" if nom else (canal.get("title") or self.chat_id)
+        return f"bot @{bot.get('username')} vers {ou}"
 
 
 class Facebook(Reseau):

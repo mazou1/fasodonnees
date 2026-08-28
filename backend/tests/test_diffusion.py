@@ -528,15 +528,26 @@ def test_verifier_controle_le_canal_pas_seulement_le_bot():
 
     class ClientFactice:
         def post(self, url, json=None, **kw):
-            appels.append(url.rsplit("/", 1)[-1])
-            return _ReponseFactice({"ok": True, "result": {"username": "faso_donnees_bot",
-                                                           "title": "Faso Données Publiques"}})
+            methode = url.rsplit("/", 1)[-1]
+            appels.append(methode)
+            if methode == "getMe":
+                return _ReponseFactice({"ok": True, "result": {"username": "faso_donnees_bot"}})
+            # Le cas réel, et le piège : le TITRE du canal ressemble à une
+            # adresse (« @faso_donnees ») sans en être une, tandis que le seul
+            # lien qui fonctionne est « t.me/fasodonnees ».
+            return _ReponseFactice({"ok": True, "result": {"title": "@faso_donnees",
+                                                           "username": "fasodonnees"}})
 
-    resultat = Telegram(token="123:AA", chat_id="@faso_donnees",
+    resultat = Telegram(token="123:AA", chat_id="-1004415026761",
                         client=ClientFactice()).verifier()
 
     assert appels == ["getMe", "getChat"]
-    assert "Faso Données Publiques" in resultat
+    assert "t.me/fasodonnees" in resultat, (
+        "Le contrôle doit donner l'adresse à laquelle on peut RÉELLEMENT "
+        "s'abonner : afficher le titre du canal a déjà fait publier un lien "
+        "mort sur le site et conclure à tort que l'abonnement était le bon."
+    )
+    assert "@faso_donnees " not in resultat and not resultat.endswith("@faso_donnees")
 
 
 class _ReponseFactice:
