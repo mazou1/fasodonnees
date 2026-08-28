@@ -50,3 +50,46 @@ def test_un_fichier_illisible_ressort_en_echec(tmp_path):
     texte, statut = extraire_texte(faux, ocr=False)
     assert statut == "echec"
     assert texte == ""
+
+
+def test_chaque_page_est_fermee_apres_lecture(monkeypatch, tmp_path):
+    """La mémoire ne doit pas croître avec le nombre de pages.
+
+    pdfplumber garde en cache tout ce qu'il a lu de chaque page : ~6 Mo/page,
+    soit 3,9 Go sur le recueil de 626 pages de l'ASCE-LC, contre 66 Mo une fois
+    les pages fermées. Sur un VPS à 3 Go, la différence n'est pas un réglage de
+    confort : le worker était tué en pleine extraction, redémarrait, retombait
+    sur le même PDF - 97 fois de suite, sans plus jamais atteindre le
+    planificateur, donc sans plus rien publier sur les réseaux.
+    """
+    from app.extraction import pdf as module
+
+    fermees = []
+
+    class PageFactice:
+        def __init__(self, rang):
+            self.rang = rang
+
+        def extract_text(self):
+            return f"page {self.rang}" * 20  # au-dessus du seuil de texte natif
+
+        def close(self):
+            fermees.append(self.rang)
+
+    class PdfFactice:
+        pages = [PageFactice(i) for i in range(5)]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    monkeypatch.setattr(module.pdfplumber, "open", lambda _: PdfFactice())
+    texte, statut = module.extraire_texte(tmp_path / "peu-importe.pdf", ocr=False)
+
+    assert statut == "ok"
+    assert fermees == [0, 1, 2, 3, 4], (
+        "Toutes les pages doivent être fermées après lecture, sinon la mémoire "
+        "croît linéairement et un gros recueil fait tomber le worker."
+    )

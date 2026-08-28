@@ -5,6 +5,7 @@ documents/jour) ne justifient ni Celery ni Airflow.
 """
 
 import logging
+from datetime import datetime, timedelta
 
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -278,24 +279,54 @@ def construire_scheduler() -> BlockingScheduler:
     return scheduler
 
 
+def run_demarrage() -> None:
+    """Le rattrapage du redémarrage, chaque étape isolée des autres.
+
+    Une collecte qui échoue ne doit emporter ni les suivantes ni le reste du
+    worker : le 28 août 2026, un recueil de 626 pages faisait tuer le process
+    en pleine extraction, avant `scheduler.start()`. Le conteneur redémarrait,
+    retombait sur le même PDF, et ainsi 97 fois - huit heures sans une seule
+    publication sur les réseaux, sans que rien ne le signale autrement que par
+    l'absence de la ligne « Diffusion … » dans le journal.
+    """
+    etapes = (
+        ("médias", run_medias),
+        ("conseil des ministres", run_conseil_ministres),
+        ("institutionnel", run_institutionnel),
+        # Au redémarrage, les Quotidiens collectés juste avant attendraient
+        # sinon le prochain créneau : la passe est bornée (15 documents), donc
+        # un redéploiement ne coûte que quelques minutes d'appels.
+        ("marchés publics", run_marches_publics),
+        # après un redéploiement, l'annuaire reflète immédiatement les
+        # validations faites depuis le dernier passage quotidien (≈2 s)
+        ("annuaire", run_annuaire),
+        ("sources muettes", verifier_sources_muettes),
+    )
+    for libelle, etape in etapes:
+        try:
+            etape()
+        except Exception:
+            logger.exception("Rattrapage de démarrage : échec de l'étape « %s »", libelle)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     with SessionLocal() as db:
         seed_sources(db)
     scheduler = construire_scheduler()
 
-    logger.info("Worker d'ingestion démarré - collecte immédiate puis cadences planifiées")
-    run_medias()
-    run_conseil_ministres()
-    run_institutionnel()
-    # Au redémarrage, les Quotidiens collectés juste avant attendraient sinon
-    # le prochain créneau : la passe est bornée (15 documents), donc un
-    # redéploiement ne coûte que quelques minutes d'appels.
-    run_marches_publics()
-    # après un redéploiement, l'annuaire reflète immédiatement les validations
-    # faites depuis le dernier passage quotidien (≈2 s)
-    run_annuaire()
-    verifier_sources_muettes()
+    # Le rattrapage passe par le scheduler plutôt que d'être appelé avant lui :
+    # il dure plusieurs minutes, et tant qu'il s'exécutait en amont de
+    # `start()`, AUCUNE cadence n'existait - la diffusion horaire comprise. Un
+    # worker qui redémarre plus souvent que la durée de son rattrapage ne
+    # publiait alors plus jamais rien.
+    scheduler.add_job(
+        run_demarrage,
+        "date",
+        run_date=datetime.now(scheduler.timezone) + timedelta(seconds=5),
+        id="rattrapage_demarrage",
+    )
+    logger.info("Worker d'ingestion démarré - cadences planifiées puis collecte immédiate")
     scheduler.start()
 
 

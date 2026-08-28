@@ -36,6 +36,27 @@ watch(() => route.fullPath, () => {
 // portable. Les groupes suivent des familles de sens, pas des commodités de
 // rangement - « Budget & exécution » raconte d'ailleurs la chaîne budget →
 // marché → ouvrage livré, celle-là même que suivent les dossiers.
+// Comptes officiels de la plateforme. Ils republient les annonces déjà
+// présentes sur le site : le lien est donc une porte de sortie assumée, pas un
+// bouton de partage - la plateforme ne demande rien au lecteur, elle lui dit où
+// la retrouver. Les icônes sont dessinées ici (chemins SVG) plutôt que
+// chargées : aucun appel vers un serveur de Meta ou de Telegram depuis une page
+// consultée, donc aucun traçage à l'insu du lecteur.
+const RESEAUX = [
+  {
+    nom: "Telegram",
+    url: "https://t.me/faso_donnees",
+    titre: "Canal Telegram : les annonces officielles, dès leur publication",
+    icone: "M9.8 15.6 9.6 19.4c.4 0 .6-.2.8-.4l1.9-1.8 3.9 2.9c.7.4 1.2.2 1.4-.7l2.6-12.1c.2-1-.4-1.4-1.1-1.2L2.6 10.4c-1 .4-1 .9-.2 1.2l4.4 1.4 10.2-6.4c.5-.3.9-.1.6.2z",
+  },
+  {
+    nom: "Facebook",
+    url: "https://www.facebook.com/1309210855614853",
+    titre: "Page Facebook : le fil complet, actualités des médias comprises",
+    icone: "M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5h1.65V3.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4.05 1.45-4.05 4.15V9.9H7.5V13h2.75v8z",
+  },
+];
+
 const NAVIGATION = [
   { chemin: "/", libelle: "Tableau de bord" },
   { chemin: "/actualites", libelle: "Actualités" },
@@ -174,6 +195,14 @@ onBeforeUnmount(() => {
       <router-link to="/a-propos">À propos & méthodologie</router-link>
       <a href="/api/docs" target="_blank" rel="noopener">API ouverte</a>
       <a href="/api/rss/conseils.xml" target="_blank" rel="noopener" title="Suivre les conseils des ministres">RSS ⓘ</a>
+      <span class="suivre">
+        <span>Suivre&nbsp;:</span>
+        <a v-for="reseau in RESEAUX" :key="reseau.nom" :href="reseau.url"
+           target="_blank" rel="noopener me" :title="reseau.titre">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path :d="reseau.icone" /></svg>
+          {{ reseau.nom }}
+        </a>
+      </span>
     </div>
   </footer>
 
@@ -201,6 +230,9 @@ onBeforeUnmount(() => {
       <div class="titre-groupe">Aller plus loin</div>
       <router-link to="/dossiers/plan-relance">Plan de relance</router-link>
       <router-link to="/glossaire">Glossaire</router-link>
+      <div class="titre-groupe">Suivre la plateforme</div>
+      <a v-for="reseau in RESEAUX" :key="reseau.nom" :href="reseau.url"
+         target="_blank" rel="noopener me">{{ reseau.nom }}</a>
     </nav>
   </div>
 </template>

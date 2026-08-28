@@ -82,3 +82,44 @@ def test_la_consolidation_des_versions_suit_la_structuration():
         "La structuration des CR doit être suivie d'une consolidation des "
         "versions, sinon les doublons s'accumulent à chaque réécriture."
     )
+
+
+def test_le_rattrapage_de_demarrage_ne_bloque_pas_les_cadences():
+    """`main()` doit planifier AVANT de collecter, jamais l'inverse.
+
+    Tant que le rattrapage tournait en amont de `scheduler.start()`, un worker
+    qui redémarrait plus souvent que la durée de ce rattrapage n'atteignait
+    jamais ses cadences : le 28 août 2026, un PDF de 626 pages a fait tuer le
+    process 97 fois d'affilée et la diffusion horaire n'a plus tourné pendant
+    huit heures, sans autre trace que l'absence de ligne dans le journal.
+    """
+    import inspect
+
+    source = inspect.getsource(scheduler.main)
+    assert "run_demarrage" in source, "le rattrapage doit passer par le planificateur"
+    for etape in ("run_medias()", "run_conseil_ministres()", "run_institutionnel()"):
+        assert etape not in source, (
+            f"« {etape} » est appelé directement dans main() : une collecte lente "
+            "ou fatale reprendrait le worker en otage avant qu'il ne planifie quoi "
+            "que ce soit."
+        )
+
+
+def test_une_etape_de_rattrapage_qui_echoue_laisse_passer_les_suivantes(monkeypatch):
+    """Une source cassée ne doit pas priver les autres de leur collecte."""
+    passees = []
+
+    def rate():
+        raise RuntimeError("source injoignable")
+
+    monkeypatch.setattr(scheduler, "run_medias", rate)
+    for nom in ("run_conseil_ministres", "run_institutionnel", "run_marches_publics",
+                "run_annuaire", "verifier_sources_muettes"):
+        monkeypatch.setattr(scheduler, nom, lambda nom=nom: passees.append(nom))
+
+    scheduler.run_demarrage()  # ne doit pas lever
+
+    assert passees == [
+        "run_conseil_ministres", "run_institutionnel", "run_marches_publics",
+        "run_annuaire", "verifier_sources_muettes",
+    ]

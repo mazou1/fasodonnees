@@ -3,6 +3,16 @@
 Les sites .gov.bf publient beaucoup de scans : si le texte natif est quasi
 vide, on bascule en OCR. Renvoie (texte, statut) avec statut ∈ ok | ocr | echec.
 
+Troisième point d'attention : **pdfplumber garde en cache tout ce qu'il a lu de
+chaque page**, si bien que la mémoire croît linéairement avec le nombre de
+pages - mesuré à ~6 Mo/page, soit 3,9 Go sur le recueil de 626 pages de
+l'ASCE-LC. Sur le VPS, qui dispose d'environ 3 Go, le worker était tué par le
+noyau au milieu de l'extraction : le document n'étant enregistré qu'à la fin,
+son URL ne rejoignait jamais les « connues » et la passe suivante retéléchargeait
+le même PDF. Le conteneur a ainsi redémarré 97 fois d'affilée sans jamais
+atteindre `scheduler.start()` - donc sans plus rien publier sur les réseaux
+pendant huit heures. Fermer chaque page après lecture ramène le pic à 66 Mo.
+
 Deuxième filet, moins évident : **pdfminer (le moteur de pdfplumber) rend
 parfois 0 page sur un PDF pourtant valide et complet**. Le Conseil
 constitutionnel en publie beaucoup - fins de ligne à l'ancienne (`\\r` seul) et
@@ -38,7 +48,7 @@ def extraire_texte(path: Path, ocr: bool = True) -> tuple[str, str]:
             if not pdf.pages:
                 # pdfminer a renoncé sans le dire : on repasse par pypdf
                 return _via_pypdf(path, ocr)
-            natif = "\n\n".join(page.extract_text() or "" for page in pdf.pages).strip()
+            natif = _texte_natif(pdf)
             if len(natif) >= SEUIL_TEXTE_NATIF:
                 return natif, "ok"
             if not ocr:
@@ -49,6 +59,20 @@ def extraire_texte(path: Path, ocr: bool = True) -> tuple[str, str]:
         return "", "echec"
 
 
+def _texte_natif(pdf: pdfplumber.PDF) -> str:
+    """Le texte de toutes les pages, en fermant chacune après lecture.
+
+    `page.close()` vide le cache que pdfplumber remplit page après page. Sans
+    lui, la mémoire croît linéairement et un recueil de plusieurs centaines de
+    pages fait tomber le process (cf. l'en-tête du module).
+    """
+    morceaux = []
+    for page in pdf.pages:
+        morceaux.append(page.extract_text() or "")
+        page.close()
+    return "\n\n".join(morceaux).strip()
+
+
 def _ocr(pdf: pdfplumber.PDF) -> str:
     import pytesseract  # import tardif : dépend du binaire tesseract
 
@@ -56,6 +80,8 @@ def _ocr(pdf: pdfplumber.PDF) -> str:
     for page in pdf.pages:
         image = page.to_image(resolution=200).original
         pages.append(pytesseract.image_to_string(image, lang="fra"))
+        # une page rastérisée à 200 dpi pèse plus lourd encore que son texte
+        page.close()
     return "\n\n".join(pages).strip()
 
 
