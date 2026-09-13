@@ -38,6 +38,12 @@ class Settings(BaseSettings):
     llm_provider: str = "mistral"
     mistral_api_key: str = ""
     anthropic_api_key: str = ""
+    # Modèle Claude pour l'extraction. Le travail est de l'extraction structurée
+    # de textes administratifs, pas du raisonnement : le modèle le moins cher
+    # suffit, et le volume quotidien (quelques dizaines d'appels) reste
+    # négligeable à ce tarif. Monter en gamme (claude-sonnet-5) seulement si la
+    # relecture dans /admin révèle des erreurs récurrentes.
+    anthropic_model: str = "claude-haiku-4-5"
 
     # ── Diffusion sur les réseaux sociaux (cf. app/diffusion/) ─────────────
     # Coupe-circuit unique : tant qu'il est à False, aucun appel réseau n'est

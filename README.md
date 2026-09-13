@@ -316,7 +316,9 @@ L'extraction LLM ne publie jamais seule : elle produit des entités `a_valider`,
 qu'un humain valide dans le back-office. Le tableau de bord **« À valider »** de
 `/admin` montre en un coup d'œil ce qui attend une action, par type. L'extraction
 utilise **Mistral** par défaut (`FASO_LLM_PROVIDER=mistral`, tier gratuit) avec
-bascule possible vers l'API Claude.
+bascule possible vers l'API Claude (`FASO_LLM_PROVIDER=anthropic`, modèle
+`FASO_ANTHROPIC_MODEL`, Haiku par défaut : l'extraction structurée n'a pas
+besoin d'un modèle de raisonnement).
 
 ## Méthodologie et limites
 

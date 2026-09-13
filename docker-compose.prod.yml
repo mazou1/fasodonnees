@@ -95,6 +95,7 @@ services:
       FASO_LLM_PROVIDER: ${FASO_LLM_PROVIDER:-mistral}
       FASO_MISTRAL_API_KEY: ${FASO_MISTRAL_API_KEY:-}
       FASO_ANTHROPIC_API_KEY: ${FASO_ANTHROPIC_API_KEY:-}
+      FASO_ANTHROPIC_MODEL: ${FASO_ANTHROPIC_MODEL:-claude-haiku-4-5}
       # Diffusion sur les réseaux sociaux. Le coupe-circuit est à false par
       # défaut : une pile relancée ailleurs (recette, restauration de sauvegarde)
       # ne doit pas se mettre à poster sur les pages publiques.

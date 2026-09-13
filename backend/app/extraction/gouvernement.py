@@ -23,6 +23,7 @@ from app.models import Document, MembreGouvernement
 logger = logging.getLogger(__name__)
 
 MODELE_MISTRAL = "mistral-small-latest"
+MODELE_ANTHROPIC = settings.anthropic_model
 
 
 class MembreExtrait(BaseModel):
@@ -52,6 +53,28 @@ y compris « Ministre d'État, » ou « Ministre délégué… » le cas échéa
 
 
 def extraire(texte: str) -> CompositionGouvernement:
+    if settings.llm_provider == "anthropic":
+        return _extraire_anthropic(texte)
+    return _extraire_mistral(texte)
+
+
+def _extraire_anthropic(texte: str) -> CompositionGouvernement:
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
+    response = client.messages.parse(
+        model=MODELE_ANTHROPIC,
+        max_tokens=8000,
+        system=PROMPT_SYSTEME,
+        messages=[{"role": "user", "content": texte}],
+        output_format=CompositionGouvernement,
+    )
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError("Sortie tronquée (max_tokens)")
+    return response.parsed_output
+
+
+def _extraire_mistral(texte: str) -> CompositionGouvernement:
     from mistralai.client import Mistral
 
     client = Mistral(api_key=settings.mistral_api_key)

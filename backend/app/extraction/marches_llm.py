@@ -35,7 +35,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = "claude-opus-5"
+MODELE_ANTHROPIC = settings.anthropic_model
 MODELE_MISTRAL = "mistral-small-latest"
 
 RE_ATTRIBUTAIRE = re.compile(r"attributaire", re.IGNORECASE)
