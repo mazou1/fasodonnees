@@ -7,7 +7,11 @@ license = { text = "GPL-3.0-only" }
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "sqlalchemy>=2.0",
+    # <2.1 : la ligne testée (2.0.x) ; [asyncio] = greenlet, que SQLAlchemy 2.1
+    # n'installe plus d'office alors que
+    # sqladmin importe sqlalchemy.ext.asyncio - sans lui, l'API ne démarre pas
+    # (constaté à la reconstruction du 2026-10-20)
+    "sqlalchemy[asyncio]>=2.0,<2.1",
     "alembic>=1.13",
     "psycopg[binary]>=3.2",
     "pydantic>=2.7",
