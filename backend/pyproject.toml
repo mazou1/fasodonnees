@@ -19,7 +19,9 @@ dependencies = [
     "sqladmin>=0.18",
     "itsdangerous>=2.2",
     "httpx>=0.27",
-    "selectolax>=0.3",
+    # <1.0 : selectolax 1.0 retire le moteur Modest (import HTMLParser) ; le
+    # passage à lexbor changerait le texte extrait, donc les empreintes
+    "selectolax>=0.3,<1.0",
     "feedparser>=6.0",
     "pdfplumber>=0.11",
     # lecteur de secours : pdfminer (sous pdfplumber) rend 0 page sur les PDF
@@ -29,8 +31,9 @@ dependencies = [
     # client S3 : Garage (conteneur du compose) ou tout S3 externe
     "boto3>=1.35",
     "apscheduler>=3.10,<4",
-    "mistralai>=2.6",
-    "anthropic>=0.34",
+    # majeures bornées : versions testées en local, les 3.x/1.x n'ont pas été essayées
+    "mistralai>=2.6,<3",
+    "anthropic>=0.34,<1",
 ]
 
 [project.optional-dependencies]
