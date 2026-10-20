@@ -14,7 +14,7 @@ from datetime import date
 from sqlalchemy import String, func, select
 
 from app.extraction.texte import html_vers_texte
-from app.ingestion.base import Collector
+from app.ingestion.base import Collector, empreinte_texte
 from app.models import Document
 
 logger = logging.getLogger(__name__)
@@ -85,19 +85,28 @@ class WordPressCollector(Collector):
         lien = self.url_deja_connue(post.get("id")) or post.get("link", "")
         if not lien:
             return False
+        texte = html_vers_texte(html)
+        # L'empreinte porte sur le texte : le HTML rendu par WordPress change
+        # d'un jour à l'autre sans republication (numérotation des galeries),
+        # et chaque collecte créait une « version » du même article. Le brut
+        # reste archivé tel quel, mais seulement s'il apporte un texte nouveau.
+        empreinte = empreinte_texte(texte)
+        if self.version_connue(lien, empreinte):
+            self.nb_vus += 1
+            return False
         pub: date | None = None
         if post.get("date"):
             pub = date.fromisoformat(post["date"][:10])
-        fichier, digest = self.archive(html.encode(), "html")
+        fichier, _ = self.archive(html.encode(), "html")
         doc = self.upsert_document(
             url=lien,
             type_doc=self.type_doc_pour(titre),
             titre=titre or None,
             date_publication=pub,
-            hash_contenu=digest,
+            hash_contenu=empreinte,
             fichier=fichier,
             mime="text/html",
-            texte_extrait=html_vers_texte(html) or None,
+            texte_extrait=texte or None,
             statut_extraction="ok",
             meta={"wp_id": post.get("id"), "wp_modified": post.get("modified")},
         )

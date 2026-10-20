@@ -25,6 +25,19 @@ from app.stockage import stockage
 logger = logging.getLogger(__name__)
 
 
+def empreinte_texte(texte: str | None) -> str:
+    """Empreinte d'un document par son TEXTE, pas par son HTML.
+
+    Le HTML d'une page officielle change sans que rien n'ait été publié :
+    WordPress renumérote ses galeries à chaque rendu (« wp-block-gallery-16 »
+    un matin, « -20 » le lendemain). Pris sur le brut, le hash faisait d'un
+    article inchangé une version de plus par jour - 29 000 fausses versions en
+    deux mois (cf. app/ingestion/dedoublonnage.py). Le texte, lui, ne bouge que
+    quand la source réécrit vraiment.
+    """
+    return hashlib.sha256((texte or "").strip().encode("utf-8")).hexdigest()
+
+
 class Collector:
     slug: str  # doit correspondre à Source.slug
     groupe: str = "autre"  # media | institutionnel - utilisé par le scheduler
@@ -90,6 +103,24 @@ class Collector:
 
     # ---- Persistance ----
 
+    def version_connue(self, url: str, hash_contenu: str | None) -> bool:
+        """Cette version (source + url + empreinte) est-elle déjà archivée ?
+
+        À appeler AVANT `archive()` quand l'empreinte se calcule sans le brut :
+        archiver puis constater le doublon laisse un fichier orphelin dans le
+        bucket à chaque collecte.
+        """
+        return (
+            self.db.scalars(
+                select(Document.id).where(
+                    Document.source_id == self.source.id,
+                    Document.url == url,
+                    Document.hash_contenu == hash_contenu,
+                )
+            ).first()
+            is not None
+        )
+
     def upsert_document(
         self,
         *,
@@ -109,14 +140,7 @@ class Collector:
         Un même url avec un hash différent crée une nouvelle ligne : on versionne,
         on n'écrase jamais (détection des republications silencieuses).
         """
-        existing = self.db.scalars(
-            select(Document.id).where(
-                Document.source_id == self.source.id,
-                Document.url == url,
-                Document.hash_contenu == hash_contenu,
-            )
-        ).first()
-        if existing is not None:
+        if self.version_connue(url, hash_contenu):
             self.nb_vus += 1
             return None
         doc = Document(

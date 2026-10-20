@@ -122,3 +122,43 @@ def test_un_billet_sans_identifiant_ne_casse_pas_la_collecte(db):
     db.commit()
 
     assert urls(db) == [PRETTY]
+
+
+# --- l'empreinte porte sur le texte, pas sur le HTML -----------------------
+
+GALERIE_16 = '<figure class="wp-block-gallery-16"><img src="a.jpg"></figure><p>Inauguration</p>'
+GALERIE_20 = '<figure class="wp-block-gallery-20"><img src="a.jpg"></figure><p>Inauguration</p>'
+
+
+def test_un_html_renumerote_par_wordpress_nest_pas_une_version(db):
+    """Le cas du 20 octobre : WordPress numérote ses galeries à chaque rendu.
+    Le même article revenait chaque matin comme « nouveau » - 29 000 lignes
+    en deux mois."""
+    collecteur = _Collecteur(db)
+    collecteur._traiter_post(post(19635, PRETTY, contenu=GALERIE_16))
+    db.commit()
+
+    cree = collecteur._traiter_post(post(19635, PRETTY, contenu=GALERIE_20))
+    db.commit()
+
+    assert cree is False
+    assert db.query(Document).count() == 1
+    assert collecteur.nb_vus == 1
+
+
+def test_un_doublon_nest_pas_archive(db):
+    """Le brut ne part dans le bucket que s'il apporte un texte nouveau :
+    sinon chaque collecte y laissait un fichier orphelin."""
+    archives = []
+
+    class _Traceur(_Collecteur):
+        def archive(self, contenu, extension):
+            archives.append(contenu)
+            return super().archive(contenu, extension)
+
+    collecteur = _Traceur(db)
+    collecteur._traiter_post(post(19635, PRETTY, contenu=GALERIE_16))
+    db.commit()
+    collecteur._traiter_post(post(19635, PRETTY, contenu=GALERIE_20))
+
+    assert len(archives) == 1
