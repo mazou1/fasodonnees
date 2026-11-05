@@ -272,21 +272,17 @@ function geojson(list) {
 
 function initCarte() {
   const sombre = document.documentElement.getAttribute("data-theme") === "dark";
-  const base = sombre ? "dark_all" : "light_all";
+  // Fond de carte OpenFreeMap : tuiles vectorielles OpenStreetMap servies sans
+  // clé ni quota (openfreemap.org). CARTO, utilisé avant, exige une clé depuis
+  // l'automne 2026 : ses tuiles revenaient blanches avec la mention
+  // « API key required », et le territoire disparaissait de la carte.
+  // L'attribution (OpenMapTiles, OpenStreetMap) est portée par le style.
+  const style = sombre
+    ? "https://tiles.openfreemap.org/styles/dark"
+    : "https://tiles.openfreemap.org/styles/positron";
   map = new maplibregl.Map({
     container: mapEl.value,
-    style: {
-      version: 8,
-      sources: {
-        carto: {
-          type: "raster",
-          tiles: [`https://basemaps.cartocdn.com/${base}/{z}/{x}/{y}.png`],
-          tileSize: 256,
-          attribution: "© OpenStreetMap © CARTO",
-        },
-      },
-      layers: [{ id: "carto", type: "raster", source: "carto" }],
-    },
+    style,
     center: [-1.7, 12.3],
     zoom: 5.4,
     attributionControl: true,
