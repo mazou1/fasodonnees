@@ -23,7 +23,6 @@ from app.models import Document, MembreGouvernement
 logger = logging.getLogger(__name__)
 
 MODELE_MISTRAL = "mistral-small-latest"
-MODELE_ANTHROPIC = settings.anthropic_model
 
 
 class MembreExtrait(BaseModel):
@@ -59,19 +58,9 @@ def extraire(texte: str) -> CompositionGouvernement:
 
 
 def _extraire_anthropic(texte: str) -> CompositionGouvernement:
-    import anthropic
+    from app.extraction.claude import extraire
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.messages.parse(
-        model=MODELE_ANTHROPIC,
-        max_tokens=8000,
-        system=PROMPT_SYSTEME,
-        messages=[{"role": "user", "content": texte}],
-        output_format=CompositionGouvernement,
-    )
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens)")
-    return response.parsed_output
+    return extraire(texte, schema=CompositionGouvernement, systeme=PROMPT_SYSTEME, max_tokens=8000)
 
 
 def _extraire_mistral(texte: str) -> CompositionGouvernement:

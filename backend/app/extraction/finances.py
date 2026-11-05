@@ -31,7 +31,6 @@ from app.models import BudgetExercice, Document, EngagementFinancier
 logger = logging.getLogger(__name__)
 
 MODELE_MISTRAL = "mistral-small-latest"
-MODELE_ANTHROPIC = settings.anthropic_model
 TEXTE_MINIMUM = 500
 
 
@@ -126,19 +125,9 @@ def _extraire_mistral(texte: str) -> ExtractionFinances:
 
 
 def _extraire_anthropic(texte: str) -> ExtractionFinances:
-    import anthropic
+    from app.extraction.claude import extraire
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.messages.parse(
-        model=MODELE_ANTHROPIC,
-        max_tokens=16000,
-        system=PROMPT_SYSTEME,
-        messages=[{"role": "user", "content": texte}],
-        output_format=ExtractionFinances,
-    )
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens)")
-    return response.parsed_output
+    return extraire(texte, schema=ExtractionFinances, systeme=PROMPT_SYSTEME, max_tokens=16000)
 
 
 def traiter_document(db: Session, doc: Document) -> tuple[int, int]:

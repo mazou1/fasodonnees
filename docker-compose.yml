@@ -88,6 +88,8 @@ services:
       FASO_LLM_PROVIDER: ${FASO_LLM_PROVIDER:-mistral}
       FASO_MISTRAL_API_KEY: ${FASO_MISTRAL_API_KEY:-}
       FASO_ANTHROPIC_API_KEY: ${FASO_ANTHROPIC_API_KEY:-}
+      FASO_ANTHROPIC_MODEL: ${FASO_ANTHROPIC_MODEL:-claude-haiku-5-5}
+      FASO_ANTHROPIC_EFFORT: ${FASO_ANTHROPIC_EFFORT:-low}
     volumes:
       - ./backend/data:/data
     depends_on:

@@ -35,7 +35,6 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = settings.anthropic_model
 MODELE_MISTRAL = "mistral-small-latest"
 
 RE_ATTRIBUTAIRE = re.compile(r"attributaire", re.IGNORECASE)
@@ -223,16 +222,6 @@ def _extraire_mistral(texte: str) -> ExtractionMarches:
 
 
 def _extraire_anthropic(texte: str) -> ExtractionMarches:
-    import anthropic
+    from app.extraction.claude import extraire
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.messages.parse(
-        model=MODELE_ANTHROPIC,
-        max_tokens=8000,
-        system=PROMPT_SYSTEME,
-        messages=[{"role": "user", "content": texte}],
-        output_format=ExtractionMarches,
-    )
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens)")
-    return response.parsed_output
+    return extraire(texte, schema=ExtractionMarches, systeme=PROMPT_SYSTEME, max_tokens=8000)

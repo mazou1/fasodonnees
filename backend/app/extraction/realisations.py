@@ -31,7 +31,6 @@ from app.models import Document, Realisation
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = settings.anthropic_model
 MODELE_MISTRAL = "mistral-small-latest"
 
 # Types d'ouvrage documentés (chaîne libre en base) → secteur d'affichage.
@@ -175,19 +174,9 @@ def _extraire_mistral(texte: str) -> ExtractionRealisations:
 
 
 def _extraire_anthropic(texte: str) -> ExtractionRealisations:
-    import anthropic
+    from app.extraction.claude import extraire
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.messages.parse(
-        model=MODELE_ANTHROPIC,
-        max_tokens=8000,
-        system=PROMPT_SYSTEME,
-        messages=[{"role": "user", "content": texte[:12000]}],
-        output_format=ExtractionRealisations,
-    )
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens)")
-    return response.parsed_output
+    return extraire(texte, schema=ExtractionRealisations, systeme=PROMPT_SYSTEME, max_tokens=8000)
 
 
 def _doublon(db: Session, type_: str, localite_id: int | None, lieu_norm: str,

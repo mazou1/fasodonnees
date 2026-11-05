@@ -24,7 +24,6 @@ from app.models import Decision, Document, Nomination, Personne, Structure
 
 logger = logging.getLogger(__name__)
 
-MODELE_ANTHROPIC = settings.anthropic_model
 MODELE_MISTRAL = "mistral-small-latest"
 TEXTE_MINIMUM = 500  # en dessous, le document est un lien PDF / une traduction, pas un CR complet
 
@@ -124,20 +123,9 @@ def _extraire_mistral(texte: str) -> ExtractionCR:
 
 
 def _extraire_anthropic(texte: str) -> ExtractionCR:
-    import anthropic
+    from app.extraction.claude import extraire
 
-    # api_key=None → le SDK résout la clé depuis l'environnement (ANTHROPIC_API_KEY / profil)
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-    response = client.messages.parse(
-        model=MODELE_ANTHROPIC,
-        max_tokens=16000,
-        system=PROMPT_SYSTEME,
-        messages=[{"role": "user", "content": texte}],
-        output_format=ExtractionCR,
-    )
-    if response.stop_reason == "max_tokens":
-        raise RuntimeError("Sortie tronquée (max_tokens) - document à traiter manuellement")
-    return response.parsed_output
+    return extraire(texte, schema=ExtractionCR, systeme=PROMPT_SYSTEME, max_tokens=16000)
 
 
 def _personne(db: Session, nom_complet: str) -> Personne:

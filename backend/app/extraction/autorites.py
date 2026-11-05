@@ -174,19 +174,9 @@ def _fenetre(texte: str, position: int, marche: Marche) -> str:
 
 def _demander(texte: str) -> AutoriteExtraite:
     if settings.llm_provider == "anthropic":
-        import anthropic
+        from app.extraction.claude import extraire
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-        from app.extraction.marches_llm import MODELE_ANTHROPIC
-
-        reponse = client.messages.parse(
-            model=MODELE_ANTHROPIC,
-            max_tokens=500,
-            system=PROMPT_SYSTEME,
-            messages=[{"role": "user", "content": texte}],
-            output_format=AutoriteExtraite,
-        )
-        return reponse.parsed_output
+        return extraire(texte, schema=AutoriteExtraite, systeme=PROMPT_SYSTEME, max_tokens=2000)
 
     from mistralai.client import Mistral
 

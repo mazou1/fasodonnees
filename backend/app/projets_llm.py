@@ -74,19 +74,9 @@ def juger(libelle_amont: str, libelle_aval: str, contexte: str = "") -> Verdict:
         f"{contexte}\n\nS'agit-il du même projet ?"
     )
     if settings.llm_provider == "anthropic":
-        import anthropic
+        from app.extraction.claude import extraire
 
-        from app.extraction.marches_llm import MODELE_ANTHROPIC
-
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-        reponse = client.messages.parse(
-            model=MODELE_ANTHROPIC,
-            max_tokens=500,
-            system=PROMPT_SYSTEME,
-            messages=[{"role": "user", "content": contenu}],
-            output_format=Verdict,
-        )
-        return reponse.parsed_output
+        return extraire(contenu, schema=Verdict, systeme=PROMPT_SYSTEME, max_tokens=2000)
 
     from mistralai.client import Mistral
 

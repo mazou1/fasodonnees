@@ -38,12 +38,17 @@ class Settings(BaseSettings):
     llm_provider: str = "mistral"
     mistral_api_key: str = ""
     anthropic_api_key: str = ""
-    # Modèle Claude pour l'extraction. Le travail est de l'extraction structurée
-    # de textes administratifs, pas du raisonnement : le modèle le moins cher
-    # suffit, et le volume quotidien (quelques dizaines d'appels) reste
-    # négligeable à ce tarif. Monter en gamme (claude-sonnet-5) seulement si la
-    # relecture dans /admin révèle des erreurs récurrentes.
-    anthropic_model: str = "claude-haiku-4-5"
+    # Modèle Claude pour l'extraction (cf. app/extraction/claude.py). Budget :
+    # 100 $/mois. Le travail est de l'extraction structurée de textes
+    # administratifs, pas du raisonnement : le moins cher de la gamme suffit
+    # (Haiku 5.5 : 0,10 $ / 0,50 $ le million de tokens, dix fois moins que
+    # Haiku 4.5). Monter en gamme seulement si la relecture dans /admin révèle
+    # des erreurs récurrentes.
+    anthropic_model: str = "claude-haiku-5-5"
+    # Effort de réflexion : low | medium | high. La réflexion est facturée en
+    # sortie ; `low` suffit pour recopier des décisions dans un schéma. Vide
+    # pour ne pas envoyer le paramètre (Haiku 4.5 le refuse).
+    anthropic_effort: str = "low"
 
     # ── Diffusion sur les réseaux sociaux (cf. app/diffusion/) ─────────────
     # Coupe-circuit unique : tant qu'il est à False, aucun appel réseau n'est

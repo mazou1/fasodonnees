@@ -87,19 +87,9 @@ quelle si tu es sûr."""
 
 def _demander(texte: str) -> Relecture:
     if settings.llm_provider == "anthropic":
-        import anthropic
+        from app.extraction.claude import extraire
 
-        from app.extraction.marches_llm import MODELE_ANTHROPIC
-
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key or None)
-        reponse = client.messages.parse(
-            model=MODELE_ANTHROPIC,
-            max_tokens=1000,
-            system=PROMPT_SYSTEME,
-            messages=[{"role": "user", "content": texte}],
-            output_format=Relecture,
-        )
-        return reponse.parsed_output
+        return extraire(texte, schema=Relecture, systeme=PROMPT_SYSTEME, max_tokens=2000)
 
     from mistralai.client import Mistral
 
