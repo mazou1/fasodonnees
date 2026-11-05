@@ -29,12 +29,14 @@
 
 {# Validation en masse : relire des milliers de lignes une par une n'est pas
    tenable. L'extraction note sa propre confiance ; au-dessus d'un seuil choisi
-   ici, on valide d'un bloc. « Prévisualiser » recharge la page pour montrer
-   l'effet du seuil AVANT de valider. File vide = pas de formulaire : un seuil
-   qui ne porte sur rien n'est qu'un bouton à ne pas cliquer. #}
+   ici, on valide d'un bloc. Le seuil se saisit en pourcentage, et tout
+   changement (seuil, cases) recharge la page pour montrer l'effet AVANT de
+   valider : le bouton n'est actif que si quelque chose atteint le seuil
+   affiché. File vide = pas de formulaire : un seuil qui ne porte sur rien
+   n'est qu'un bouton à ne pas cliquer. #}
 {% if total %}
 <div class="col-12">
-  <form method="post" class="card">
+  <form method="post" class="card" id="formulaire-seuil">
     <input type="hidden" name="applique" value="1">
     <div class="card-header">
       <h3 class="card-title">Validation en masse par seuil de confiance</h3>
@@ -42,9 +44,12 @@
     <div class="card-body">
       <div class="row g-3 align-items-end">
         <div class="col-auto">
-          <label class="form-label" for="seuil">Seuil de confiance</label>
-          <input type="number" class="form-control" id="seuil" name="seuil"
-                 value="{{ '%.2f'|format(seuil) }}" min="0" max="1" step="0.05" style="width: 7rem">
+          <label class="form-label" for="seuil">Seuil de confiance (%)</label>
+          <div class="input-group" style="width: 9rem">
+            <input type="number" class="form-control" id="seuil" name="seuil"
+                   value="{{ (seuil * 100)|round|int }}" min="0" max="100" step="5">
+            <span class="input-group-text">%</span>
+          </div>
         </div>
         <div class="col-auto">
           <label class="form-check">
@@ -68,7 +73,7 @@
             <span class="form-check-label">
               {{ l.libelle }}
               <span class="text-secondary">
-                — {{ l.au_seuil }} au seuil{% if l.sans_score %}, {{ l.sans_score }} sans score{% endif %}
+                — {{ l.au_seuil }} au seuil{% if l.sans_score %}, {{ l.sans_score }} sans score{% endif %}{% if l.meilleur is not none %}, meilleur score {{ (l.meilleur * 100)|round|int }} %{% endif %}
               </span>
             </span>
           </label>
@@ -80,17 +85,37 @@
       <button type="submit" formmethod="get" class="btn">Prévisualiser</button>
       <span class="ms-3 text-secondary">
         {% if au_seuil %}
-        <strong>{{ au_seuil }}</strong> élément(s) seront validés au seuil {{ '%.2f'|format(seuil) }}.
+        <strong>{{ au_seuil }}</strong> élément(s) seront validés au seuil {{ (seuil * 100)|round|int }} %.
         {% else %}
-        Aucun élément n'atteint ce seuil parmi les types cochés.
+        Aucun élément n'atteint {{ (seuil * 100)|round|int }} % parmi les types cochés{% if meilleur is not none %} : le meilleur score en attente est {{ (meilleur * 100)|round|int }} %, baissez le seuil en dessous{% endif %}.
         {% endif %}
       </span>
       <button type="submit" class="btn btn-primary ms-auto" {% if not au_seuil %}disabled{% endif %}
-              onclick="return confirm('Valider {{ au_seuil }} élément(s) au seuil {{ '%.2f'|format(seuil) }} ? Ils deviendront publics via l\'API.');">
+              onclick="return confirm('Valider {{ au_seuil }} élément(s) au seuil {{ (seuil * 100)|round|int }} % ? Ils deviendront publics via l\'API.');">
         ✓ Valider tout ce qui atteint le seuil
       </button>
     </div>
   </form>
+  <script>
+    // Tout changement de seuil ou de case recharge la prévisualisation (GET) :
+    // les compteurs et l'état du bouton correspondent toujours à ce qui est
+    // affiché. Sans cela, un seuil modifié laissait le bouton grisé jusqu'au
+    // clic sur « Prévisualiser », ce que personne ne devinait.
+    (function () {
+      var formulaire = document.getElementById("formulaire-seuil");
+      if (!formulaire) return;
+      var previsualiser = function () {
+        formulaire.method = "get";
+        formulaire.submit();
+      };
+      formulaire.querySelectorAll("#seuil, input[type=checkbox]").forEach(function (champ) {
+        champ.addEventListener("change", previsualiser);
+      });
+      document.getElementById("seuil").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); previsualiser(); }
+      });
+    })();
+  </script>
 </div>
 {% endif %}
 
@@ -113,7 +138,7 @@
     Astuce : dans une file, ajoutez <code>?statut=valide</code>,
     <code>?statut=rejete</code> ou <code>?statut=tous</code> à l'URL pour revoir
     les éléments déjà traités. En ligne de commande, le même seuil s'applique
-    avec <code>python -m app.validation 0.9</code>.
+    avec <code>python -m app.validation 0.8</code> (en fraction, 0.8 = 80 %).
   </small></p>
 </div>
 {% endblock %}

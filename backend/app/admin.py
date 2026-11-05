@@ -566,12 +566,19 @@ _MODELES_PAR_CLE = {modele.__tablename__: modele for modele, _, _ in _FILES_VALI
 
 
 def _seuil_demande(valeur: str | None) -> float:
-    """Un seuil hors de [0, 1] n'a pas de sens : on le ramène plutôt que de
-    renvoyer une erreur au milieu d'une file de validation."""
+    """Le seuil saisi, ramené à une fraction de [0, 1].
+
+    L'administrateur pense en pourcentages : « 80 » ou « 80 % » valent 0,80.
+    Avant cette lecture, « 80 » était borné à 1,0 et le champ revenait figé à
+    100 % avec un bouton grisé, sans explication. Une fraction (« 0,8 ») reste
+    acceptée : c'est la forme de la CLI et des anciennes adresses.
+    """
     try:
-        seuil = float(str(valeur).replace(",", "."))
+        seuil = float(str(valeur).replace("%", "").replace(",", ".").strip())
     except (TypeError, ValueError):
         return SEUIL_DEFAUT
+    if seuil > 1.0:
+        seuil = seuil / 100.0
     return min(max(seuil, 0.0), 1.0)
 
 
@@ -633,6 +640,7 @@ class AValiderView(BaseView):
 
         lignes = []
         total = au_seuil = 0
+        meilleur = None
         with SessionLocal() as db:
             for modele, libelle, identity in _FILES_VALIDATION:
                 compte = compter_a_valider(db, modele, seuil)
@@ -641,6 +649,8 @@ class AValiderView(BaseView):
                 total += compte["total"]
                 if coche:
                     au_seuil += compte["au_seuil"] + (compte["sans_score"] if sans_score else 0)
+                    if compte["meilleur"] is not None:
+                        meilleur = max(meilleur or 0.0, compte["meilleur"])
                 lignes.append(
                     {
                         "cle": cle,
@@ -648,6 +658,7 @@ class AValiderView(BaseView):
                         "compte": compte["total"],
                         "au_seuil": compte["au_seuil"],
                         "sans_score": compte["sans_score"],
+                        "meilleur": compte["meilleur"],
                         "coche": coche,
                         "url": request.url_for("admin:list", identity=identity),
                     }
@@ -661,6 +672,7 @@ class AValiderView(BaseView):
                 "seuil": seuil,
                 "sans_score": sans_score,
                 "au_seuil": au_seuil,
+                "meilleur": meilleur,
                 "message": message,
                 "title": "À valider",
             },

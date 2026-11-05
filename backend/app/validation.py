@@ -68,10 +68,17 @@ def compter_a_valider(db, modele, seuil: float) -> dict[str, int]:
             or 0
         )
 
+    meilleur = db.scalar(
+        select(func.max(modele.score_confiance)).where(modele.statut_validation == "a_valider")
+    )
     return {
         "total": compte(),
         "au_seuil": compte(modele.score_confiance >= seuil),
         "sans_score": compte(modele.score_confiance.is_(None)),
+        # le meilleur score en attente : si le seuil est au-dessus, rien ne
+        # passera, et l'administrateur doit le savoir plutôt que de voir un
+        # bouton grisé
+        "meilleur": float(meilleur) if meilleur is not None else None,
     }
 
 

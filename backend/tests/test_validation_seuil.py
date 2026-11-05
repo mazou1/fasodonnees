@@ -116,7 +116,7 @@ def test_compter_naffecte_rien(db):
 
     compte = compter_a_valider(db, Decision, 0.9)
 
-    assert compte == {"total": 2, "au_seuil": 1, "sans_score": 0}
+    assert compte == {"total": 2, "au_seuil": 1, "sans_score": 0, "meilleur": 0.95}
     assert statuts(db, Decision) == [(0.6, "a_valider"), (0.95, "a_valider")]
 
 
@@ -160,7 +160,10 @@ def test_sans_nomination_validee_lannuaire_nest_pas_reconstruit(db, monkeypatch)
     [
         ("0.85", 0.85),
         ("0,85", 0.85),  # séparateur décimal français
-        ("2", 1.0),  # borné : un seuil au-dessus de 1 ne validerait plus rien
+        ("85", 0.85),  # l'administrateur pense en pourcentages
+        ("85 %", 0.85),
+        ("1", 1.0),  # 100 %
+        ("150", 1.0),  # borné : un seuil au-dessus de 100 % ne validerait plus rien
         ("-1", 0.0),
         ("", SEUIL_DEFAUT),
         (None, SEUIL_DEFAUT),
