@@ -2,21 +2,12 @@
   <h1>Services numériques de l'État</h1>
   <p class="sous-titre">
     L'annuaire des sites et téléservices officiels du Burkina Faso, regroupés au même endroit -
-    institutions, textes de loi, finances, statistiques, concours et services aux usagers.
-    Chaque lien pointe vers un site public officiel.
+    état civil, justice, diaspora, impôts, entreprises, foncier, concours, santé et services aux usagers.
+    Chaque lien pointe vers un site public officiel : {{ total }} services vérifiés.
   </p>
 
-  <a v-if="!q.trim()" class="portail-phare" href="https://service-public.gov.bf" target="_blank" rel="noopener">
-    <span class="pf-ico" aria-hidden="true">🪪</span>
-    <span class="pf-txt">
-      <span class="pf-titre">Service Public BF - le guichet unique de l'administration</span>
-      <span class="pf-desc">Le portail officiel de l'État qui centralise les démarches en ligne (guides pratiques, procédures dématérialisées, institutions). Le point de départ pour toute démarche.</span>
-      <span class="pf-dom">service-public.gov.bf ↗</span>
-    </span>
-  </a>
-
   <div class="filtres">
-    <input v-model="q" type="search" placeholder="Chercher un service (ex : impôts, marchés, statistique…)" />
+    <input v-model="q" type="search" placeholder="Chercher un service (ex : casier, timbre, diaspora, visa…)" />
   </div>
 
   <template v-for="section in sectionsFiltrees" :key="section.titre">
@@ -44,11 +35,14 @@
   <p v-if="!sectionsFiltrees.length" class="vide">Aucun service ne correspond.</p>
 
   <p class="note-methode">
-    Nous ne référençons que les sites officiels dont l'accès a été vérifié joignable
-    (juillet 2026). Quelques services existants ont été écartés parce qu'ils étaient
-    injoignables ou présentaient un certificat de sécurité invalide au moment de la
-    vérification (ex. SONABEL, La Poste BF) - ils seront ajoutés dès qu'ils redeviennent
-    accessibles en toute sécurité. Un site manque&nbsp;? Signalez-le sur le dépôt du projet.
+    Nous ne référençons que les sites officiels dont l'accès a été vérifié (réponse du site et
+    certificat de sécurité valide) le 18 novembre 2026. Plusieurs services existants sont écartés
+    parce qu'ils étaient ce jour-là en panne, en maintenance ou servis avec un certificat invalide :
+    le portail Service Public BF, les sites des ministères des Finances, de la Santé et de
+    l'Enseignement supérieur, celui du Conseil constitutionnel, la CNSS, le site principal de la
+    SONABEL, le portail des données ouvertes, les Douanes, e-Bulletin et e-Traduction. Ils seront
+    ajoutés dès qu'ils redeviennent accessibles en toute sécurité. Un site manque&nbsp;?
+    Signalez-le sur le dépôt du projet.
   </p>
 </template>
 
@@ -61,88 +55,208 @@ const SECTIONS = [
     emoji: "🏛️",
     services: [
       { nom: "Présidence du Faso", url: "https://www.presidencedufaso.bf", desc: "Le site de la Présidence : communiqués, agenda et actes du Chef de l'État." },
-      { nom: "Gouvernement du Burkina Faso", url: "https://www.gouvernement.gov.bf", desc: "Portail du Gouvernement : comptes rendus du Conseil des ministres, communiqués et action gouvernementale." },
+      { nom: "Gouvernement du Burkina Faso", sigle: "SIG", url: "https://www.gouvernement.gov.bf", desc: "Portail du Gouvernement, tenu par le Service d'information du Gouvernement : comptes rendus du Conseil des ministres, communiqués et action gouvernementale." },
       { nom: "Assemblée législative du peuple", sigle: "ALP", url: "https://www.assembleenationale.bf", desc: "L'organe législatif : lois votées, députés et travaux parlementaires." },
-      { nom: "Conseil constitutionnel", url: "https://www.conseil-constitutionnel.gov.bf", desc: "La juridiction chargée du contrôle de constitutionnalité et de la régularité des élections." },
-      { nom: "Service d'information du Gouvernement", sigle: "SIG", url: "https://sig.gov.bf", desc: "La communication institutionnelle de l'État : actualités et productions officielles." },
+      { nom: "Ministère de la Justice", url: "https://justice.gov.bf", desc: "Le site du ministère, point d'entrée vers ses téléservices (casier judiciaire, nationalité, plainte en ligne)." },
+      { nom: "Ministère des Affaires étrangères", url: "https://diplomatie.gov.bf", desc: "Actualités diplomatiques, services au public et accès aux plateformes consulaires." },
+      { nom: "Demande d'audience à la Primature", url: "https://audience.primature.gov.bf", desc: "Demander en ligne une audience auprès du Premier ministre." },
+      { nom: "Pétitions citoyennes", url: "https://petitions.gov.bf", desc: "Lancer ou soutenir une pétition adressée aux pouvoirs publics." },
     ],
   },
   {
-    titre: "Démarches & téléservices",
+    titre: "État civil, identité & justice",
     emoji: "🪪",
     services: [
-      { nom: "Service Public BF", url: "https://service-public.gov.bf", desc: "Le portail national unique des services publics en ligne : guides pratiques, procédures dématérialisées et orientation vers les téléservices officiels." },
+      { nom: "e-Certificat de nationalité", url: "https://ecertificat-nationalite.gov.bf", desc: "Demander, payer et recevoir en ligne son certificat de nationalité burkinabè." },
+      { nom: "e-Casier judiciaire", url: "https://ecasier-judiciaire.gov.bf", desc: "Demander, payer et obtenir en ligne le bulletin n°3 du casier judiciaire." },
+      { nom: "Actes d'état civil", sigle: "DGMEC", url: "https://services-etatcivil.gov.bf", desc: "Demander un acte de naissance, de mariage ou de décès et suivre son dossier." },
+      { nom: "Plainte en ligne", url: "https://justice-penale.gov.bf", desc: "Déposer une plainte pénale auprès d'un parquet et suivre son dossier." },
+      { nom: "e-Permis de communiquer", url: "https://e-permis-communiquer.gov.bf", desc: "Demander un permis de visite pour un proche détenu." },
+      { nom: "Justice-Sira - assistance judiciaire", url: "https://justice-sira.bf", desc: "Demander une assistance judiciaire et suivre sa demande." },
+      { nom: "Office national d'identification", sigle: "ONI", url: "https://oni.bf", desc: "CNIB, carte d'identité biométrique AES et passeport : pièces à fournir, coûts et sites d'enrôlement (information, pas de démarche en ligne)." },
+      { nom: "Vérification d'immatriculation", sigle: "DGTTM", url: "https://dgttmverif.bf", desc: "Vérifier l'authenticité d'une plaque ou d'une carte grise à partir du numéro d'immatriculation." },
+      { nom: "Police nationale", url: "https://www.police.gov.bf", desc: "Le site de la Police nationale : informations, communiqués et contacts." },
+    ],
+  },
+  {
+    titre: "Diaspora, visas & voyage",
+    emoji: "🌍",
+    services: [
+      { nom: "Portail de la diaspora burkinabè", url: "https://diaspora.gov.bf", desc: "S'immatriculer auprès de sa mission diplomatique, demander sa carte consulaire et ses actes consulaires, accéder au guichet unique de la diaspora et au HCBE." },
+      { nom: "Ambassades et consulats", url: "https://diplomatie.gov.bf/?page_id=2288", desc: "L'annuaire des représentations diplomatiques et consulaires du Burkina Faso, avec le site de chacune." },
+      { nom: "e-Visa", url: "https://www.visaburkina.bf", desc: "Demander et payer en ligne un visa d'entrée au Burkina Faso." },
+      { nom: "Fiche de voyage", url: "https://fichedevoyage.gov.bf", desc: "Remplir avant le vol la fiche de police d'arrivée ou de départ des aéroports." },
+      { nom: "Contribution au Fonds de soutien patriotique", sigle: "FSP", url: "https://my.fasoarzeka.bf/ctrb/ctrb-fsp", desc: "Verser une contribution volontaire au FSP, y compris depuis l'étranger, via Faso Arzeka." },
+      { nom: "Faso Andubè", url: "https://fasoandube.bf", desc: "Enregistrer ses compétences scientifiques et techniques, y compris depuis la diaspora, et proposer des projets." },
+      { nom: "Actionnariat populaire", sigle: "APEC", url: "https://souscription.apec.bf", desc: "Souscrire en ligne des parts d'entreprises communautaires, ouvert aux Burkinabè de l'extérieur." },
+      { nom: "Plateforme nationale du Hadj", url: "https://ehadjburkina.gov.bf", desc: "S'inscrire au pèlerinage pendant les périodes d'inscription annoncées." },
+      { nom: "e-Protocole d'État", url: "https://eprotocole-etat.gov.bf", desc: "Réservé aux ambassades et organisations accréditées : cartes diplomatiques et accès aux salons officiels." },
+    ],
+  },
+  {
+    titre: "Impôts, timbres & paiements",
+    emoji: "💳",
+    services: [
       { nom: "eSINTAX - impôts en ligne", sigle: "DGI", url: "https://esintax.bf", desc: "La télédéclaration et le télépaiement des impôts (TVA, IS, IR…) de la Direction générale des impôts, par banque ou mobile money." },
+      { nom: "e-Timbre", sigle: "DGI", url: "https://etimbre.dgi.bf/home/", desc: "Acheter un timbre fiscal électronique et en vérifier l'authenticité." },
+      { nom: "e-Document - actes fiscaux", sigle: "DGI", url: "https://dgi.bf/edocument/accueil", desc: "Demander et recevoir en ligne une attestation fiscale (situation fiscale, domiciliation, revenu…) et vérifier un acte." },
+      { nom: "Direction générale des impôts", sigle: "DGI", url: "https://dgi.bf", desc: "Informations fiscales, formulaires et accès à l'ensemble des téléservices des impôts." },
       { nom: "Faso Arzeka", url: "https://fasoarzeka.bf", desc: "La plateforme nationale de paiements numériques à l'État (administration, collectivités, institutions). Accessible aussi au *700# et par mobile money." },
     ],
   },
   {
-    titre: "Droit & textes officiels",
-    emoji: "⚖️",
+    titre: "Entreprises & commerce",
+    emoji: "🏪",
     services: [
-      { nom: "Légiburkina", url: "https://www.legiburkina.gov.bf", desc: "La base de données juridique officielle du Secrétariat général du Gouvernement : lois, décrets, arrêtés et Journal officiel." },
+      { nom: "Création d'entreprise en ligne", sigle: "CEFORE", url: "https://creerentreprise.me.bf", desc: "Créer son entreprise en ligne : dépôt du dossier, pièces et suivi." },
+      { nom: "Fichier national du RCCM", url: "https://fichiernationalrccm.bf", desc: "Rechercher une entreprise et vérifier la disponibilité d'un nom commercial." },
+      { nom: "e-RCCM - actes du registre du commerce", url: "https://e-actes-rccm.gov.bf", desc: "Obtenir en ligne un extrait RCCM ou un certificat d'immatriculation." },
+      { nom: "Registre des bénéficiaires effectifs", sigle: "RBE", url: "https://rbe.gov.bf", desc: "Déclarer les bénéficiaires effectifs d'une société." },
+      { nom: "Burkina Trade Portal", url: "https://burkinatradeportal.bf", desc: "Les procédures d'importation, d'exportation et de transit expliquées pas à pas." },
+      { nom: "Propriété industrielle", sigle: "CNPI", url: "https://cnpi.bf", desc: "Brevets, marques, noms commerciaux, dessins et modèles : informations et dépôt de demande." },
+      { nom: "Maison de l'entreprise", sigle: "MEBF", url: "https://www.me.bf", desc: "Informations, formulaires et accompagnement des entreprises." },
+      { nom: "Chambre de commerce et d'industrie", sigle: "CCI-BF", url: "https://www.cci.bf", desc: "Le site de la Chambre de commerce et d'industrie du Burkina Faso." },
+      { nom: "Agréments énergie, mines et carrières", url: "https://e-agrements.memc.gov.bf", desc: "Le portail de demande d'agréments du ministère en charge de l'énergie, des mines et des carrières." },
+      { nom: "Évaluations environnementales", sigle: "SINADEVE", url: "https://sinadeve.envieau.gov.bf", desc: "Déposer et suivre une demande d'avis sur une évaluation environnementale." },
+      { nom: "Cadastre minier", url: "https://www.cadastreminier.bf/emc", desc: "Consulter la carte et la liste des titres miniers." },
+    ],
+  },
+  {
+    titre: "Foncier & logement",
+    emoji: "🏠",
+    services: [
+      { nom: "SyC@D - foncier et domaines", sigle: "DGI", url: "https://sif.bf", desc: "Les démarches foncières et domaniales en ligne (cadastre, domaines, titres)." },
+      { nom: "eCadastre", sigle: "DGI", url: "https://ecadastre.dgi.bf", desc: "Consulter le cadastre du Burkina Faso sur une carte." },
+      { nom: "Teng@ Topo", url: "https://tengatopo.gov.bf", desc: "Demander un bornage, une identification de terrain ou un extrait de plan, et suivre sa demande." },
+      { nom: "Souscription aux parcelles", sigle: "SONATUR", url: "https://souscription.sonatur.bf", desc: "Consulter les parcelles disponibles et souscrire en ligne." },
+      { nom: "Centre de gestion des cités", sigle: "CEGECI", url: "https://www.cegeci.bf", desc: "Logements et cités de l'État : offres et informations." },
     ],
   },
   {
     titre: "Finances publiques & commande publique",
     emoji: "💰",
     services: [
-      { nom: "Ministère de l'Économie et des Finances", url: "https://www.finances.gov.bf", desc: "Budget de l'État, politiques économiques et fiscales, lois de finances." },
       { nom: "Direction générale du Budget", sigle: "DGB", url: "https://www.dgb.gov.bf", desc: "L'élaboration et l'exécution du budget de l'État, documents budgétaires." },
       { nom: "Marchés publics", sigle: "DGCMEF", url: "https://www.dgcmef.gov.bf", desc: "Direction générale du contrôle des marchés publics et des engagements financiers : appels d'offres et attributions." },
+      { nom: "Pièces de la commande publique", sigle: "SECOP", url: "https://secop.finances.bf", desc: "Obtenir en ligne les pièces administratives exigées pour soumissionner à un marché public." },
     ],
   },
   {
-    titre: "Emploi & concours de la fonction publique",
+    titre: "Droit & textes officiels",
+    emoji: "⚖️",
+    services: [
+      { nom: "Légiburkina", url: "https://www.legiburkina.gov.bf", desc: "La base de données juridique officielle du Secrétariat général du Gouvernement : lois, décrets, arrêtés." },
+      { nom: "Journal officiel du Burkina Faso", sigle: "JOBF", url: "https://www.jobf.gov.bf", desc: "Les numéros du Journal officiel et les textes réglementaires qui y sont publiés." },
+    ],
+  },
+  {
+    titre: "Concours, emploi & fonction publique",
     emoji: "🧑‍💼",
     services: [
-      { nom: "Job Burkina Faso", sigle: "jobf", url: "https://jobf.gov.bf", desc: "Le portail des concours directs et professionnels de la fonction publique : calendrier, inscriptions et résultats." },
+      { nom: "Agence générale de recrutement de l'État", sigle: "AGRE", url: "https://concours.gov.bf", desc: "Communiqués, calendrier et résultats des concours de la fonction publique." },
+      { nom: "e-Concours - concours directs", url: "https://econcours.gov.bf", desc: "S'inscrire en ligne aux concours directs de la fonction publique." },
+      { nom: "e-Concours pro", url: "https://econcours-pro.gov.bf", desc: "S'inscrire en ligne aux concours professionnels." },
+      { nom: "Actes de carrière", sigle: "eDAC", url: "https://edac.gov.bf", desc: "Pour les agents publics : demander en ligne un acte de carrière." },
+      { nom: "Recrutement ANPE", sigle: "ANPE", url: "https://recrutement.anpe.gov.bf", desc: "La plateforme de recrutement de l'Agence nationale pour l'emploi." },
+      { nom: "Burkina Suudu Bawdè", sigle: "BSB", url: "https://bsb.gov.bf", desc: "S'inscrire aux formations aux métiers." },
+      { nom: "Programme national de volontariat", sigle: "PNVB", url: "https://fasovolontariat.bf", desc: "S'informer sur le volontariat national et ses appels à candidatures." },
+      { nom: "Service national pour le développement", sigle: "SND", url: "https://sigsnd.snd.bf", desc: "La plateforme du Service national pour le développement." },
+      { nom: "Immersion patriotique obligatoire", sigle: "IPO", url: "https://immersion-patriotique.gov.bf", desc: "La plateforme de l'immersion patriotique des nouveaux bacheliers." },
     ],
   },
   {
-    titre: "Statistiques & données ouvertes",
+    titre: "Éducation & enseignement supérieur",
+    emoji: "🎓",
+    services: [
+      { nom: "Campus Faso", url: "https://campusfaso.bf", desc: "Orientation après le bac, candidatures, inscriptions et demandes de bourse dans l'enseignement supérieur." },
+      { nom: "Hébergement universitaire", url: "https://hebergement.campusfaso.bf", desc: "Demander un logement en cité universitaire." },
+      { nom: "Fonds de soutien à l'éducation et à la recherche", sigle: "FOSER", url: "https://foser.bf", desc: "Allocations, aides et prêts d'études, financement de la recherche : appels et résultats." },
+      { nom: "Résultats du CEP", url: "https://resultats.examens.gov.bf", desc: "Consulter son résultat au certificat d'études primaires." },
+      { nom: "Bourses et orientation scolaires", sigle: "SIGOBS", url: "https://sigospb.formationpro.gov.bf", desc: "Orientation et bourses de l'enseignement secondaire et de la formation professionnelle." },
+      { nom: "Faso e-éducation", url: "https://www.fasoeducation.bf", desc: "Cours et ressources en ligne, du préscolaire au secondaire." },
+      { nom: "Université virtuelle du Burkina Faso", sigle: "UV-BF", url: "https://uv.bf", desc: "Les formations universitaires à distance et leur espace numérique de travail." },
+    ],
+  },
+  {
+    titre: "Santé & protection sociale",
+    emoji: "🤝",
+    services: [
+      { nom: "Caisse nationale d'assurance maladie universelle", sigle: "CNAMU", url: "https://cnamu.bf", desc: "Le régime d'assurance maladie universelle (RAMU) : couverture santé, immatriculation et structures de soins conventionnées." },
+      { nom: "Vérifier ses droits à l'assurance maladie", sigle: "CNAMU", url: "https://sigramu.cnamu.bf/verif/droits", desc: "Vérifier la validité de ses droits à l'assurance maladie universelle." },
+      { nom: "Caisse autonome de retraite des fonctionnaires", sigle: "CARFO", url: "https://www.carfo.bf", desc: "La retraite et les risques professionnels des agents publics : pensions et prestations." },
+      { nom: "eCARFO", sigle: "CARFO", url: "https://ecarfo.carfo.bf", desc: "L'espace en ligne des pensionnés et des cotisants de la CARFO." },
+      { nom: "PREVIUS - simulateur de pension", sigle: "CARFO", url: "https://previus.carfo.bf", desc: "Estimer le montant de sa future pension." },
+      { nom: "LaafiaKo", url: "https://laafiako.minsante.bf", desc: "Déposer une plainte ou une réclamation d'usager des services de santé." },
+      { nom: "Carte sanitaire", url: "https://cartesanitaire.minsante.bf", desc: "La carte sanitaire numérique du ministère de la Santé." },
+      { nom: "e-Agrément santé", url: "https://e-agrement.minsante.bf", desc: "Demander en ligne l'agrément d'un établissement de santé privé." },
+      { nom: "Faso FDA - régulation pharmaceutique", sigle: "ANRP", url: "https://fasofda.bf/fr/", desc: "Informations sur les produits de santé et signalement d'effets indésirables." },
+      { nom: "Dɛmɛ Sira - solidarité nationale", url: "https://solidarite.gov.bf", desc: "Faire une demande d'aide, la suivre, ou répondre aux appels à la solidarité." },
+    ],
+  },
+  {
+    titre: "Eau, énergie, poste & transport",
+    emoji: "🏭",
+    services: [
+      { nom: "Office national de l'eau et de l'assainissement", sigle: "ONEA", url: "https://www.onea.bf", desc: "Le service public de l'eau potable et de l'assainissement en milieu urbain." },
+      { nom: "ONEA clientèle", sigle: "ONEA", url: "https://oneaclientele.com", desc: "Demander en ligne un branchement d'eau et accéder aux services clients de l'ONEA." },
+      { nom: "e-Guichet SONABEL", sigle: "SONABEL", url: "https://eguichet.sonabel.bf", desc: "L'agence en ligne de la SONABEL : demandes de branchement et autres services sans se déplacer." },
+      { nom: "La Poste Burkina Faso", url: "https://laposte.bf", desc: "Services postaux et financiers de La Poste." },
+      { nom: "Société nationale burkinabè d'hydrocarbures", sigle: "SONABHY", url: "https://www.sonabhy.bf", desc: "L'importation, le stockage et la distribution des hydrocarbures du pays." },
+      { nom: "SOTRACO", url: "https://sotraco.bf", desc: "Les lignes et horaires des bus de la Société de transport en commun." },
+      { nom: "Loterie nationale burkinabè", sigle: "LONAB", url: "https://www.lonab.bf", desc: "L'opérateur public des jeux de hasard et de loterie au Burkina Faso." },
+    ],
+  },
+  {
+    titre: "Collectivités territoriales",
+    emoji: "🗺️",
+    services: [
+      { nom: "Portail des régions", url: "https://portail-regions.gov.bf", desc: "Les régions du Burkina Faso présentées sur un portail unique." },
+      { nom: "Commune de Bobo-Dioulasso - e-services", url: "https://mairie-bobo.bf/e-services/", desc: "Demander un acte de naissance, de mariage ou de décès, un certificat de célibat, ou louer une salle." },
+    ],
+  },
+  {
+    titre: "Statistiques & données",
     emoji: "📊",
     services: [
       { nom: "Institut national de la statistique et de la démographie", sigle: "INSD", url: "https://www.insd.bf", desc: "La statistique publique : recensements, enquêtes, indicateurs économiques et sociaux." },
-      { nom: "Portail national des données ouvertes", url: "https://data.gov.bf", desc: "Les jeux de données publiques mis à disposition par l'administration en accès libre." },
+      { nom: "Microdonnées de l'INSD", sigle: "INSD", url: "https://microdata.insd.bf", desc: "Le catalogue des enquêtes et recensements, avec leurs microdonnées." },
+      { nom: "Conseil national de la statistique", sigle: "CNS", url: "https://cns.bf", desc: "Le système statistique national et ses publications." },
+      { nom: "Agence nationale de la météorologie", sigle: "ANAM", url: "https://meteoburkina.bf", desc: "Prévisions, alertes météo et carte interactive." },
+      { nom: "Géoportail géologique et minier", sigle: "BUMIGEB", url: "https://geoportail.bumigeb.bf", desc: "Les cartes géologiques et minières du Burkina Faso." },
     ],
   },
   {
-    titre: "Contrôle & transparence",
+    titre: "Contrôle, régulation & numérique",
     emoji: "🔍",
     services: [
       { nom: "Autorité supérieure de contrôle d'État et de lutte contre la corruption", sigle: "ASCE-LC", url: "https://www.asce-lc.bf", desc: "L'organe supérieur de contrôle de l'administration et de lutte contre la corruption : rapports et signalements." },
+      { nom: "Commission de l'informatique et des libertés", sigle: "CIL", url: "https://cil.bf", desc: "La protection des données personnelles : droits, obligations et formalités." },
+      { nom: "Plaintes et déclarations à la CIL", sigle: "CIL", url: "https://plainte-declaration.cil.bf", desc: "Déposer une plainte ou une déclaration relative aux données personnelles." },
+      { nom: "Autorité de régulation des communications électroniques et des postes", sigle: "ARCEP", url: "https://www.arcep.bf", desc: "Régulation des télécoms et des postes : plaintes des consommateurs, qualité des réseaux." },
+      { nom: "Agence nationale de sécurité des systèmes d'information", sigle: "ANSSI", url: "https://anssi.bf", desc: "La cybersécurité de l'État : alertes et recommandations." },
+      { nom: "Portail de la dématérialisation", url: "https://www.dematerialisation.gov.bf", desc: "Les outils et le cadre de la dématérialisation des procédures administratives." },
+      { nom: "Suivi de la dématérialisation", url: "https://suividemat.gov.bf", desc: "L'avancement de la dématérialisation, procédure par procédure." },
+      { nom: "Registre du domaine .bf", url: "https://www.registre.bf", desc: "Le registre officiel des noms de domaine en « .bf »." },
     ],
   },
   {
-    titre: "Ministères sectoriels",
-    emoji: "🏢",
+    titre: "Culture & médias publics",
+    emoji: "🎭",
     services: [
-      { nom: "Ministère de la Santé", url: "https://www.sante.gov.bf", desc: "Politiques de santé, structures sanitaires et actualités du secteur." },
-      { nom: "Ministère de l'Enseignement supérieur, de la Recherche et de l'Innovation", sigle: "MESRSI", url: "https://www.mesrsi.gov.bf", desc: "Universités, recherche, bourses et orientation de l'enseignement supérieur." },
-    ],
-  },
-  {
-    titre: "Protection sociale & santé",
-    emoji: "🤝",
-    services: [
-      { nom: "Caisse nationale de sécurité sociale", sigle: "CNSS", url: "https://cnss.bf", desc: "La sécurité sociale des travailleurs du privé : immatriculation, cotisations et prestations." },
-      { nom: "Caisse autonome de retraite des fonctionnaires", sigle: "CARFO", url: "https://www.carfo.bf", desc: "La retraite et les risques professionnels des agents publics : pensions et prestations." },
-      { nom: "Caisse nationale d'assurance maladie universelle", sigle: "CNAMU", url: "https://cnamu.bf", desc: "Le régime d'assurance maladie universelle (RAMU) : couverture santé et affiliation." },
-    ],
-  },
-  {
-    titre: "Sociétés d'État & services aux usagers",
-    emoji: "🏭",
-    services: [
-      { nom: "Office national de l'eau et de l'assainissement", sigle: "ONEA", url: "https://www.onea.bf", desc: "Le service public de l'eau potable et de l'assainissement en milieu urbain : abonnements et factures." },
-      { nom: "Société nationale burkinabè d'hydrocarbures", sigle: "SONABHY", url: "https://www.sonabhy.bf", desc: "L'importation, le stockage et la distribution des hydrocarbures du pays." },
-      { nom: "Loterie nationale burkinabè", sigle: "LONAB", url: "https://www.lonab.bf", desc: "L'opérateur public des jeux de hasard et de loterie au Burkina Faso." },
+      { nom: "Radiodiffusion télévision du Burkina", sigle: "RTB", url: "https://www.rtb.bf", desc: "La télévision et la radio publiques." },
+      { nom: "Agence d'information du Burkina", sigle: "AIB", url: "https://www.aib.media", desc: "Les dépêches de l'agence de presse publique." },
+      { nom: "Sidwaya", url: "https://www.sidwaya.info", desc: "Le quotidien d'État." },
+      { nom: "Bureau burkinabè du droit d'auteur", sigle: "BBDA", url: "https://bbda.bf", desc: "Adhérer et déclarer ses œuvres en ligne." },
+      { nom: "E-services culture, communication et tourisme", sigle: "MCCAT", url: "https://www.eservices-mccat.gov.bf", desc: "Les démarches en ligne du ministère en charge de la communication, de la culture, des arts et du tourisme." },
+      { nom: "Semaine nationale de la culture", sigle: "SNC", url: "https://souscription.snc.bf", desc: "Souscrire en ligne pour participer à la SNC." },
+      { nom: "FESPACO", url: "https://fespaco.bf", desc: "Le Festival panafricain du cinéma et de la télévision de Ouagadougou." },
+      { nom: "SIAO", url: "https://siao.bf", desc: "Le Salon international de l'artisanat de Ouagadougou." },
     ],
   },
 ];
 
 const q = ref("");
+const total = SECTIONS.reduce((n, s) => n + s.services.length, 0);
 
 function domaine(url) {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -165,20 +279,6 @@ const sectionsFiltrees = computed(() => {
 </script>
 
 <style scoped>
-.portail-phare {
-  display: flex; align-items: center; gap: 16px; margin: 4px 0 22px;
-  padding: 18px 20px; border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface-1));
-  color: inherit;
-}
-.portail-phare:hover { text-decoration: none; border-color: var(--accent); }
-.portail-phare .pf-ico { font-size: 2rem; line-height: 1; flex: none; }
-.portail-phare .pf-txt { display: flex; flex-direction: column; gap: 3px; }
-.portail-phare .pf-titre { font-weight: 700; font-size: 1.05rem; }
-.portail-phare .pf-desc { color: var(--text-secondary); font-size: 0.92rem; }
-.portail-phare .pf-dom { color: var(--accent); font-size: 0.84rem; font-weight: 600; }
-
 .titre-section { margin-top: 28px; display: flex; align-items: center; gap: 8px; }
 .titre-section .ico { font-size: 1.1em; }
 .grille-services {

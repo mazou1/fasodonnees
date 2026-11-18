@@ -73,6 +73,17 @@
     </div>
   </div>
   <p v-if="!stats" class="chargement">Chargement…</p>
+
+  <!-- Initiatives citoyennes amies : hors de nos sources, d'où l'encart à part -->
+  <a class="a-decouvrir" href="https://archivesdufaso.com" target="_blank" rel="noopener">
+    <span class="ad-ico" aria-hidden="true">🎙️</span>
+    <span class="ad-txt">
+      <span class="ad-sur">À découvrir - autre initiative citoyenne</span>
+      <span class="ad-titre">Archives du Faso</span>
+      <span class="ad-desc">L'archive citoyenne et indépendante de la parole présidentielle burkinabè, de 1960 à aujourd'hui : discours, citations et vidéos, chacun relié à sa source.</span>
+      <span class="ad-dom">archivesdufaso.com ↗</span>
+    </span>
+  </a>
 </template>
 
 <script setup>
@@ -288,4 +299,18 @@ onBeforeUnmount(() => nettoyages.forEach((fn) => fn()));
 .titre-actu { font-weight: 600; text-decoration: none; color: inherit; }
 .titre-actu:hover { color: var(--accent); }
 .tout { display: inline-block; margin-top: 10px; font-size: 0.9rem; }
+
+.a-decouvrir {
+  display: flex; align-items: center; gap: 16px; margin-top: 18px;
+  padding: 18px 20px; border-radius: 14px; color: inherit;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-1));
+}
+.a-decouvrir:hover { text-decoration: none; border-color: var(--accent); }
+.ad-ico { font-size: 2rem; line-height: 1; flex: none; }
+.ad-txt { display: flex; flex-direction: column; gap: 3px; }
+.ad-sur { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.ad-titre { font-weight: 700; font-size: 1.05rem; }
+.ad-desc { color: var(--text-secondary); font-size: 0.92rem; }
+.ad-dom { color: var(--accent); font-size: 0.84rem; font-weight: 600; }
 </style>

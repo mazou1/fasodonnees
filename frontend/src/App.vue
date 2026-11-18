@@ -199,6 +199,7 @@ onBeforeUnmount(() => {
       <router-link to="/a-propos">À propos & méthodologie</router-link>
       <a href="/api/docs" target="_blank" rel="noopener">API ouverte</a>
       <a href="/api/rss/conseils.xml" target="_blank" rel="noopener" title="Suivre les conseils des ministres">RSS ⓘ</a>
+      <a href="https://archivesdufaso.com" target="_blank" rel="noopener" title="Archive citoyenne de la parole présidentielle burkinabè, de 1960 à aujourd'hui">Archives du Faso ↗</a>
       <span class="suivre">
         <span>Suivre&nbsp;:</span>
         <a v-for="reseau in RESEAUX" :key="reseau.nom" :href="reseau.url"
