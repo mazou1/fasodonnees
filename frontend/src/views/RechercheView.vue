@@ -72,7 +72,8 @@
           </div>
           <div class="titre">{{ t.reference ? `N° ${t.reference}` : t.titre }}</div>
           <div class="detail extrait" v-html="t.extrait"></div>
-          <a class="source" :href="t.url_pdf" target="_blank" rel="noopener">Texte intégral (PDF) →</a>
+          <a v-if="t.url_pdf" class="source" :href="t.url_pdf" target="_blank" rel="noopener">{{ t.archive ? "Texte intégral (copie archivée)" : "Texte intégral (PDF)" }} →</a>
+          <span v-else class="retire">Texte retiré de Légiburkina, non archivé</span>
         </article>
       </div>
     </section>

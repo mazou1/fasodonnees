@@ -44,7 +44,8 @@
         <a v-if="d.pdf" class="source" :href="`/api/documents/${d.id}/fichier`" target="_blank" rel="noopener">
           📄 PDF archivé →
         </a>
-        <a class="source" :href="d.url" target="_blank" rel="noopener">Source d'origine →</a>
+        <a v-if="!d.source_retiree" class="source" :href="d.url" target="_blank" rel="noopener">Source d'origine →</a>
+        <span v-else class="source">Retiré de la source</span>
       </div>
     </article>
   </div>

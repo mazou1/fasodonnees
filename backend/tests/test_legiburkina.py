@@ -140,3 +140,20 @@ def test_cr_coquille_suit_l_original_pas_l_erratum_ni_les_traductions():
     # le rectificatif ne sert que faute d'original
     assert choisir_lien(liens[1:]) == "https://g/RECTIF.-CONSEIL-DES-MINISTRES-N031.pdf"
     assert choisir_lien(liens[2:]) is None
+
+
+def test_un_texte_disparu_de_la_source_pointe_vers_l_archive():
+    from app.api.routes import lien_texte, retire_de_la_source
+
+    ancien = {"legi_id": 42, "reference": "2026-0874/PF"}
+    retrouve = {**ancien, "legi_uuid": "uuid-1"}
+
+    assert retire_de_la_source(ancien) and not retire_de_la_source(retrouve)
+    assert lien_texte(7, "https://morte", ancien, "legiburkina/pdf/x.pdf").endswith(
+        "/api/documents/7/fichier"
+    )
+    # disparu et jamais archivé : aucun lien plutôt qu'un lien mort
+    assert lien_texte(7, "https://morte", ancien, None) is None
+    assert lien_texte(7, "https://vivante", retrouve, "x.pdf") == "https://vivante"
+    # les autres sources ne sont pas concernées
+    assert lien_texte(7, "https://gouv", {"wp_id": 1}, None) == "https://gouv"

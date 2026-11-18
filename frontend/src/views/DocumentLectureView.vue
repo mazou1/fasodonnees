@@ -40,14 +40,16 @@
 
     <p v-else class="vide">
       Ce document n'a pas encore de version lisible dans la plateforme.
-      <a :href="doc.url" target="_blank" rel="noopener">Le consulter à la source →</a>
+      <a v-if="!doc.source_retiree" :href="doc.url" target="_blank" rel="noopener">Le consulter à la source →</a>
+      <template v-else>La source ne le publie plus.</template>
     </p>
 
     <div class="meta liens-bas">
       <a v-if="doc.pdf" class="source" :href="`/api/documents/${doc.id}/fichier`" target="_blank" rel="noopener">
         📄 Télécharger le PDF archivé
       </a>
-      <a class="source" :href="doc.url" target="_blank" rel="noopener">Source d'origine →</a>
+      <a v-if="!doc.source_retiree" class="source" :href="doc.url" target="_blank" rel="noopener">Source d'origine →</a>
+      <span v-else class="source">Retiré de la source - seule notre copie archivée subsiste</span>
       <router-link v-if="doc.type_doc === 'cr_conseil'" class="source" :to="`/conseils/${doc.id}`">
         Décisions et nominations extraites →
       </router-link>

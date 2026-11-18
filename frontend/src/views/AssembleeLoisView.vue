@@ -29,7 +29,8 @@
       <div class="titre">{{ t.reference ? `N° ${t.reference.replace(/^N°\s*/, "")}` : t.titre }}</div>
       <div v-if="t.description" class="detail">{{ majuscule(t.description) }}</div>
       <div class="meta" style="margin-top: 6px">
-        <a class="source" :href="t.url_pdf" target="_blank" rel="noopener">Texte intégral (PDF) →</a>
+        <a v-if="t.url_pdf" class="source" :href="t.url_pdf" target="_blank" rel="noopener">{{ t.archive ? "Texte intégral (copie archivée)" : "Texte intégral (PDF)" }} →</a>
+        <span v-else class="retire">Texte retiré de Légiburkina, non archivé</span>
         <a v-if="t.jo_url" class="source" :href="t.jo_url" target="_blank" rel="noopener">
           Journal officiel {{ t.jo_numero }} →
         </a>

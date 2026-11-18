@@ -35,7 +35,8 @@
         <div v-if="t.secteur" class="secteur">{{ t.secteur }}</div>
         <div v-if="t.description" class="description">{{ majuscule(t.description) }}</div>
         <div class="pied">
-          <a :href="t.url_pdf" target="_blank" rel="noopener">Texte intégral (PDF) →</a>
+          <a v-if="t.url_pdf" :href="t.url_pdf" target="_blank" rel="noopener">{{ t.archive ? "Texte intégral (copie archivée)" : "Texte intégral (PDF)" }} →</a>
+          <span v-else class="retire">Texte retiré de Légiburkina, non archivé</span>
           <a v-if="t.jo_url" :href="t.jo_url" target="_blank" rel="noopener">JO {{ t.jo_numero }} →</a>
         </div>
       </div>

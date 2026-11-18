@@ -27,6 +27,28 @@ from app.versions import ids_versions_de_reference
 router = APIRouter()
 
 
+def retire_de_la_source(meta: dict | None) -> bool:
+    """Texte de Légiburkina absent du site depuis sa refonte de l'automne 2026.
+
+    `legi_id` marque un texte collecté sur l'ancien site ; `legi_uuid` n'est
+    posé que lorsqu'il a été retrouvé sur le nouveau. Environ 1 300 textes ne
+    l'ont pas été : leur adresse d'origine ne répond plus.
+    """
+    meta = meta or {}
+    return "legi_id" in meta and "legi_uuid" not in meta
+
+
+def lien_texte(doc_id: int, url: str, meta: dict | None, fichier: str | None) -> str | None:
+    """Où lire un texte : à la source, ou dans notre archive s'il en a disparu.
+
+    None si le texte a disparu de la source sans que son PDF ait été archivé -
+    mieux vaut ne pas proposer de lien qu'en afficher un mort.
+    """
+    if not retire_de_la_source(meta):
+        return url
+    return f"{settings.site_url}/api/documents/{doc_id}/fichier" if fichier else None
+
+
 def get_db():
     db = SessionLocal()
     try:
@@ -253,6 +275,7 @@ def recherche(
                 Document.date_publication,
                 Document.url,
                 Document.meta,
+                Document.fichier,
                 func.ts_headline(
                     "french",
                     func.coalesce(Document.texte_extrait, Document.titre, ""),
@@ -320,7 +343,8 @@ def recherche(
                 "titre": d.titre,
                 "reference": (d.meta or {}).get("reference"),
                 "date": d.date_publication,
-                "url_pdf": d.url,
+                "url_pdf": lien_texte(d.id, d.url, d.meta, d.fichier),
+                "archive": retire_de_la_source(d.meta),
                 "extrait": d.extrait,
             }
             for d in textes
@@ -1190,6 +1214,8 @@ class DocumentOut(BaseModel):
     date_publication: date | None
     date_collecte: datetime
     pdf: bool = False
+    # True : l'adresse d'origine ne répond plus, seule notre archive subsiste
+    source_retiree: bool = False
 
     @classmethod
     def from_row(cls, d: Document) -> "DocumentOut":
@@ -1203,6 +1229,7 @@ class DocumentOut(BaseModel):
             date_publication=d.date_publication,
             date_collecte=d.date_collecte,
             pdf=bool(d.fichier and d.mime == "application/pdf"),
+            source_retiree=retire_de_la_source(d.meta),
         )
 
 
@@ -1372,7 +1399,10 @@ class TexteOut(BaseModel):
     date_publication: date | None
     secteur: str | None
     description: str | None
-    url_pdf: str
+    # None : texte disparu de la source et jamais archivé en PDF
+    url_pdf: str | None
+    # True : le lien mène à notre copie archivée, la source ne servant plus ce texte
+    archive: bool = False
     jo_numero: str | None
     jo_url: str | None
 
@@ -1417,7 +1447,8 @@ def list_textes(
                 date_publication=d.date_publication,
                 secteur=meta.get("secteur"),
                 description=(description[:600] if description else None),
-                url_pdf=d.url,
+                url_pdf=lien_texte(d.id, d.url, meta, d.fichier),
+                archive=retire_de_la_source(meta),
                 jo_numero=meta.get("jo_numero"),
                 jo_url=meta.get("jo_url"),
             )
@@ -1652,7 +1683,7 @@ def export_textes(db: Session = Depends(get_db)):
             d.titre or "",
             d.date_publication.isoformat() if d.date_publication else "",
             (d.meta or {}).get("jo_numero", ""),
-            d.url,
+            lien_texte(d.id, d.url, d.meta, d.fichier) or "",
         )
         for d in db.scalars(stmt).all()
     )
@@ -1769,7 +1800,8 @@ def rss_textes(request: Request, db: Session = Depends(get_db)):
     items = [
         {
             "titre": ((d.meta or {}).get("reference") or d.titre or "Texte juridique"),
-            "lien": d.url,
+            "lien": lien_texte(d.id, d.url, d.meta, d.fichier)
+            or f"{settings.site_url}/documents/{d.id}",
             "guid": f"texte-{d.id}",
             "description": ((d.meta or {}).get("description") or None),
             "date": d.date_publication,
