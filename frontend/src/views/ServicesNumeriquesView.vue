@@ -6,6 +6,15 @@
     Chaque lien pointe vers un site public officiel : {{ total }} services vérifiés.
   </p>
 
+  <a v-if="!q.trim()" class="portail-phare" href="https://service-public.gov.bf" target="_blank" rel="noopener">
+    <span class="pf-ico" aria-hidden="true">🪪</span>
+    <span class="pf-txt">
+      <span class="pf-titre">Service Public BF - le guichet unique de l'administration</span>
+      <span class="pf-desc">Le portail officiel de l'État qui centralise les démarches en ligne (guides pratiques, procédures dématérialisées, institutions). Le point de départ pour toute démarche.</span>
+      <span class="pf-dom">service-public.gov.bf ↗</span>
+    </span>
+  </a>
+
   <div class="filtres">
     <input v-model="q" type="search" placeholder="Chercher un service (ex : casier, timbre, diaspora, visa…)" />
   </div>
@@ -38,10 +47,12 @@
     Nous ne référençons que les sites officiels dont l'accès a été vérifié (réponse du site et
     certificat de sécurité valide) le 18 novembre 2026. Plusieurs services existants sont écartés
     parce qu'ils étaient ce jour-là en panne, en maintenance ou servis avec un certificat invalide :
-    le portail Service Public BF, les sites des ministères des Finances, de la Santé et de
+    les sites des ministères des Finances, de la Santé et de
     l'Enseignement supérieur, celui du Conseil constitutionnel, la CNSS, le site principal de la
     SONABEL, le portail des données ouvertes, les Douanes, e-Bulletin et e-Traduction. Ils seront
-    ajoutés dès qu'ils redeviennent accessibles en toute sécurité. Un site manque&nbsp;?
+    ajoutés dès qu'ils redeviennent accessibles en toute sécurité. Seule exception : le portail
+    Service Public BF, guichet unique de l'administration, reste en tête de page bien qu'il ait été
+    en panne ce jour-là. Un site manque&nbsp;?
     Signalez-le sur le dépôt du projet.
   </p>
 </template>
@@ -279,6 +290,20 @@ const sectionsFiltrees = computed(() => {
 </script>
 
 <style scoped>
+.portail-phare {
+  display: flex; align-items: center; gap: 16px; margin: 4px 0 22px;
+  padding: 18px 20px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-1));
+  color: inherit;
+}
+.portail-phare:hover { text-decoration: none; border-color: var(--accent); }
+.portail-phare .pf-ico { font-size: 2rem; line-height: 1; flex: none; }
+.portail-phare .pf-txt { display: flex; flex-direction: column; gap: 3px; }
+.portail-phare .pf-titre { font-weight: 700; font-size: 1.05rem; }
+.portail-phare .pf-desc { color: var(--text-secondary); font-size: 0.92rem; }
+.portail-phare .pf-dom { color: var(--accent); font-size: 0.84rem; font-weight: 600; }
+
 .titre-section { margin-top: 28px; display: flex; align-items: center; gap: 8px; }
 .titre-section .ico { font-size: 1.1em; }
 .grille-services {
