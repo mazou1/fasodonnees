@@ -514,6 +514,26 @@ class Realisation(Base):
         return f"{self.type} - {self.titre[:60]}"
 
 
+class EtatService(Base):
+    """Dernier état constaté d'un téléservice de l'annuaire « Services en ligne ».
+
+    Une ligne par adresse, réécrite à chaque vérification quotidienne
+    (cf. app/services_numeriques.py) : on garde l'état courant et la date à
+    laquelle il a commencé, pas l'historique des passages.
+    """
+
+    __tablename__ = "etat_service"
+
+    url: Mapped[str] = mapped_column(String(500), primary_key=True)
+    # en_ligne | maintenance | en_panne | certificat | injoignable | inconnu
+    statut: Mapped[str] = mapped_column(String(20))
+    code_http: Mapped[int | None] = mapped_column(Integer)
+    detail: Mapped[str | None] = mapped_column(String(300))
+    depuis: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    verifie_le: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    dernier_ok: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Publication(Base):
     """Journal des publications sur les réseaux sociaux : une ligne par couple
     (réseau, item du site).

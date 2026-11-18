@@ -28,6 +28,7 @@ ETAPES_ATTENDUES = {
     "ocr_nocturne": "OCR des scans",
     "alerte_sources_muettes": "alerte quand une source se tait",
     "diffusion_horaire": "publication sur les réseaux sociaux",
+    "etat_services": "état en direct des téléservices de l'annuaire",
 }
 
 
@@ -114,12 +115,12 @@ def test_une_etape_de_rattrapage_qui_echoue_laisse_passer_les_suivantes(monkeypa
 
     monkeypatch.setattr(scheduler, "run_medias", rate)
     for nom in ("run_conseil_ministres", "run_institutionnel", "run_marches_publics",
-                "run_annuaire", "verifier_sources_muettes"):
+                "run_annuaire", "verifier_sources_muettes", "run_etat_services"):
         monkeypatch.setattr(scheduler, nom, lambda nom=nom: passees.append(nom))
 
     scheduler.run_demarrage()  # ne doit pas lever
 
     assert passees == [
         "run_conseil_ministres", "run_institutionnel", "run_marches_publics",
-        "run_annuaire", "verifier_sources_muettes",
+        "run_annuaire", "verifier_sources_muettes", "run_etat_services",
     ]

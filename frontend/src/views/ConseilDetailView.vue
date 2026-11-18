@@ -13,6 +13,10 @@
           📄 PDF officiel
         </a>
       </div>
+      <div v-if="conseil.traductions && conseil.traductions.length" class="traductions">
+        <span>Aussi en langues nationales&nbsp;:</span>
+        <a v-for="t in conseil.traductions" :key="t.langue" :href="t.url" target="_blank" rel="noopener">{{ t.libelle }}</a>
+      </div>
     </header>
 
     <nav class="onglets">
@@ -168,4 +172,10 @@ onMounted(async () => {
 .texte-integral { max-width: 820px; line-height: 1.7; }
 .texte-integral p { margin: 0 0 12px; }
 .texte-integral .titre-section { font-weight: 700; margin-top: 20px; }
+.traductions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.9rem; }
+.traductions a {
+  color: #fff; padding: 3px 11px; border-radius: 999px; font-weight: 600; text-decoration: none;
+  border: 1px solid currentColor;
+}
+.traductions a:hover { text-decoration: underline; }
 </style>

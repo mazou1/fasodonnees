@@ -484,6 +484,39 @@ def list_conseils(
     )
 
 
+def traductions_du_conseil(db: Session, conseil: Document) -> list[dict]:
+    """Les versions en langues nationales publiées pour ce conseil.
+
+    Le gouvernement publie chaque compte rendu en mooré, fulfuldé, dioula et
+    gulmancéma, comme autant de pages distinctes ; elles se rattachent au
+    conseil par sa date. Une seule entrée par langue, la plus récente.
+    """
+    from app.ingestion.conseil_ministres import LANGUES
+
+    if conseil.date_publication is None:
+        return []
+    docs = db.scalars(
+        select(Document)
+        .where(
+            Document.type_doc == "cr_conseil_traduction",
+            Document.date_publication == conseil.date_publication,
+        )
+        .order_by(Document.date_collecte.desc(), Document.id.desc())
+    ).all()
+    par_langue: dict[str, dict] = {}
+    for doc in docs:
+        meta = doc.meta or {}
+        langue = meta.get("langue")
+        if langue in LANGUES and langue not in par_langue:
+            par_langue[langue] = {
+                "langue": langue,
+                "libelle": LANGUES[langue][1],
+                # le PDF quand la page y renvoie, la page elle-même sinon
+                "url": meta.get("pdf_url") or doc.url,
+            }
+    return [par_langue[code] for code in LANGUES if code in par_langue]
+
+
 @router.get("/conseils/{doc_id}")
 def get_conseil(doc_id: int, db: Session = Depends(get_db)) -> dict:
     """Un conseil des ministres et tout son contenu validé, traçable."""
@@ -515,6 +548,7 @@ def get_conseil(doc_id: int, db: Session = Depends(get_db)) -> dict:
         "url": d.url,
         "texte": d.texte_extrait,
         "pdf": bool(d.fichier and d.mime == "application/pdf"),
+        "traductions": traductions_du_conseil(db, d),
         "decisions": [
             {"id": x.id, "ministere": x.ministere, "type": x.type, "objet": x.objet}
             for x in decisions
@@ -1353,6 +1387,42 @@ def contexte(genre: str, entite_id: int, db: Session = Depends(get_db)) -> dict:
     return {
         "passage": localiser(doc.texte_extrait, ancres),
         "document": {"id": doc.id, "titre": doc.titre, "url": doc.url},
+    }
+
+
+@router.get("/services-numeriques")
+def get_services_numeriques(db: Session = Depends(get_db)) -> dict:
+    """L'annuaire des téléservices officiels, avec l'état constaté de chacun.
+
+    L'état vient de la vérification quotidienne du worker
+    (app/services_numeriques.py) ; un service jamais vérifié n'en porte pas.
+    """
+    from app.models import EtatService
+    from app.services_numeriques import EN_LIGNE, annuaire
+
+    etats = {e.url: e for e in db.scalars(select(EtatService))}
+
+    def avec_etat(service: dict) -> dict:
+        e = etats.get(service["url"])
+        etat = (
+            {"statut": e.statut, "depuis": e.depuis, "detail": e.detail}
+            if e is not None
+            else None
+        )
+        return {**service, "etat": etat}
+
+    donnees = annuaire()
+    sections = [
+        {**section, "services": [avec_etat(s) for s in section["services"]]}
+        for section in donnees["sections"]
+    ]
+    services = [s for section in sections for s in section["services"]]
+    return {
+        "phare": avec_etat(donnees["phare"]),
+        "sections": sections,
+        "total": len(services),
+        "en_ligne": sum(1 for s in services if s["etat"] and s["etat"]["statut"] == EN_LIGNE),
+        "verifie_le": max((e.verifie_le for e in etats.values()), default=None),
     }
 
 

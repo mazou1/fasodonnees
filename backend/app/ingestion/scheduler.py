@@ -165,6 +165,15 @@ def run_conseil_ministres() -> None:
     logger.info("Versions consolidées : %s", stats)
 
 
+def run_etat_services() -> None:
+    """Teste chaque téléservice de l'annuaire, comme le verrait un visiteur."""
+    from app.services_numeriques import verifier_tout
+
+    with SessionLocal() as db:
+        bilan = verifier_tout(db)
+    logger.info("Téléservices vérifiés : %s", bilan)
+
+
 def run_annuaire() -> None:
     """Reconstruit les mandats à partir des nominations validées.
 
@@ -219,6 +228,14 @@ def construire_scheduler() -> BlockingScheduler:
         verifier_sources_muettes,
         CronTrigger(hour=7, minute=30),
         id="alerte_sources_muettes",
+    )
+    # Deux passages par jour : avant l'ouverture des bureaux, puis en début
+    # d'après-midi - une panne du matin n'attend pas le lendemain pour s'afficher.
+    scheduler.add_job(
+        run_etat_services,
+        CronTrigger(hour="5,13", minute=40),
+        id="etat_services",
+        coalesce=True,
     )
     # Le Conseil des ministres se tient désormais le jeudi ; le CR est publié
     # le soir ou le lendemain - passage jeudi soir + rattrapages.
@@ -311,6 +328,8 @@ def run_demarrage() -> None:
         # validations faites depuis le dernier passage quotidien (≈2 s)
         ("annuaire", run_annuaire),
         ("sources muettes", verifier_sources_muettes),
+        # en dernier : une minute de requêtes, sans rapport avec la collecte
+        ("état des téléservices", run_etat_services),
     )
     for libelle, etape in etapes:
         try:

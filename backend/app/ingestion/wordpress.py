@@ -30,6 +30,10 @@ class WordPressCollector(Collector):
         return self.type_doc
     par_page: int = 20
 
+    def meta_supplementaire(self, titre: str, html: str) -> dict:
+        """Champs propres à un collecteur, ajoutés aux métadonnées du document."""
+        return {}
+
     def collect(self) -> None:
         page = 1
         total_pages = 1
@@ -108,6 +112,7 @@ class WordPressCollector(Collector):
             mime="text/html",
             texte_extrait=texte or None,
             statut_extraction="ok",
-            meta={"wp_id": post.get("id"), "wp_modified": post.get("modified")},
+            meta={"wp_id": post.get("id"), "wp_modified": post.get("modified")}
+            | self.meta_supplementaire(titre, html),
         )
         return doc is not None
