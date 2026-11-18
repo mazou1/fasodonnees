@@ -123,6 +123,24 @@
         </ul>
       </div>
     </section>
+
+    <section class="item">
+      <h2>À voir aussi</h2>
+      <div class="detail">
+        <p>D'autres initiatives citoyennes burkinabè, indépendantes de ce site :</p>
+        <ul>
+          <li>
+            <a href="https://archivesdufaso.com" target="_blank" rel="noopener">Archives du Faso</a>
+            - archive citoyenne et indépendante de la parole présidentielle burkinabè, de 1960 à
+            aujourd'hui : discours, citations et vidéos, chacun relié à sa source d'origine.
+          </li>
+        </ul>
+        <p class="note-licence">
+          Ces sites ne font pas partie de nos sources : les données publiées ici proviennent
+          uniquement des sites officiels listés plus haut.
+        </p>
+      </div>
+    </section>
   </div>
 </template>
 
