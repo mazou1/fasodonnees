@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 import sys
 import time
 
 import httpx
 from selectolax.parser import HTMLParser
 from sqlalchemy import func, select
+from sqlalchemy.orm import aliased
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -29,6 +31,7 @@ from app.db import SessionLocal
 from app.extraction.pdf import extraire_texte
 from app.models import Document
 from app.stockage import stockage
+from app.versions import ids_versions_de_reference
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +46,29 @@ def _lien_pdf(doc: Document) -> str | None:
         logger.warning("Archive HTML introuvable pour le document %s : %s", doc.id, doc.fichier)
         return None
     tree = HTMLParser(stockage.lire(doc.fichier).decode(errors="replace"))
-    for a in tree.css("a[href]"):
-        href = a.attributes.get("href") or ""
-        if ".pdf" in href.lower():
+    return choisir_lien(
+        [(a.attributes.get("href") or "", a.text() or "") for a in tree.css("a[href]")]
+    )
+
+
+def choisir_lien(liens: list[tuple[str, str]]) -> str | None:
+    """Le PDF français à suivre parmi les liens (href, libellé) d'une page.
+
+    Une page coquille aligne plusieurs « Télécharger » : le compte rendu, ses
+    traductions en langues nationales, parfois un rectificatif (conseil n°31 du
+    5 novembre 2026). Les traductions sont écartées ; le rectificatif, quand il
+    existe, l'emporte - c'est la version que le gouvernement tient pour bonne.
+    """
+    francais = [
+        href
+        for href, libelle in liens
+        if ".pdf" in href.lower()
+        and not re.search(LANGUES_NATIONALES, f"{href} {libelle}", re.IGNORECASE)
+    ]
+    for href in francais:
+        if re.search(r"RECTIF", href, re.IGNORECASE):
             return href
-    return None
+    return francais[0] if francais else None
 
 
 def _archiver_pdf(contenu: bytes, annee: str) -> tuple[str, str]:
@@ -89,9 +110,25 @@ def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     return statut
 
 
-def main() -> int:
+def main(max_docs: int | None = None) -> int:
+    # `max_docs` permet au worker d'appeler cette passe sans ligne de commande
+    # (cf. app/ingestion/scheduler.py)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 200
+    if max_docs is None:
+        max_docs = int(sys.argv[1]) if len(sys.argv) > 1 else 200
+    # Le gouvernement réécrit ses pages : un conseil dont une version porte déjà
+    # le texte intégral n'a pas à être rechargé parce qu'une réécriture
+    # ultérieure n'a laissé que des liens - il serait extrait deux fois.
+    autre = aliased(Document)
+    deja_complet = (
+        select(autre.id)
+        .where(
+            autre.type_doc == "cr_conseil",
+            autre.date_publication == Document.date_publication,
+            func.length(func.coalesce(autre.texte_extrait, "")) >= TEXTE_MINIMUM,
+        )
+        .exists()
+    )
     client = httpx.Client(
         headers={"User-Agent": settings.user_agent}, timeout=60, follow_redirects=True
     )
@@ -103,6 +140,8 @@ def main() -> int:
                 func.length(func.coalesce(Document.texte_extrait, "")) < TEXTE_MINIMUM,
                 ~Document.titre.op("~*")(LANGUES_NATIONALES),
                 ~Document.meta.has_key("pdf_statut"),
+                Document.id.in_(ids_versions_de_reference()),
+                ~deja_complet,
             )
             .order_by(Document.date_publication.desc().nulls_last())
             .limit(max_docs)

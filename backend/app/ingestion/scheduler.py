@@ -139,6 +139,16 @@ def run_conseil_ministres() -> None:
             settings.llm_provider,
         )
         return
+    # Certains comptes rendus ne sont publiés qu'en PDF, derrière un lien
+    # « Télécharger » : sans cette passe, la page vide est « structurée » avec
+    # zéro décision et le conseil manque au site (n°31 du 5 novembre 2026).
+    from app.extraction import pdf_cr
+
+    try:
+        pdf_cr.main(max_docs=5)
+    except Exception:  # noqa: BLE001 - ne doit pas empêcher la structuration du reste
+        logger.exception("Rapatriement des PDF de comptes rendus en échec")
+
     from app.extraction import run as extraction_run
 
     extraction_run.main()

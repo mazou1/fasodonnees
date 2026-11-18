@@ -60,7 +60,8 @@ RSS_FEEDS: dict[str, str] = {
     "lefaso": "https://lefaso.net/spip.php?page=backend",
     "sidwaya": "https://www.sidwaya.info/feed",
     "burkina24": "https://burkina24.com/feed",
-    "aib": "https://www.aib.media/feed",
+    # `/feed` renvoie 404 depuis le 2026-09-22 ; seule la forme en paramètre répond
+    "aib": "https://www.aib.media/?feed=rss2",
     "lepays": "https://lepays.bf/feed",
 }
 

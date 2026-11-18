@@ -17,7 +17,6 @@ import hashlib
 import logging
 import sys
 import time
-from urllib.parse import quote, unquote
 
 import httpx
 from sqlalchemy import select
@@ -31,33 +30,17 @@ from app.stockage import stockage
 
 logger = logging.getLogger(__name__)
 
-ENDPOINT = "https://www.legiburkina.gov.bf/api/documents/download/"
-
-
-def _nom_fichier(url: str) -> str | None:
-    if "sggcm" in url:
-        nom = url.rsplit("sggcm", 1)[-1]
-    else:
-        nom = url.rsplit("/", 1)[-1]
-    return nom or None
-
 
 def traiter(db: Session, doc: Document, client: httpx.Client) -> str:
     """Renvoie le statut : ok | scan | echec_source | echec."""
     meta = dict(doc.meta or {})
     meta.setdefault("description", doc.texte_extrait)
 
-    nom = _nom_fichier(doc.url)
-    if not nom:
-        meta["pdf_statut"] = "echec"
-        doc.meta = meta
-        db.commit()
-        return "echec"
-
-    # l'URL publiée est déjà percent-encodée : on normalise pour éviter le double encodage
-    resp = client.get(ENDPOINT + quote(unquote(nom)))
-    if resp.status_code >= 400:
-        # 500 « NonUniqueResult » = doublon côté Légiburkina - irrécupérable de notre côté
+    # Depuis la refonte de l'automne 2026, l'URL du document EST celle du PDF
+    # (`/documents/{uuid}/visualiser`) ; l'ancien point de téléchargement par
+    # nom de fichier a disparu avec l'API.
+    resp = client.get(doc.url)
+    if resp.status_code >= 400 or not resp.content.startswith(b"%PDF"):
         meta["pdf_statut"] = "echec_source"
         meta["pdf_erreur"] = resp.status_code
         doc.meta = meta
@@ -95,7 +78,9 @@ def main(max_docs: int | None = None) -> int:
         docs = db.scalars(
             select(Document)
             .where(
-                Document.meta.has_key("legi_id"),
+                # `legi_uuid` : textes vus sur le nouveau site, les seuls dont
+                # l'adresse réponde encore
+                Document.meta.has_key("legi_uuid"),
                 ~Document.meta.has_key("pdf_statut"),
             )
             .order_by(Document.date_publication.desc().nulls_last())
