@@ -227,3 +227,42 @@ def test_une_date_illisible_narrete_pas_la_collecte(db):
     assert len(docs) == 2
     assert docs[0].date_publication is None
     assert docs[1].date_publication is not None
+
+
+class _JobfPayant(_Jobf):
+    """Depuis novembre 2026, l'API refuse le chemin du PDF (403)."""
+
+    def __init__(self, db, pages):
+        super().__init__(db, pages)
+        self.demandes_pdf = 0
+
+    def _repondre(self, request):
+        if "jo-file-url" in request.url.path:
+            self.demandes_pdf += 1
+            return httpx.Response(403, json={"success": False, "message": "Vous n'avez pas accès"})
+        return super()._repondre(request)
+
+
+def test_un_numero_payant_est_archive_par_son_sommaire(db):
+    collecteur = _JobfPayant(db, [[numero(46, jour=12)], []])
+
+    collecteur.collect()
+
+    doc = documents(db)[0]
+    assert doc.url == "https://jobf.gov.bf/newspapers/46#uuid-46"
+    assert doc.statut_extraction == "na" and doc.fichier is None
+    assert "Décret n°46" in doc.texte_extrait
+    assert doc.meta["acces"] == "payant"
+    assert collecteur.telechargements == [], "aucun PDF n'est demandé au stockage"
+
+
+def test_un_numero_payant_connu_ne_redemande_pas_son_pdf(db):
+    """Sans cela, chaque passage reposait la question pour tous les numéros
+    de toutes les pages - et la source répondait 429."""
+    _JobfPayant(db, [[numero(46)], []]).collect()
+
+    second = _JobfPayant(db, [[numero(46)], []])
+    second.collect()
+
+    assert second.demandes_pdf == 0
+    assert len(documents(db)) == 1

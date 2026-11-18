@@ -56,8 +56,10 @@ def choisir_lien(liens: list[tuple[str, str]]) -> str | None:
 
     Une page coquille aligne plusieurs « Télécharger » : le compte rendu, ses
     traductions en langues nationales, parfois un rectificatif (conseil n°31 du
-    5 novembre 2026). Les traductions sont écartées ; le rectificatif, quand il
-    existe, l'emporte - c'est la version que le gouvernement tient pour bonne.
+    5 novembre 2026). Les traductions sont écartées, et le rectificatif aussi
+    tant qu'il existe un original : c'est un erratum de quelques pages (« au
+    lieu de… lire… »), pas un compte rendu. Le suivre à la place de l'original
+    a donné 2 décisions au lieu de 28.
     """
     francais = [
         href
@@ -65,10 +67,8 @@ def choisir_lien(liens: list[tuple[str, str]]) -> str | None:
         if ".pdf" in href.lower()
         and not re.search(LANGUES_NATIONALES, f"{href} {libelle}", re.IGNORECASE)
     ]
-    for href in francais:
-        if re.search(r"RECTIF", href, re.IGNORECASE):
-            return href
-    return francais[0] if francais else None
+    originaux = [href for href in francais if not re.search(r"RECTIF", href, re.IGNORECASE)]
+    return (originaux or francais or [None])[0]
 
 
 def _archiver_pdf(contenu: bytes, annee: str) -> tuple[str, str]:

@@ -18,13 +18,19 @@ React), sans authentification :
   sous /storage/.
 
 Ne pas confondre avec `/api/clients/newspapers` ni `/api/newspapers/page/{n}`,
-qui exigent un compte. Le site vend des abonnements et des insertions
-d'annonces, pas l'accès au Journal officiel lui-même : les PDF sont servis
-librement, ce que le statut de document public commande.
+qui exigent un compte.
+
+Constaté le 2026-11-18 : le PDF est devenu payant. `jo-file-url` répond 403
+« Un achat, un abonnement actif ou l'accessibilité gratuite est requis » pour
+tous les numéros essayés. C'est une restriction voulue par l'éditeur : on ne la
+contourne pas. La liste et le sommaire de chaque numéro restent publics ; un
+numéro dont le PDF est refusé est donc archivé par son sommaire seul, qui
+énumère tous les actes publiés - de quoi savoir ce qui est paru, sans le texte.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 from datetime import date
@@ -48,6 +54,7 @@ class JobfCollector(Collector):
     # collecte est donc bornée par passage et l'arriéré se résorbe sur
     # plusieurs jours - le même parti que l'OCR et les PDF de Légiburkina.
     max_nouveaux = 15
+    pause_page = 2.0
 
     def collect(self) -> None:
         nouveaux = 0
@@ -75,6 +82,8 @@ class JobfCollector(Collector):
             if self.nb_vus - vus_avant == len(numeros) and not self._rattrapage(total_source):
                 break
             page += 1
+            # le 2026-11-18, cinq pages lues coup sur coup ont valu un 429
+            time.sleep(self.pause_page)
         if nouveaux >= self.max_nouveaux:
             logger.info(
                 "%s : plafond de %d numéros atteint - le reste suivra au prochain passage",
@@ -119,6 +128,11 @@ class JobfCollector(Collector):
             reponse = self.client.post(
                 f"{self.api}/newspapers/jo-file-url", json={"joUuid": uuid}, timeout=30
             )
+            if reponse.status_code == 403:
+                # refus d'accès explicite (numéro payant), à ne pas confondre
+                # avec une panne : le numéro sera archivé par son sommaire
+                self.payants = getattr(self, "payants", set()) | {uuid}
+                return None
             reponse.raise_for_status()
             chemin = ((reponse.json().get("data")) or {}).get("pathJo")
         except Exception as exc:  # réseau, JSON, champ absent
@@ -131,9 +145,13 @@ class JobfCollector(Collector):
         uuid = numero.get("uuid")
         if not uuid:
             return False
-        pdf_url = self.url_pdf(uuid)
-        if not pdf_url:
+        # Avant toute requête : un numéro déjà archivé, par son PDF ou par son
+        # sommaire, n'a pas à redemander son chemin à l'API à chaque passage.
+        if self.uuid_connu(uuid):
+            self.nb_vus += 1
             return False
+        pdf_url = self.url_pdf(uuid)
+        time.sleep(0.5)
 
         # Une date illisible ne doit pas emporter la collecte entière : le
         # numéro reste archivé, sa date manquera - c'est réparable, un numéro
@@ -162,6 +180,13 @@ class JobfCollector(Collector):
         # redéposé apparaîtra comme une pièce distincte plutôt que comme une
         # version. C'est acceptable ici - un Journal officiel ne se réécrit pas,
         # il s'errate dans un numéro suivant.
+        if not pdf_url:
+            # Une panne passagère laisse le numéro pour le prochain passage :
+            # l'archiver par son sommaire le ferait passer pour connu, et son
+            # PDF ne serait plus jamais demandé.
+            if uuid not in getattr(self, "payants", ()):
+                return False
+            return self._archiver_sommaire(numero, uuid, titre, pub)
         if self.deja_connu(pdf_url):
             self.nb_vus += 1
             return False
@@ -206,6 +231,50 @@ class JobfCollector(Collector):
             logger.info("%s : %s archivé (%s)", self.slug, titre, statut)
         time.sleep(0.5)  # politesse : le JO sert des fichiers de plusieurs mégaoctets
         return doc is not None
+
+    def _archiver_sommaire(self, numero: dict, uuid: str, titre: str, pub: date | None) -> bool:
+        """Archive un numéro dont le PDF est refusé, par son sommaire public."""
+        sommaire = html_vers_texte(numero.get("sommaire") or "") or None
+        # le fragment rend l'adresse unique : la numérotation repart à 1 chaque
+        # janvier, /newspapers/{numero} seul désignerait plusieurs numéros
+        permalien = f"https://jobf.gov.bf/newspapers/{numero.get('numero')}"
+        doc = self.upsert_document(
+            url=f"{permalien}#{uuid}",
+            type_doc="journal_officiel",
+            titre=titre[:1000],
+            date_publication=pub,
+            hash_contenu=hashlib.sha256(f"{uuid}|{sommaire}".encode()).hexdigest(),
+            texte_extrait=sommaire,
+            statut_extraction="na",  # sommaire seul : rien à extraire d'un fichier
+            meta={
+                "jo_uuid": uuid,
+                "jo_id": numero.get("id"),
+                "jo_numero": str(numero.get("numero") or "") or None,
+                "jo_type": numero.get("type"),
+                "sommaire": sommaire,
+                "permalien": permalien,
+                "acces": "payant",
+            },
+        )
+        if doc is not None:
+            logger.info("%s : %s archivé par son sommaire (PDF payant)", self.slug, titre)
+        return doc is not None
+
+    def uuid_connu(self, uuid: str) -> bool:
+        """Ce numéro est-il déjà archivé, quelle que soit son adresse ?"""
+        from sqlalchemy import select
+
+        from app.models import Document
+
+        return (
+            self.db.scalars(
+                select(Document.id).where(
+                    Document.source_id == self.source.id,
+                    Document.meta["jo_uuid"].as_string() == uuid,
+                ).limit(1)
+            ).first()
+            is not None
+        )
 
     def deja_connu(self, url: str) -> bool:
         """Ce numéro est-il déjà archivé, sous cette même adresse ?

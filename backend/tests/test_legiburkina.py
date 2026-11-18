@@ -129,13 +129,14 @@ def test_cle_reference_ignore_espaces_et_casse():
     assert cle_reference(" 2026-1165 /pf/MGDP ") == "2026-1165/PF/MGDP"
 
 
-def test_cr_coquille_prefere_le_rectificatif_et_ecarte_les_traductions():
+def test_cr_coquille_suit_l_original_pas_l_erratum_ni_les_traductions():
     liens = [
         ("https://g/CONSEIL-DES-MINISTRES-N31.pdf", "Télécharger"),
         ("https://g/RECTIF.-CONSEIL-DES-MINISTRES-N031.pdf", "Télécharger"),
         ("https://g/moore-CONSEIL-DES-MINISTRES-N31.pdf", "Télécharger"),
         ("https://g/page", "Accueil"),
     ]
-    assert choisir_lien(liens) == "https://g/RECTIF.-CONSEIL-DES-MINISTRES-N031.pdf"
-    assert choisir_lien(liens[:1] + liens[2:]) == "https://g/CONSEIL-DES-MINISTRES-N31.pdf"
+    assert choisir_lien(liens) == "https://g/CONSEIL-DES-MINISTRES-N31.pdf"
+    # le rectificatif ne sert que faute d'original
+    assert choisir_lien(liens[1:]) == "https://g/RECTIF.-CONSEIL-DES-MINISTRES-N031.pdf"
     assert choisir_lien(liens[2:]) is None
