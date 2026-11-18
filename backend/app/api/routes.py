@@ -1329,6 +1329,8 @@ class DocumentOut(BaseModel):
     pdf: bool = False
     # True : l'adresse d'origine ne répond plus, seule notre archive subsiste
     source_retiree: bool = False
+    # fiche de lecture validée (Conseil constitutionnel, ASCE-LC), s'il y en a une
+    fiche: dict | None = None
 
     @classmethod
     def from_row(cls, d: Document) -> "DocumentOut":
@@ -1344,6 +1346,34 @@ class DocumentOut(BaseModel):
             pdf=bool(d.fichier and d.mime == "application/pdf"),
             source_retiree=retire_de_la_source(d.meta),
         )
+
+
+def fiches_validees(db: Session, doc_ids: list[int]) -> dict[int, dict]:
+    """Fiches de lecture publiables, par document (cf. app/extraction/fiches.py)."""
+    from app.extraction.fiches import CATEGORIES, ISSUES
+    from app.models import FicheDocument
+
+    if not doc_ids:
+        return {}
+    fiches = db.scalars(
+        select(FicheDocument).where(
+            FicheDocument.document_id.in_(doc_ids), FicheDocument.statut_validation == "valide"
+        )
+    )
+    return {
+        f.document_id: {
+            "objet": f.objet,
+            "categorie": f.categorie,
+            "categorie_libelle": CATEGORIES.get(f.categorie, f.categorie),
+            "partie": f.partie,
+            "issue": f.issue,
+            "issue_libelle": ISSUES.get(f.issue) if f.issue else None,
+            "resume": f.resume,
+            "points": f.points or [],
+            "date_document": f.date_document,
+        }
+        for f in fiches
+    }
 
 
 class DocumentsPage(BaseModel):
@@ -1406,9 +1436,12 @@ def list_documents(
         ).group_by(Source.slug, Source.nom).order_by(func.count().desc())
     ).all()
 
+    fiches = fiches_validees(db, [d.id for d in docs])
     return DocumentsPage(
         total=int(total or 0),
-        documents=[DocumentOut.from_row(d) for d in docs],
+        documents=[
+            DocumentOut.from_row(d).model_copy(update={"fiche": fiches.get(d.id)}) for d in docs
+        ],
         types=[{"type_doc": t, "n": int(n)} for t, n in types],
         sources=[{"slug": s, "nom": nom, "n": int(n)} for s, nom, n in sources],
     )
@@ -1426,6 +1459,7 @@ def get_document(doc_id: int, db: Session = Depends(get_db)):
     if d is None:
         raise HTTPException(404, "Document introuvable")
     base = DocumentOut.from_row(d).model_dump()
+    base["fiche"] = fiches_validees(db, [d.id]).get(d.id)
     return DocumentDetail(
         **base,
         texte_extrait=d.texte_extrait,

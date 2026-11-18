@@ -28,6 +28,7 @@ from app.models import (
     Decision,
     DotationBudgetaire,
     EngagementFinancier,
+    FicheDocument,
     Marche,
     MembreGouvernement,
     Nomination,
@@ -48,6 +49,7 @@ CIBLES = (
     (Marche, "marchés publics"),
     (Realisation, "infrastructures"),
     (VotePlenier, "votes en plénière"),
+    (FicheDocument, "fiches de lecture"),
 )
 
 SEUIL_DEFAUT = 0.9

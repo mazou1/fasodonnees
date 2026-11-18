@@ -13,6 +13,24 @@
       <button :class="{ actif: vue === 'texte' }" @click="vue = 'texte'">Texte</button>
     </nav>
 
+    <div v-if="doc.fiche" class="carte fiche-lecture">
+      <h2>En bref</h2>
+      <p class="objet">{{ doc.fiche.objet }}</p>
+      <dl>
+        <template v-if="doc.fiche.issue_libelle"><dt>Décision</dt><dd><strong>{{ doc.fiche.issue_libelle }}</strong></dd></template>
+        <dt>Nature</dt><dd>{{ doc.fiche.categorie_libelle }}</dd>
+        <template v-if="doc.fiche.partie"><dt>{{ doc.fiche.issue ? "Saisine" : "Entité concernée" }}</dt><dd>{{ doc.fiche.partie }}</dd></template>
+      </dl>
+      <p>{{ doc.fiche.resume }}</p>
+      <ul v-if="doc.fiche.points.length">
+        <li v-for="(p, i) in doc.fiche.points" :key="i">{{ p }}</li>
+      </ul>
+      <p class="note-fiche">
+        Fiche établie automatiquement à partir du texte, puis relue. Elle rapporte ce que le
+        document énonce, sans le commenter - le document officiel fait foi.
+      </p>
+    </div>
+
     <!-- Le PDF est servi par une redirection vers l'archive : l'iframe suit la
          redirection comme un onglet le ferait. -->
     <div v-if="doc.pdf && vue === 'pdf'" class="cadre-pdf">
@@ -130,4 +148,12 @@ watch(() => route.params.id, charger);
   max-height: 75vh; overflow-y: auto;
 }
 .liens-bas { margin-top: 16px; gap: 16px; flex-wrap: wrap; }
+.fiche-lecture { margin-bottom: 16px; border-left: 3px solid var(--accent); }
+.fiche-lecture h2 { margin: 0 0 6px; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.fiche-lecture .objet { font-weight: 600; font-size: 1.05rem; margin: 0 0 10px; }
+.fiche-lecture dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0 0 10px; font-size: 0.92rem; }
+.fiche-lecture dt { color: var(--text-muted); }
+.fiche-lecture dd { margin: 0; }
+.fiche-lecture ul { margin: 8px 0; padding-left: 18px; line-height: 1.55; }
+.note-fiche { color: var(--text-muted); font-size: 0.84rem; margin: 10px 0 0; }
 </style>

@@ -40,7 +40,21 @@
         <span>{{ d.source_nom }}</span>
       </div>
       <div class="titre">{{ d.titre || d.url }}</div>
+      <div v-if="d.fiche" class="fiche">
+        <div class="objet">{{ d.fiche.objet }}</div>
+        <div class="reperes">
+          <span v-if="d.fiche.issue_libelle" class="issue" :class="d.fiche.issue">{{ d.fiche.issue_libelle }}</span>
+          <span>{{ d.fiche.categorie_libelle }}</span>
+          <span v-if="d.fiche.partie">{{ d.fiche.issue ? "Saisine : " : "" }}{{ d.fiche.partie }}</span>
+          <span v-if="d.fiche.date_document && !d.date_publication">{{ formatDate(d.fiche.date_document) }}</span>
+        </div>
+        <p class="resume">{{ d.fiche.resume }}</p>
+        <ul v-if="d.fiche.points.length" class="points">
+          <li v-for="(p, i) in d.fiche.points" :key="i">{{ p }}</li>
+        </ul>
+      </div>
       <div class="meta" style="margin-top: 6px">
+        <router-link class="source" :to="`/documents/${d.id}`">Lire le texte →</router-link>
         <a v-if="d.pdf" class="source" :href="`/api/documents/${d.id}/fichier`" target="_blank" rel="noopener">
           📄 PDF archivé →
         </a>
@@ -79,11 +93,15 @@
   </section>
 
   <p class="note-methode">
-    Corpus archivé tel que publié par les institutions : la plateforme ne commente ni ne résume
-    les décisions et les rapports. Le Conseil constitutionnel publie ses décisions, avis et
-    ordonnances par année - ils sont ici distingués, un avis n'ayant pas la portée d'une
-    décision. Côté ASCE-LC, l'article d'annonce et le rapport lui-même sont archivés séparément :
-    c'est le PDF qui porte le contenu de l'audit.
+    Corpus archivé tel que publié par les institutions. Quand un document porte une fiche (objet,
+    saisine ou entité contrôlée, sens de la décision, résumé), elle a été établie automatiquement
+    à partir de son texte, puis relue avant publication. Elle rapporte ce que le document énonce,
+    sans le commenter ; elle ne le remplace pas, et seul le document officiel fait foi. Les rapports
+    très longs sont résumés à partir de leur début et de leurs conclusions. Le Conseil
+    constitutionnel publie ses décisions, avis et ordonnances par année - ils sont ici distingués,
+    un avis n'ayant pas la portée d'une décision. Côté ASCE-LC, l'article d'annonce et le rapport
+    lui-même sont archivés séparément : c'est le PDF qui porte le contenu de l'audit. Une
+    irrégularité relevée par un audit n'est pas une condamnation.
   </p>
 </template>
 
@@ -182,6 +200,15 @@ onMounted(async () => {
 .onglets .compte { opacity: 0.7; margin-left: 6px; font-variant-numeric: tabular-nums; }
 .entete-recherche { align-items: center; flex-wrap: wrap; gap: 12px; }
 .entete-recherche input[type="search"] { flex: 1; max-width: 340px; }
+
+.fiche { margin-top: 8px; padding: 10px 12px; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 5%, var(--surface-1)); border-radius: 0 8px 8px 0; }
+.fiche .objet { font-weight: 600; }
+.fiche .reperes { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 4px; color: var(--text-muted); font-size: 0.84rem; }
+.fiche .issue { font-weight: 700; color: var(--text-primary); }
+.fiche .issue.non_conforme, .fiche .issue.irrecevable, .fiche .issue.rejet { color: #b3261e; }
+.fiche .issue.conforme, .fiche .issue.admission { color: #00713a; }
+.fiche .resume { margin: 8px 0 0; color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55; }
+.fiche .points { margin: 6px 0 0; padding-left: 18px; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; }
 
 .manque { margin-top: 28px; border-left: 3px solid #ce1126; }
 .manque h2 { font-size: 1rem; margin: 0 0 10px; }

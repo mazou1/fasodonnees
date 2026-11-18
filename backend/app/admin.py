@@ -29,6 +29,7 @@ from app.models import (
     Personne,
     Projet,
     Publication,
+    FicheDocument,
     Realisation,
     VotePlenier,
     RepartitionBudgetaire,
@@ -377,6 +378,51 @@ class VotePlenierAdmin(ValidationActionsMixin, ModelView, model=VotePlenier):
     icon = "fa-solid fa-landmark"
 
 
+class FicheDocumentAdmin(ValidationActionsMixin, ModelView, model=FicheDocument):
+    modele = FicheDocument
+    name_plural = "Fiches de lecture - justice & contrôle (validation)"
+    page_size = 50
+    column_list = [
+        FicheDocument.id,
+        FicheDocument.genre,
+        FicheDocument.categorie,
+        FicheDocument.issue,
+        FicheDocument.objet,
+        FicheDocument.partie,
+        FicheDocument.score_confiance,
+        FicheDocument.statut_validation,
+    ]
+    column_details_list = [
+        FicheDocument.document,
+        FicheDocument.genre,
+        FicheDocument.categorie,
+        FicheDocument.issue,
+        FicheDocument.objet,
+        FicheDocument.partie,
+        FicheDocument.resume,
+        FicheDocument.points,
+        FicheDocument.date_document,
+        FicheDocument.score_confiance,
+        FicheDocument.statut_validation,
+    ]
+    form_columns = [
+        FicheDocument.objet,
+        FicheDocument.categorie,
+        FicheDocument.partie,
+        FicheDocument.issue,
+        FicheDocument.resume,
+        FicheDocument.points,
+        FicheDocument.date_document,
+        FicheDocument.statut_validation,
+    ]
+    column_searchable_list = [FicheDocument.objet, FicheDocument.partie]
+    column_sortable_list = [
+        FicheDocument.id, FicheDocument.categorie, FicheDocument.issue,
+        FicheDocument.score_confiance,
+    ]
+    icon = "fa-solid fa-scale-balanced"
+
+
 class ProjetAdmin(ValidationActionsMixin, ModelView, model=Projet):
     """Dossiers de suivi : annonce → attribution → livraison.
 
@@ -600,6 +646,7 @@ _FILES_VALIDATION = [
     (Realisation, "Infrastructures & inaugurations", "realisation"),
     (BudgetExercice, "Budgets d'exercice", "budget-exercice"),
     (VotePlenier, "Votes en plénière", "vote-plenier"),
+    (FicheDocument, "Fiches de lecture (justice & contrôle)", "fiche-document"),
 ]
 
 
@@ -739,6 +786,7 @@ def mount_admin(app: FastAPI) -> None:
         AttributaireAdmin,
         RealisationAdmin,
         VotePlenierAdmin,
+        FicheDocumentAdmin,
         ProjetAdmin,
         DotationAdmin,
         RepartitionAdmin,

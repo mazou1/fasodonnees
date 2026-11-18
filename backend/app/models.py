@@ -548,6 +548,35 @@ class VotePlenier(Base):
         return f"{self.date_seance} - {self.intitule[:80]}"
 
 
+class FicheDocument(Base):
+    """Fiche de lecture d'une décision du Conseil constitutionnel ou d'un
+    rapport de l'ASCE-LC (cf. app/extraction/fiches.py) : ce que le document
+    énonce, en quelques lignes, sans commentaire. Une fiche par document.
+    """
+
+    __tablename__ = "fiche_document"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("document.id"), unique=True)
+    genre: Mapped[str] = mapped_column(String(20))  # constitutionnel | controle
+    objet: Mapped[str] = mapped_column(Text)
+    categorie: Mapped[str] = mapped_column(String(40), default="autre", index=True)
+    # auteur de la saisine (Conseil constitutionnel) ou entité contrôlée (ASCE-LC)
+    partie: Mapped[str | None] = mapped_column(String(500))
+    # sens du dispositif, pour le seul Conseil constitutionnel
+    issue: Mapped[str | None] = mapped_column(String(40), index=True)
+    resume: Mapped[str] = mapped_column(Text)
+    points: Mapped[list | None] = mapped_column(JSONB().with_variant(JSON(), "sqlite"))
+    date_document: Mapped[date | None] = mapped_column(Date)
+    score_confiance: Mapped[float | None] = mapped_column(Float)
+    statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+
+    document: Mapped[Document] = relationship()
+
+    def __str__(self) -> str:
+        return self.objet[:100]
+
+
 class Abonnement(Base):
     """Une alerte demandée par un lecteur (cf. app/alertes/).
 

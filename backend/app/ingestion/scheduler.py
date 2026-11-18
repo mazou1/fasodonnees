@@ -65,6 +65,19 @@ def run_institutionnel() -> None:
         vus, total, echecs,
     )
 
+    # Fiches de lecture des nouvelles décisions constitutionnelles et des
+    # nouveaux rapports de l'ASCE-LC. Le corpus historique se traite à la main
+    # (python -m app.extraction.fiches 1000) ; ici, seulement le flux.
+    from app.extraction import fiches
+
+    with SessionLocal() as db:
+        vus, creees, echecs = fiches.traiter_lot(db, max_docs=10)
+    logger.info(
+        "Fiches de lecture : %d document(s) examiné(s), %d fiche(s) établie(s) (à valider), "
+        "%d échec(s)",
+        vus, creees, echecs,
+    )
+
 
 def run_marches_publics() -> None:
     """Chaîne complète des marchés : extraction LLM, autorités, consolidation.
