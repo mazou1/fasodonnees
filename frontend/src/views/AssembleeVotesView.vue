@@ -36,7 +36,7 @@
         <span v-if="v.date_seance">Séance du {{ formatDate(v.date_seance) }}</span>
         <span class="resultat" :class="v.resultat">{{ v.resultat === "rejete" ? "Rejeté" : "Adopté" }}</span>
       </div>
-      <div class="titre">{{ majuscule(v.intitule) }}</div>
+      <div class="titre">{{ titre(v) }}</div>
       <div v-if="v.resume" class="detail">{{ v.resume }}</div>
       <div class="scrutin" v-if="scrutin(v)">{{ scrutin(v) }}</div>
       <div class="meta" style="margin-top: 6px">
@@ -87,6 +87,14 @@ function formatDate(d) {
 }
 function majuscule(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Certains comptes rendus ne nomment le texte que par « portant… » : on lui
+    rend alors sa nature, sans quoi le titre commence au milieu d'une phrase. */
+function titre(v) {
+  return /^(portant|relatif|relative)\b/i.test(v.intitule)
+    ? `${v.nature_libelle} ${v.intitule}`
+    : majuscule(v.intitule);
 }
 
 /** Ce que le compte rendu dit du scrutin, sans rien compléter. */
