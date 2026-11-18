@@ -514,6 +514,40 @@ class Realisation(Base):
         return f"{self.type} - {self.titre[:60]}"
 
 
+class VotePlenier(Base):
+    """Texte soumis au vote en séance plénière de l'Assemblée, tel que le
+    rapporte le compte rendu de séance (cf. app/extraction/plenieres.py).
+
+    Les décomptes restent vides quand le compte rendu ne les donne pas : seul
+    ce qui est écrit à la source est enregistré.
+    """
+
+    __tablename__ = "vote_plenier"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("document.id"), index=True)
+    intitule: Mapped[str] = mapped_column(Text)
+    # projet_loi | proposition_loi | ratification | loi_finances | resolution | autre
+    nature: Mapped[str] = mapped_column(String(30), default="autre", index=True)
+    resultat: Mapped[str] = mapped_column(String(20), default="adopte")  # adopte | rejete
+    date_seance: Mapped[date | None] = mapped_column(Date, index=True)
+    unanimite: Mapped[bool | None] = mapped_column(Boolean)
+    votants: Mapped[int | None] = mapped_column(Integer)
+    pour: Mapped[int | None] = mapped_column(Integer)
+    contre: Mapped[int | None] = mapped_column(Integer)
+    abstentions: Mapped[int | None] = mapped_column(Integer)
+    commission: Mapped[str | None] = mapped_column(String(300))
+    presente_par: Mapped[str | None] = mapped_column(String(300))
+    resume: Mapped[str | None] = mapped_column(Text)
+    score_confiance: Mapped[float | None] = mapped_column(Float)
+    statut_validation: Mapped[str] = mapped_column(String(20), default="a_valider", index=True)
+
+    document: Mapped[Document] = relationship()
+
+    def __str__(self) -> str:
+        return f"{self.date_seance} - {self.intitule[:80]}"
+
+
 class EtatService(Base):
     """Dernier état constaté d'un téléservice de l'annuaire « Services en ligne ».
 

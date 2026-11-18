@@ -52,6 +52,19 @@ def run_institutionnel() -> None:
         vus, total, echecs,
     )
 
+    # Les comptes rendus de plénière viennent d'être collectés (groupe
+    # institutionnel) : on en tire les textes votés. Borné comme le reste -
+    # l'Assemblée publie quelques comptes rendus par semaine au plus.
+    from app.extraction import plenieres
+
+    with SessionLocal() as db:
+        vus, total, _, echecs = plenieres.traiter_lot(db, max_docs=15)
+    logger.info(
+        "Plénières : %d compte(s) rendu(s) examiné(s), %d vote(s) extrait(s) (à valider), "
+        "%d échec(s)",
+        vus, total, echecs,
+    )
+
 
 def run_marches_publics() -> None:
     """Chaîne complète des marchés : extraction LLM, autorités, consolidation.

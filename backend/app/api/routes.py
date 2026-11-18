@@ -156,6 +156,85 @@ def assemblee(db: Session = Depends(get_db)) -> dict:
     }
 
 
+@router.get("/assemblee/votes")
+def assemblee_votes(
+    q: str | None = Query(None, description="Mots de l'intitulé"),
+    annee: int | None = Query(None),
+    nature: str | None = Query(None, description="projet_loi, ratification, loi_finances…"),
+    page: int = Query(1, ge=1),
+    par_page: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Textes adoptés (ou rejetés) en séance plénière, validés, du plus récent au plus ancien.
+
+    Source : les comptes rendus de séance de l'Assemblée législative du peuple.
+    Les décomptes de voix ne sont renseignés que lorsque le compte rendu les donne.
+    """
+    from app.extraction.plenieres import NATURES
+    from app.models import VotePlenier
+
+    valides = VotePlenier.statut_validation == "valide"
+    filtres = [valides]
+    if q and len(q.strip()) >= 2:
+        for mot in q.split():
+            filtres.append(VotePlenier.intitule.ilike(f"%{mot}%"))
+    if annee:
+        filtres.append(func.extract("year", VotePlenier.date_seance) == annee)
+    if nature in NATURES:
+        filtres.append(VotePlenier.nature == nature)
+
+    total = db.scalar(select(func.count()).select_from(VotePlenier).where(*filtres)) or 0
+    votes = db.scalars(
+        select(VotePlenier)
+        .where(*filtres)
+        .order_by(VotePlenier.date_seance.desc().nulls_last(), VotePlenier.id.desc())
+        .offset((page - 1) * par_page)
+        .limit(par_page)
+    ).all()
+    annee_col = func.extract("year", VotePlenier.date_seance)
+    par_annee = db.execute(
+        select(annee_col, func.count())
+        .where(valides, VotePlenier.date_seance.is_not(None))
+        .group_by(annee_col)
+        .order_by(annee_col.desc())
+    ).all()
+    par_nature = dict(
+        db.execute(
+            select(VotePlenier.nature, func.count()).where(valides).group_by(VotePlenier.nature)
+        ).all()
+    )
+    return {
+        "total": total,
+        "annees": [{"annee": int(a), "nombre": n} for a, n in par_annee],
+        "natures": [
+            {"code": code, "libelle": libelle, "nombre": par_nature.get(code, 0)}
+            for code, libelle in NATURES.items()
+            if par_nature.get(code)
+        ],
+        "votes": [
+            {
+                "id": v.id,
+                "intitule": v.intitule,
+                "nature": v.nature,
+                "nature_libelle": NATURES.get(v.nature, v.nature),
+                "resultat": v.resultat,
+                "date_seance": v.date_seance,
+                "unanimite": v.unanimite,
+                "votants": v.votants,
+                "pour": v.pour,
+                "contre": v.contre,
+                "abstentions": v.abstentions,
+                "commission": v.commission,
+                "presente_par": v.presente_par,
+                "resume": v.resume,
+                "document_id": v.document_id,
+                "source_url": v.document.url,
+            }
+            for v in votes
+        ],
+    }
+
+
 @router.get("/gouvernement")
 def gouvernement(db: Session = Depends(get_db)) -> dict:
     """Composition officielle du gouvernement (décret de composition), validée."""

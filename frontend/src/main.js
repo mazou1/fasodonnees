@@ -27,6 +27,7 @@ const router = createRouter({
     { path: "/actualites", name: "actualites", component: () => import("./views/ActualitesView.vue") },
     { path: "/gouvernement", name: "gouvernement", component: () => import("./views/GouvernementView.vue") },
     { path: "/assemblee", name: "assemblee", component: () => import("./views/AssembleeView.vue") },
+    { path: "/assemblee/votes", name: "assemblee-votes", component: () => import("./views/AssembleeVotesView.vue") },
     { path: "/assemblee/lois", name: "assemblee-lois", component: () => import("./views/AssembleeLoisView.vue") },
     { path: "/a-propos", name: "a-propos", component: () => import("./views/AProposView.vue") },
     { path: "/annuaire", name: "annuaire", component: () => import("./views/AnnuaireView.vue") },

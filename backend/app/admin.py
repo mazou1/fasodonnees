@@ -30,6 +30,7 @@ from app.models import (
     Projet,
     Publication,
     Realisation,
+    VotePlenier,
     RepartitionBudgetaire,
     Run,
     Source,
@@ -337,6 +338,45 @@ class RealisationAdmin(ValidationActionsMixin, ModelView, model=Realisation):
     icon = "fa-solid fa-helmet-safety"
 
 
+class VotePlenierAdmin(ValidationActionsMixin, ModelView, model=VotePlenier):
+    modele = VotePlenier
+    name_plural = "Votes en plénière (validation)"
+    page_size = 100
+    column_list = [
+        VotePlenier.id,
+        VotePlenier.date_seance,
+        VotePlenier.nature,
+        VotePlenier.intitule,
+        VotePlenier.resultat,
+        VotePlenier.unanimite,
+        VotePlenier.votants,
+        VotePlenier.score_confiance,
+        VotePlenier.statut_validation,
+    ]
+    form_columns = [
+        VotePlenier.intitule,
+        VotePlenier.nature,
+        VotePlenier.resultat,
+        VotePlenier.date_seance,
+        VotePlenier.unanimite,
+        VotePlenier.votants,
+        VotePlenier.pour,
+        VotePlenier.contre,
+        VotePlenier.abstentions,
+        VotePlenier.commission,
+        VotePlenier.presente_par,
+        VotePlenier.resume,
+        VotePlenier.document,
+        VotePlenier.statut_validation,
+    ]
+    column_searchable_list = [VotePlenier.intitule]
+    column_sortable_list = [
+        VotePlenier.date_seance, VotePlenier.nature, VotePlenier.score_confiance,
+    ]
+    column_default_sort = ("date_seance", True)
+    icon = "fa-solid fa-landmark"
+
+
 class ProjetAdmin(ValidationActionsMixin, ModelView, model=Projet):
     """Dossiers de suivi : annonce → attribution → livraison.
 
@@ -559,6 +599,7 @@ _FILES_VALIDATION = [
     (Marche, "Marchés publics", "marche"),
     (Realisation, "Infrastructures & inaugurations", "realisation"),
     (BudgetExercice, "Budgets d'exercice", "budget-exercice"),
+    (VotePlenier, "Votes en plénière", "vote-plenier"),
 ]
 
 
@@ -697,6 +738,7 @@ def mount_admin(app: FastAPI) -> None:
         MarcheAdmin,
         AttributaireAdmin,
         RealisationAdmin,
+        VotePlenierAdmin,
         ProjetAdmin,
         DotationAdmin,
         RepartitionAdmin,

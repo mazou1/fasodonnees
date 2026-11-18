@@ -6,6 +6,7 @@
 
   <nav class="onglets">
     <router-link to="/assemblee">Composition</router-link>
+    <router-link to="/assemblee/votes">Votes en plénière</router-link>
     <router-link to="/assemblee/lois" class="actif">Lois votées</router-link>
   </nav>
 

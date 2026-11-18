@@ -32,6 +32,7 @@ from app.models import (
     MembreGouvernement,
     Nomination,
     Realisation,
+    VotePlenier,
 )
 
 # Tous les modèles portant à la fois un statut de validation et un score.
@@ -46,6 +47,7 @@ CIBLES = (
     (MembreGouvernement, "membres du gouvernement"),
     (Marche, "marchés publics"),
     (Realisation, "infrastructures"),
+    (VotePlenier, "votes en plénière"),
 )
 
 SEUIL_DEFAUT = 0.9
