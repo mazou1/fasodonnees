@@ -29,6 +29,7 @@ ETAPES_ATTENDUES = {
     "alerte_sources_muettes": "alerte quand une source se tait",
     "diffusion_horaire": "publication sur les réseaux sociaux",
     "etat_services": "état en direct des téléservices de l'annuaire",
+    "alertes_horaires": "alertes personnalisées aux abonnés Telegram",
 }
 
 

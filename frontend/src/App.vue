@@ -96,6 +96,7 @@ const NAVIGATION = [
       ["/documents", "Documents"],
       ["/dossiers", "Dossiers"],
       ["/services-numeriques", "Services en ligne"],
+      ["/alertes", "Alertes"],
     ],
   },
 ];
@@ -197,6 +198,7 @@ onBeforeUnmount(() => {
       <span>Plateforme citoyenne indépendante - données issues des sources officielles, chaque entrée liée à son document d'origine.</span>
       <router-link to="/glossaire">Glossaire</router-link>
       <router-link to="/a-propos">À propos & méthodologie</router-link>
+      <router-link to="/alertes">🔔 Alertes</router-link>
       <a href="/api/docs" target="_blank" rel="noopener">API ouverte</a>
       <a href="/api/rss/conseils.xml" target="_blank" rel="noopener" title="Suivre les conseils des ministres">RSS ⓘ</a>
       <a href="https://archivesdufaso.com" target="_blank" rel="noopener" title="Archive citoyenne de la parole présidentielle burkinabè, de 1960 à aujourd'hui">Archives du Faso ↗</a>

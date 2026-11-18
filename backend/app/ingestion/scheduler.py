@@ -178,6 +178,35 @@ def run_conseil_ministres() -> None:
     logger.info("Versions consolidées : %s", stats)
 
 
+def run_alertes() -> None:
+    """Envoie aux abonnés Telegram ce qui correspond à leurs alertes."""
+    if not (settings.alertes_actives and settings.telegram_bot_token):
+        return
+    from app.alertes.envoi import envoyer_alertes, purger_journal
+    from app.diffusion.reseaux import Telegram
+
+    with SessionLocal() as db:
+        bilan = envoyer_alertes(db, Telegram())
+        purger_journal(db)
+    logger.info("Alertes : %s", bilan)
+
+
+def demarrer_bot_alertes() -> None:
+    """Lance l'écoute du bot dans un fil à part.
+
+    Hors du planificateur : c'est une attente longue permanente, pas une tâche
+    périodique, et elle ne doit ni occuper un de ses fils ni dépendre de lui.
+    """
+    if not (settings.alertes_actives and settings.telegram_bot_token):
+        logger.info("Bot d'alertes non démarré (jeton Telegram absent ou alertes désactivées)")
+        return
+    import threading
+
+    from app.alertes.bot import ecouter
+
+    threading.Thread(target=ecouter, name="bot-alertes", daemon=True).start()
+
+
 def run_etat_services() -> None:
     """Teste chaque téléservice de l'annuaire, comme le verrait un visiteur."""
     from app.services_numeriques import verifier_tout
@@ -244,6 +273,14 @@ def construire_scheduler() -> BlockingScheduler:
     )
     # Deux passages par jour : avant l'ouverture des bureaux, puis en début
     # d'après-midi - une panne du matin n'attend pas le lendemain pour s'afficher.
+    # Cinq minutes après la diffusion : les deux écrivent sur Telegram, autant
+    # ne pas les faire partir ensemble.
+    scheduler.add_job(
+        run_alertes,
+        CronTrigger(minute=25),
+        id="alertes_horaires",
+        coalesce=True,
+    )
     scheduler.add_job(
         run_etat_services,
         CronTrigger(hour="5,13", minute=40),
@@ -368,6 +405,7 @@ def main() -> None:
         run_date=datetime.now(scheduler.timezone) + timedelta(seconds=5),
         id="rattrapage_demarrage",
     )
+    demarrer_bot_alertes()
     logger.info("Worker d'ingestion démarré - cadences planifiées puis collecte immédiate")
     scheduler.start()
 

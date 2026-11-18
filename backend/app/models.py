@@ -548,6 +548,42 @@ class VotePlenier(Base):
         return f"{self.date_seance} - {self.intitule[:80]}"
 
 
+class Abonnement(Base):
+    """Une alerte demandée par un lecteur (cf. app/alertes/).
+
+    `destinataire` est l'identifiant de la conversation Telegram : la seule
+    donnée personnelle conservée, effacée par `/arreter tout`.
+    """
+
+    __tablename__ = "abonnement"
+    __table_args__ = (
+        UniqueConstraint("canal", "destinataire", "genre", "valeur", name="uq_abonnement"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    canal: Mapped[str] = mapped_column(String(20), default="telegram")
+    destinataire: Mapped[str] = mapped_column(String(100), index=True)
+    genre: Mapped[str] = mapped_column(String(20))  # mot | personne | structure
+    # mot-clé normalisé, ou identifiant de la personne / de la structure
+    valeur: Mapped[str] = mapped_column(String(300))
+    libelle: Mapped[str] = mapped_column(String(300))  # ce que l'abonné a demandé, tel quel
+    cree_le: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class AlerteEnvoyee(Base):
+    """Journal des envois : (abonnement, élément) ne part qu'une fois."""
+
+    __tablename__ = "alerte_envoyee"
+    __table_args__ = (UniqueConstraint("abonnement_id", "cle", name="uq_alerte_envoyee"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    abonnement_id: Mapped[int] = mapped_column(
+        ForeignKey("abonnement.id", ondelete="CASCADE"), index=True
+    )
+    cle: Mapped[str] = mapped_column(String(80))  # nomination-123, decision-45, texte-678…
+    date_envoi: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class EtatService(Base):
     """Dernier état constaté d'un téléservice de l'annuaire « Services en ligne ».
 

@@ -35,6 +35,7 @@ const router = createRouter({
     { path: "/personnes/:id(\\d+)", name: "personne", component: () => import("./views/PersonneView.vue") },
     { path: "/annuaire/nominations", name: "nominations", component: () => import("./views/NominationsView.vue") },
     { path: "/nominations", redirect: "/annuaire/nominations" },
+    { path: "/alertes", name: "alertes", component: () => import("./views/AlertesView.vue") },
     { path: "/services-numeriques", name: "services-numeriques", component: () => import("./views/ServicesNumeriquesView.vue") },
   ],
   scrollBehavior: () => ({ top: 0 }),

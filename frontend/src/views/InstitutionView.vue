@@ -9,6 +9,10 @@
       · {{ inst.nb_agents.toLocaleString("fr-FR") }} en fonction<template v-if="inst.nb_anciens">
         · {{ inst.nb_anciens.toLocaleString("fr-FR") }} ancien{{ inst.nb_anciens > 1 ? "s" : "" }}</template>
     </p>
+    <p v-if="lienAlerteInstitution(inst.id)" style="margin: -6px 0 14px">
+      <a class="alerte" :href="lienAlerteInstitution(inst.id)" target="_blank" rel="noopener"
+         title="Être prévenu sur Telegram des nominations dans cette institution">🔔 Recevoir une alerte</a>
+    </p>
 
     <label v-if="inst.nb_anciens" class="bascule-anciens">
       <input type="checkbox" v-model="montrerAnciens" />
@@ -68,8 +72,10 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { apiGet } from "../api";
+import { chargerAlertes, lienAlerteInstitution } from "../alertes";
 
 const route = useRoute();
+chargerAlertes(); // nom du bot Telegram, pour le lien « Recevoir une alerte »
 const inst = ref(null);
 const chargement = ref(false);
 const montrerAnciens = ref(false);

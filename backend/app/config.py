@@ -104,6 +104,11 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""  # « @faso_donnees » ou l'identifiant numérique
     telegram_quota_jour: int = 40
+    # Nom public du bot (sans @) : sert aux liens « Recevoir une alerte » du
+    # site. Vide = les alertes ne sont pas proposées.
+    telegram_bot_nom: str = "faso_donnees_bot"
+    # Le bot répond aux messages privés et envoie les alertes (cf. app/alertes/).
+    alertes_actives: bool = True
 
     # Facebook : page + jeton de page longue durée (Graph API).
     facebook_page_id: str = ""

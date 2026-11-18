@@ -1469,6 +1469,18 @@ def contexte(genre: str, entite_id: int, db: Session = Depends(get_db)) -> dict:
     }
 
 
+@router.get("/alertes")
+def get_alertes() -> dict:
+    """Ce qu'il faut au site pour proposer les alertes Telegram.
+
+    `bot` est le nom public du bot ; le site en tire les liens
+    `https://t.me/<bot>?start=<charge>` (p<id> personne, s<id> institution,
+    m<mot-clé en base64 URL>). Aucune donnée d'abonné n'est exposée.
+    """
+    actif = bool(settings.alertes_actives and settings.telegram_bot_nom)
+    return {"actif": actif, "bot": settings.telegram_bot_nom if actif else None}
+
+
 @router.get("/services-numeriques")
 def get_services_numeriques(db: Session = Depends(get_db)) -> dict:
     """L'annuaire des téléservices officiels, avec l'état constaté de chacun.

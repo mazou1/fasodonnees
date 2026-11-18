@@ -182,6 +182,20 @@ class Telegram(Reseau):
         # n'y a pas de champ séparé à renseigner.
         return str(self._appel("sendMessage", chat_id=self.chat_id, text=message)["message_id"])
 
+    def envoyer(self, chat_id: str, texte: str) -> str:
+        """Message privé à un abonné des alertes (cf. app/alertes/).
+
+        Sans aperçu de lien : une alerte liste plusieurs adresses, et Telegram
+        n'illustrerait que la première.
+        """
+        resultat = self._appel(
+            "sendMessage",
+            chat_id=chat_id,
+            text=texte[:4000],
+            link_preview_options={"is_disabled": True},
+        )
+        return str(resultat["message_id"])
+
     def verifier(self) -> str:
         """Contrôle le bot ET le canal.
 

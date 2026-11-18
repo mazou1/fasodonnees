@@ -18,6 +18,8 @@
           {{ actuelle.poste }}<template v-if="actuelle.structure"> - {{ actuelle.structure }}</template>
           <span class="depuis" v-if="actuelle.date_debut"> · depuis le {{ formatDate(actuelle.date_debut) }}</span>
         </div>
+        <a v-if="lienAlertePersonne(fiche.id)" class="alerte" :href="lienAlertePersonne(fiche.id)" target="_blank" rel="noopener"
+           title="Être prévenu sur Telegram de ses prochaines nominations">🔔 Recevoir une alerte</a>
       </div>
     </header>
 
@@ -64,9 +66,11 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { apiGet } from "../api";
+import { chargerAlertes, lienAlertePersonne } from "../alertes";
 import ContexteSource from "../components/ContexteSource.vue";
 
 const route = useRoute();
+chargerAlertes(); // nom du bot Telegram, pour le lien « Recevoir une alerte »
 const fiche = ref(null);
 
 const actuelle = computed(() => fiche.value?.fonctions.find((f) => !f.date_fin) ?? null);

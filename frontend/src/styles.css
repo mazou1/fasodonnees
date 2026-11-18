@@ -299,3 +299,10 @@ a.item-lien:hover, .item:hover { border-color: color-mix(in srgb, var(--accent) 
   padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px;
 }
 .export:hover { text-decoration: none; border-color: var(--accent); }
+
+/* Lien « Recevoir une alerte » des fiches (cf. src/alertes.js) */
+.alerte {
+  display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid var(--accent); color: var(--accent); font-size: 0.86rem; font-weight: 600;
+}
+.alerte:hover { background: var(--accent); color: #fff; text-decoration: none; }
